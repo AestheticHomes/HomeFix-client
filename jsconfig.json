@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["*"],
+      "@/app/*": ["app/*"],
+      "@/components/*": ["components/*"],
+      "@/hooks/*": ["hooks/*"],
+      "@/contexts/*": ["contexts/*"],
+      "@/lib/*": ["lib/*"],
+      "@/public/*": ["public/*"]
+    },
+    "strict": true,
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "jsx": "preserve"
+  },
+  "exclude": ["node_modules", ".next", "out"]
+}

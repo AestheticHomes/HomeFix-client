@@ -1,0 +1,8 @@
+# Normalize text files
+* text=auto eol=lf
+
+# Treat binary assets properly
+*.glb binary
+*.png binary
+*.jpg binary
+*.mp4 binary

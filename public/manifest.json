@@ -1,0 +1,65 @@
+{
+  "name": "HomeFix India",
+  "short_name": "HomeFix",
+  "description": "Instant Home Repair & Interior Services across Chennai and Nellore",
+  "id": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["home", "services", "interior", "repairs"],
+
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-maskable.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+
+  "screenshots": [
+    {
+      "src": "/images/screenshot-home.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/images/screenshot-mobile.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Book a Service",
+      "short_name": "Book",
+      "url": "/bookings",
+      "icons": [{ "src": "/icons/shortcut-book.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "My Profile",
+      "short_name": "Profile",
+      "url": "/profile",
+      "icons": [{ "src": "/icons/shortcut-profile.png", "sizes": "96x96" }]
+    }
+  ]
+}

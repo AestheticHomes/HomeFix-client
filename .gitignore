@@ -1,0 +1,73 @@
+# ------------------------------------------------------
+# HomeFix Studio AI — Clean Git Ignore (Next.js + Supabase)
+# ------------------------------------------------------
+
+# Node / Package junk
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build / cache directories
+.next/
+out/
+dist/
+.cache/
+.vercel/
+
+# Env & Secrets
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Logs / Diagnostics
+*.log
+logs/
+debug.log
+error.log
+.DS_Store
+Thumbs.db
+
+# IDE / Editor configs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS / Misc
+*.tmp
+*.bak
+*.old
+*.lock
+
+# Supabase local environment
+supabase/.temp/
+supabase/.branches/
+supabase/.logs/
+supabase/.gitignore # keep its internal ignore
+supabase/docker/
+supabase/.env
+
+# Optional: if you export renders / screenshots
+/public/renders/
+public/screenshots/
+
+# Ignore coverage / test reports
+coverage/
+*.lcov
+
+# Backup archives
+*.zip
+*.tar
+*.gz
+
+# Allow key project folders
+!app/
+!components/
+!lib/
+!public/
+!styles/
+!supabase/functions/

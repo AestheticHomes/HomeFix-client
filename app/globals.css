@@ -1,0 +1,210 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ================================================================
+   🧠 Base Theme + Typography
+   ================================================================ */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100
+      transition-colors duration-300;
+  }
+
+  /* Default text and heading colors for dark mode */
+  h1, h2, h3, h4, h5, h6, p, label, span, div {
+    @apply transition-colors duration-200 text-gray-900 dark:text-gray-100;
+  }
+
+  /* Muted text helpers */
+  .text-muted {
+    @apply text-gray-600 dark:text-gray-400;
+  }
+
+  .text-subtle {
+    @apply text-gray-500 dark:text-gray-300;
+  }
+}
+
+/* ================================================================
+   📱 Safe Screen Layout + Mobile Dock Support
+   ================================================================ */
+:root {
+  --mbnav-h: 72px; /* mobile bottom nav height */
+  --mbnav-h-safe: calc(var(--mbnav-h) + env(safe-area-inset-bottom));
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Global viewport normalization */
+html,
+body {
+  height: auto;
+  min-height: 100%;
+  overflow: auto;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure main content never hides behind the bottom nav */
+main,
+.page-root {
+  padding-bottom: var(--mbnav-h-safe) !important;
+}
+
+/* Reserve top/bottom safe area for iOS */
+.safe-area {
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+}
+
+/* Subtle space below floating nav pills */
+.nav-bottom-spacer {
+  height: calc(var(--mbnav-h) / 6);
+}
+
+/* ================================================================
+   🎨 Navigation Feedback (Touch / Focus / Active)
+   ================================================================ */
+.nav-touch-highlight {
+  transition:
+    box-shadow 0.18s ease,
+    transform 0.12s ease,
+    background-color 0.12s ease;
+}
+.nav-touch-highlight:active {
+  transform: translateY(1px) scale(0.98);
+}
+.nav-focus-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.14);
+  border-radius: 8px;
+}
+
+/* ================================================================
+   🌈 Scrollbar (non-invasive aesthetic)
+   ================================================================ */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 197, 94, 0.25) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(34, 197, 94, 0.25);
+  border-radius: 999px;
+}
+
+/* ================================================================
+   🧱 Global Z-Index Hierarchy (System Layers)
+   ================================================================ */
+:root {
+  --z-content: 1;
+  --z-navbar: 7000;
+  --z-fab: 8000;
+  --z-drawer: 9000;
+  --z-toast: 9500;
+  --z-modal: 9999;
+}
+
+.z-content {
+  z-index: var(--z-content) !important;
+}
+.z-navbar {
+  z-index: var(--z-navbar) !important;
+}
+.z-fab {
+  z-index: var(--z-fab) !important;
+}
+.z-drawer {
+  z-index: var(--z-drawer) !important;
+}
+.z-toast {
+  z-index: var(--z-toast) !important;
+}
+.z-modal {
+  z-index: var(--z-modal) !important;
+}
+
+/* ================================================================
+   🧩 SafeScreen Layout Auto-Fix (No Component Change Needed)
+   ================================================================ */
+.safe-screen {
+  position: relative;
+  z-index: var(--z-content);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: inherit;
+  padding-bottom: var(--mbnav-h-safe);
+}
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-screen {
+    padding-top: var(--safe-top);
+    padding-bottom: var(--mbnav-h-safe);
+  }
+}
+
+/* Auto-raise drawers/modals above dock without touching components */
+.safe-screen-overlay,
+body > div[role="dialog"],
+body > div[data-drawer-root],
+body > div[data-overlay],
+[data-overlay-root],
+[data-drawer-overlay] {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: var(--z-drawer) !important;
+}
+
+/* Ensure nav / dock always pinned below overlays */
+nav,
+.mobile-dock,
+.bottom-nav,
+[data-nav-root] {
+  position: fixed !important;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-navbar) !important;
+}
+
+/* ================================================================
+   🍏 iOS + PWA Enhancements
+   ================================================================ */
+@supports (padding: env(safe-area-inset-top)) {
+  :root {
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
+  }
+}
+/* ===============================
+   🧩 Viewport-Safe Screen Layout Fix
+   =============================== */
+
+:root {
+  --navbar-height: 72px; /* matches NavBar height */
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Safe viewport container (for pages, drawers, modals) */
+.safe-screen {
+  min-height: calc(100vh - var(--navbar-height) - var(--safe-bottom));
+  max-height: calc(100vh - var(--navbar-height) - var(--safe-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Optional: for fixed drawers/modals that appear above NavBar */
+.drawer-container {
+  bottom: var(--navbar-height);
+}
