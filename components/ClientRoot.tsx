@@ -1,11 +1,10 @@
 "use client";
-
 /**
- * ClientRoot v2.7 — Hook-Stable & Global Drawer Safe 🌿
+ * ClientRoot v2.8 — Gemini Stable 🌿
  * ------------------------------------------------------------
- * ✅ Fixes "Rendered more hooks than during the previous render"
- * ✅ Ensures hooks always run in the same order
- * ✅ Keeps global openAuthDrawer listener stable
+ * ✅ Removes duplicate Sidebar (handled by LayoutContent)
+ * ✅ Keeps Providers, Auth Drawer, and Admin FAB intact
+ * ✅ Stable for mobile + desktop unified shell
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -14,7 +13,6 @@ import { UserProvider } from "@/contexts/UserContext";
 import { CartProvider } from "@/components/CartContext";
 import ClientLayoutWrapper from "@/components/ClientLayoutWrapper";
 import SessionHydrator from "@/components/SessionHydrator";
-import Sidebar from "@/components/Sidebar";
 import NavBar from "@/components/NavBar";
 import AdminFAB from "@/components/AdminFAB";
 import AuthCenterDrawer from "@/components/AuthCenterDrawer";
@@ -22,26 +20,22 @@ import { Loader2 } from "lucide-react";
 
 export const openAuthDrawerEvent = new Event("openAuthDrawer");
 
-export default function ClientRoot(
-  { children }: { children: React.ReactNode },
-) {
+export default function ClientRoot({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-
+  // 🧠 Session sync listener
   useEffect(() => {
-  function onSessionSync(e: CustomEvent) {
-    const state = e.detail;
-    if (state === "logged_out") {
-      // Force refresh to reset context + cached bookings
-      window.location.href = "/";
+    function onSessionSync(e: CustomEvent) {
+      const state = e.detail;
+      if (state === "logged_out") window.location.href = "/";
     }
-  }
+    window.addEventListener("hf:session-sync", onSessionSync as EventListener);
+    return () =>
+      window.removeEventListener("hf:session-sync", onSessionSync as EventListener);
+  }, []);
 
-  window.addEventListener("hf:session-sync", onSessionSync as EventListener);
-  return () => window.removeEventListener("hf:session-sync", onSessionSync as EventListener);
-}, []);
-  // Always run hooks, even before mounting is done
+  // 🔓 Global "openAuthDrawer" event handler
   useEffect(() => {
     const handler = () => setDrawerOpen(true);
     window.addEventListener("openAuthDrawer", handler);
@@ -49,18 +43,18 @@ export default function ClientRoot(
   }, []);
 
   useEffect(() => setMounted(true), []);
-
   const handleCloseDrawer = useCallback(() => setDrawerOpen(false), []);
 
-  // Instead of returning early, render a loading placeholder
-  const loadingView = (
-    <div className="flex flex-col items-center justify-center h-[100dvh] bg-gray-50 dark:bg-slate-900 text-gray-500">
-      <Loader2 className="animate-spin w-5 h-5 mb-3" />
-      Initializing session...
-    </div>
-  );
+  // ⏳ Fallback view before mount
+  if (!mounted)
+    return (
+      <div className="flex flex-col items-center justify-center h-[100dvh] bg-gray-50 dark:bg-slate-900 text-gray-500">
+        <Loader2 className="animate-spin w-5 h-5 mb-3" />
+        Initializing session...
+      </div>
+    );
 
-  const appView = (
+  return (
     <ThemeProvider
       attribute="class"
       defaultTheme="system"
@@ -73,20 +67,17 @@ export default function ClientRoot(
             <SessionHydrator />
             <AdminFAB />
 
-            <aside className="hidden md:block z-[40]">
-              <Sidebar />
-            </aside>
-
+            {/* 🧭 Main Content (Sidebar handled by LayoutContent) */}
             <main
               id="app-content"
-              className="relative flex-1 z-[30] md:pl-[256px]
-                         overflow-y-auto scrollbar-thin 
+              className="relative flex-1 z-[30] overflow-y-auto scrollbar-thin 
                          pb-[var(--mbnav-h-safe)] md:pb-0
                          -webkit-overflow-scrolling-touch"
             >
               {children}
             </main>
 
+            {/* 📱 Mobile Navigation Bar */}
             <footer
               id="hf-mobile-navbar"
               className="md:hidden fixed bottom-0 left-0 right-0 z-[60]
@@ -100,10 +91,8 @@ export default function ClientRoot(
               <NavBar />
             </footer>
 
-            <div
-              id="global-overlay"
-              className="fixed inset-0 z-[70] pointer-events-none"
-            >
+            {/* 🧩 Global Auth Drawer */}
+            <div id="global-overlay" className="fixed inset-0 z-[70] pointer-events-none">
               <AuthCenterDrawer open={drawerOpen} onClose={handleCloseDrawer} />
             </div>
           </ClientLayoutWrapper>
@@ -111,6 +100,4 @@ export default function ClientRoot(
       </UserProvider>
     </ThemeProvider>
   );
-
-  return mounted ? appView : loadingView;
 }

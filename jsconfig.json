@@ -6,9 +6,10 @@
       "@/app/*": ["app/*"],
       "@/components/*": ["components/*"],
       "@/hooks/*": ["hooks/*"],
-      "@/contexts/*": ["contexts/*"],
+        "@/contexts/*": ["contexts/*"],
       "@/lib/*": ["lib/*"],
-      "@/public/*": ["public/*"]
+      "@/public/*": ["public/*"],
+      "@/types/*": ["types/*"]      // ✅ Add this line
     },
     "strict": true,
     "noImplicitAny": true,

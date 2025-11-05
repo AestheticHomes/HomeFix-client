@@ -1,0 +1,267 @@
+📂 .vscode  (1 items)
+   📄 settings.json
+📂 app  (17 items)
+   📂 animations  (7 items)
+      📄 civil.json
+      📄 diy.json
+      📄 electric.json
+      📄 fix.json
+      📄 interior.json
+      📄 map.json
+      📄 paint.json
+   📂 api  (14 items)
+      📂 admin  (2 items)
+         📂 bookings  (2 items)
+            📂 list  (1 items)
+            📂 update  (1 items)
+         📂 reports  (1 items)
+            📂 export  (1 items)
+      📂 auth  (5 items)
+         📂 otp  (1 items)
+            📄 route.js
+         📂 send-email-otp  (1 items)
+            📄 route.js
+         📂 verify  (1 items)
+            📄 route.js
+         📂 verify-email  (1 items)
+            📄 route.js
+         📂 verify-email-otp  (1 items)
+            📄 route.js
+      📂 bookings  (5 items)
+         📂 [id]  (1 items)
+            📄 route.js
+         📂 cancel  (1 items)
+            📄 route.js
+         📂 list  (1 items)
+            📄 route.js
+         📂 reschedule  (1 items)
+            📄 route.js
+         📄 route.js
+      📂 clients  (1 items)
+         📄 route.js
+      📂 edith  (1 items)
+         📄 route.ts
+      📂 goods  (3 items)
+         📂 exports  (1 items)
+            📄 route.js
+         📂 import  (1 items)
+            📄 route.js
+         📄 route.js
+      📂 profile  (1 items)
+         📄 route.js
+      📂 services  (1 items)
+         📄 route.js
+      📂 test  (1 items)
+         📂 admin-create  (1 items)
+            📄 route.js
+      📂 test-db  (1 items)
+         📄 route.js
+      📂 verify-email  (1 items)
+         📄 route.js
+      📄 auth.js
+      📄 book.js
+      📄 services.js
+   📂 bookings  (2 items)
+      📂 list  (1 items)
+         📄 route.js
+      📄 page.js
+   📂 cart  (1 items)
+      📄 page.js
+   📂 checkout  (1 items)
+      📄 page.js
+   📂 devtools  (1 items)
+      📄 page.js
+   📂 estimator  (1 items)
+      📄 page.jsx
+   📂 login  (1 items)
+      📄 page.tsx
+   📂 profile  (1 items)
+      📄 page.tsx
+   📂 services  (1 items)
+      📄 page.js
+   📂 settings  (1 items)
+      📄 page.tsx
+   📂 studio  (2 items)
+      📄 layout.tsx
+      📄 page.jsx
+   📂 unauthorized  (1 items)
+      📄 page.js
+   📂 util  (1 items)
+      📄 sendEmail.js
+   📄 globals.css
+   📄 layout.tsx
+   📄 page.tsx
+📂 components  (35 items)
+   📂 estimator  (8 items)
+      📂 store  (1 items)
+         📄 estimatorStore.js
+      📄 EstimatorShell.jsx
+      📄 KitchenEstimator.jsx
+      📄 RateConfig.js
+      📄 SummaryPanel.jsx
+      📄 SvgKitchenPreview.jsx
+      📄 SvgWardrobePreview.jsx
+      📄 WardrobeEstimator.jsx
+   📂 studio  (8 items)
+      📂 store  (1 items)
+         📄 plannerStore.js
+      📄 Edith.jsx
+      📄 PriceHUD.jsx
+      📄 RoomPlanner2D_SVG.jsx
+      📄 RoomPlanner3D.jsx
+      📄 RoomShapeSelector.jsx
+      📄 RoomSummary.jsx
+      📄 Toolbar.jsx
+   📂 ui  (14 items)
+      📄 badge.js
+      📄 button.tsx
+      📄 calendar.js
+      📄 card.tsx
+      📄 dialog.js
+      📄 HomeFixLogo.tsx
+      📄 label.tsx
+      📄 progress.js
+      📄 switch.tsx
+      📄 tabs.js
+      📄 toast.jsx
+      📄 toaster.jsx
+      📄 UniversalHeader.tsx
+      📄 use-toast.js
+   📄 AdminFAB.tsx
+   📄 AuthCenterDrawer.tsx
+   📄 BaseDrawer.tsx
+   📄 BookingDrawer.tsx
+   📄 BookingForm.js
+   📄 Button.jsx
+   📄 CartContext.js
+   📄 CartDrawer.tsx
+   📄 ClientLayoutWrapper.tsx
+   📄 ClientRoot.tsx
+   📄 Edith.tsx
+   📄 HeroFX.js
+   📄 HeroParallax.tsx
+   📄 InstallFAB.js
+   📄 LayoutContent.tsx
+   📄 MapPicker.tsx
+   📄 ModalCenter.jsx
+   📄 Navbar.jsx
+   📄 NavBar.tsx
+   📄 OTPInput.tsx
+   📄 PWAInstallButton.js
+   📄 PWAPrompt.tsx
+   📄 RateCard.js
+   📄 RootShell.tsx
+   📄 ServiceCard.tsx
+   📄 SessionHydrator.tsx
+   📄 SessionSync.tsx
+   📄 Sidebar.tsx
+   📄 studio.zip
+   📄 ThemeToggle.tsx
+   📄 UniversalHeader.tsx
+   📄 UserProvider.tsx
+📂 contexts  (3 items)
+   📄 SidebarContext.tsx
+   📄 StudioContext.tsx
+   📄 UserContext.tsx
+📂 edith  (1 items)
+   📂 components  (1 items)
+      📄 useAssetSync.ts
+📂 hooks  (3 items)
+   📄 use-toast.js
+   📄 useDrawerSafeStyle.ts
+   📄 useRoleGuard.js
+📂 lib  (13 items)
+   📂 assets  (1 items)
+      📄 homefix-logo.ts
+   📂 supabaseQueries  (3 items)
+      📄 admin.ts
+      📄 admin.types.ts
+      📄 bookings.ts
+   📄 bookingUtils.js
+   📄 console.ts
+   📄 database.types.ts
+   📄 edithEvents.ts
+   📄 goods.js
+   📄 roles.ts
+   📄 supabaseClient.js
+   📄 supabaseServerClient.ts
+   📄 twilio.js
+   📄 useAuth.ts
+   📄 utils.ts
+📂 public  (8 items)
+   📂 icons  (5 items)
+      📄 HomeFix.png
+      📄 icon.192x192.png.png
+      📄 icon.512x512.png.png
+      📄 Logo.png
+      📄 vc.png
+   📂 images  (1 items)
+      📄 HomeFix.png
+   📂 models  (3 items)
+      📄 chair.glb
+      📄 interior_scene.glb
+      📄 sofa.glb
+   📄 logo-homefix.svg
+   📄 manifest.json
+   📄 offline.html
+   📄 sw.js
+   📄 workbox-4754cb34.js
+📂 Scripts  (1 items)
+   📄 HomeFix-Mail-Test.ps1
+📂 supabase  (5 items)
+   📂 .temp  (8 items)
+      📄 cli-latest
+      📄 gotrue-version
+      📄 pooler-url
+      📄 postgres-version
+      📄 project-ref
+      📄 rest-version
+      📄 storage-migration
+      📄 storage-version
+   📂 functions  (7 items)
+      📂 email-queue-worker  (1 items)
+         📄 index.ts
+      📂 notify-booking-status  (1 items)
+         📄 index.ts
+      📂 notify-cms-update  (1 items)
+         📄 index.ts
+      📂 send-booking-email-core  (1 items)
+         📄 index.ts
+      📂 send-email-otp  (1 items)
+         📄 index.ts
+      📂 verify-email-otp  (1 items)
+         📄 index.ts
+      📄 deno.json
+   📂 migrations  (4 items)
+      📄 20251013_reset_init.sql
+      📄 20251014_cleanup_profiles_table.sql
+      📄 20251026_fix_booking_fk_relations.sql
+      📄 20251026_triggers_cms_booking_sync.sql
+   📄 .gitignore
+   📄 config.toml
+📂 types  (2 items)
+   📄 index.d.ts
+   📄 react-three.d.ts
+📄 .env.local
+📄 .gitattributes
+📄 .gitignore
+📄 build_trace_full.txt
+📄 build_trace.txt
+📄 CLEANUP_LOG.md
+📄 components.json
+📄 deno.json
+📄 deno.lock
+📄 gitattributes
+📄 HomeFix.code-workspace
+📄 import_map.json
+📄 jsconfig.json
+📄 middleware.ts
+📄 next-env.d.ts
+📄 next.config.mjs
+📄 package-lock.json
+📄 package.json
+📄 postcss.config.js
+📄 repo-tree.ps1
+📄 tailwind.config.js
+📄 tsconfig.json
+📄 tsconfig.tsbuildinfo

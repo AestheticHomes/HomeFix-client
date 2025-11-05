@@ -33,7 +33,7 @@ export default function CartDrawer() {
     <>
       {/* Floating FAB */}
       <motion.button
-        whileHover={{ scale: 1.1 }}
+whileHover={{ scale: 1.1, boxShadow: "0 0 20px rgba(155,92,248,0.6)" }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setOpen(true)}
         className="fixed right-6 bg-primary text-white p-3 rounded-full shadow-lg z-fab"
