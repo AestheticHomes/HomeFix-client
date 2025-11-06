@@ -6,14 +6,16 @@ import { Toaster } from "@/components/ui/toaster";
 import UniversalHeader from "@/components/ui/UniversalHeader";
 import { Suspense } from "react";
 
-// ✅ Proper Metadata (Next 14 compatible)
+/* -------------------------------------------------------------------------- */
+/* 🧭 METADATA                                                                */
+/* -------------------------------------------------------------------------- */
 export const metadata: Metadata = {
   title: "HomeFix India",
-  description: "Smart home services & interior platform",
+  description: "Smart home services & interior platform by Aesthetic Homes",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icons/icon.192x192.png.png",
-    apple: "/icons/icon.512x512.png.png",
+    icon: "/icons/icon-192x192.png",
+    apple: "/icons/icon-512x512.png",
   },
   appleWebApp: {
     capable: true,
@@ -22,7 +24,9 @@ export const metadata: Metadata = {
   },
 };
 
-// ✅ Separate Viewport export (fixes build warnings)
+/* -------------------------------------------------------------------------- */
+/* 📱 VIEWPORT (Next 14 Compliant)                                           */
+/* -------------------------------------------------------------------------- */
 export const viewport: Viewport = {
   themeColor: "#5A5DF0",
   width: "device-width",
@@ -31,16 +35,22 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+/* -------------------------------------------------------------------------- */
+/* 🏗️ ROOT LAYOUT – Edith Framework                                          */
+/* -------------------------------------------------------------------------- */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`min-h-screen antialiased overflow-x-hidden
-                    bg-gradient-to-br from-[#F8F7FF] via-[#F2F0FF] to-[#EAE8FF]
-                    dark:from-[#0D0B2B] dark:via-[#1B1545] dark:to-[#201A55]
-                    text-[#2A2A66] dark:text-[#E0D6FF]
-                    transition-colors duration-500`}
+        className={`
+          relative min-h-screen antialiased overflow-x-hidden
+          bg-gradient-to-br from-[#F8F7FF] via-[#F2F0FF] to-[#EAE8FF]
+          dark:from-[#0D0B2B] dark:via-[#1B1545] dark:to-[#201A55]
+          text-[#2A2A66] dark:text-[#E0D6FF]
+          selection:bg-[#9B5CF8]/20 selection:text-[#5A5DF0]
+          transition-colors duration-500
+        `}
       >
         <ThemeProvider
           attribute="class"
@@ -48,17 +58,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           enableSystem
           disableTransitionOnChange
         >
+          {/* 🌐 Core Shell Wrapper */}
           <RootShell>
-            {/* 🧭 Edith Horizon Header (always visible) */}
-            <Suspense>
+            {/* 🧭 Edith Horizon Header */}
+            <Suspense fallback={null}>
               <UniversalHeader />
             </Suspense>
 
-            {/* 🏗 Page Content below header */}
-            <main className="pt-[72px] safe-screen">{children}</main>
+            {/* 📄 Page Content */}
+            <main
+              className={`
+                relative z-0 flex flex-col
+                min-h-[calc(100vh-72px)]
+                pt-[72px] pb-safe-bottom
+                w-full overflow-x-hidden
+              `}
+            >
+              {children}
+            </main>
           </RootShell>
 
-          {/* 🔔 Toasts */}
+          {/* 🔔 Toast Notifications */}
           <Toaster />
         </ThemeProvider>
       </body>

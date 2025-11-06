@@ -1,25 +1,27 @@
 "use client";
 /**
  * File: components/ui/UniversalHeader.tsx
- * EdithHeader v5.0 — Unified Horizon Bar 🌌
+ * EdithHeader v5.1 — Gemini Continuum Aura Edition 🌌
  * ---------------------------------------------------------
  * 🧭 Fixed top header shared across all HomeFix modules
  * 🧮 Context-aware navigation (Estimator / Viewer modes)
+ * 🧿 Clickable Profile Aura → /profile
  * 🌓 Theme toggle + Fullscreen + Sync
  * ✨ Vibrant Edith aesthetic — Horizon gradient + blur
  * 📱 Fully mobile responsive (compact stacked layout)
  */
 
 import React, { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import HomeFixLogo from "@/components/ui/HomeFixLogo";
-import  useEstimator  from "@/components/estimator/store/estimatorStore";
+import useEstimator from "@/components/estimator/store/estimatorStore";
 import { Sun, Moon, Maximize2, RefreshCw } from "lucide-react";
-
+import type { TargetAndTransition } from "framer-motion";
 export default function UniversalHeader(): React.ReactElement {
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, setTheme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isSyncing, setSyncing] = useState(false);
@@ -46,7 +48,7 @@ export default function UniversalHeader(): React.ReactElement {
     pathname?.startsWith("/studio")
       ? "HomeFix Studio"
       : pathname?.startsWith("/store")
-      ? "HomeFix Store"
+      ? "HomeFix Store" 
       : pathname?.startsWith("/bookings")
       ? "My Bookings"
       : pathname?.startsWith("/services")
@@ -57,7 +59,7 @@ export default function UniversalHeader(): React.ReactElement {
       ? "Edith Viewer"
       : isEstimator
       ? "HomeFix Estimator"
-      : "HomeFix India";
+      : "";
 
   // 🔸 Sync (for Edith Viewer / 3D assets)
   async function handleSync(): Promise<void> {
@@ -85,6 +87,19 @@ export default function UniversalHeader(): React.ReactElement {
     { key: "summary", label: "3. Summary" },
   ];
 
+  // 🔮 Shared aura animation
+const auraPulse: { initial: TargetAndTransition; animate: TargetAndTransition } = {
+  initial: { opacity: 0.6, scale: 1 },
+  animate: {
+    opacity: [0.6, 0.2, 0.6],
+    scale: [1, 1.25, 1],
+    transition: {
+      duration: 2.4,
+      repeat: Infinity,
+      ease: ["easeInOut"], // ✅ correct type
+    },
+  },
+};
   return (
     <motion.header
       className="fixed top-0 left-0 right-0 z-[60] flex flex-col
@@ -123,8 +138,8 @@ export default function UniversalHeader(): React.ReactElement {
           {pageTitle}
         </motion.h1>
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-2">
+        {/* Action Buttons + Aura Profile */}
+        <div className="flex items-center gap-3 sm:gap-4">
           {isViewer && (
             <button
               onClick={handleSync}
@@ -166,6 +181,32 @@ export default function UniversalHeader(): React.ReactElement {
               <Sun className="text-[#EC6ECF]" size={16} />
             )}
           </button>
+
+          {/* 🧿 Profile Aura */}
+          <motion.div
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.94 }}
+            onClick={() => router.push("/profile")}
+            className="relative cursor-pointer group"
+          >
+            <motion.div
+              {...auraPulse}
+              className="absolute inset-0 rounded-full bg-gradient-to-r from-[#5A5DF0]/40 to-[#EC6ECF]/40 blur-lg group-hover:opacity-80"
+            />
+            <motion.div
+              whileHover={{ rotate: 3 }}
+              className="relative w-9 h-9 rounded-full bg-gradient-to-r from-[#5A5DF0] to-[#EC6ECF]
+                         flex items-center justify-center text-sm font-bold text-white
+                         shadow-[0_0_8px_rgba(155,92,248,0.6)] ring-1 ring-white/10"
+            >
+              {typeof window !== "undefined"
+                ? localStorage.getItem("user")
+                  ? JSON.parse(localStorage.getItem("user") || "{}")?.name?.[0]?.toUpperCase() ||
+                    "G"
+                  : "G"
+                : "G"}
+            </motion.div>
+          </motion.div>
         </div>
       </div>
 

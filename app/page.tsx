@@ -1,21 +1,7 @@
 "use client";
-/// <reference types="react" />
-
-/**
- * File: /app/page.tsx
- * Project: HomeFix India — v3.3 Parallax Flow Edition
- * Author: Edith 🪶 for Jagadish Ramaswamy
- *
- * - Cinematic homepage with shimmer preload
- * - Cascading service Lotties
- * - Parallax DIY & CTA sections
- * - Smooth dark/light transitions
- */
-
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import {
   motion,
-  AnimatePresence,
   useScroll,
   useTransform,
   useSpring,
@@ -24,9 +10,10 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import InstallFAB from "@/components/InstallFAB";
-
+import ServicesSection from "@/components/ServicesSection";
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
+// 🎬 Local animations
 import fixAnim from "./animations/fix.json";
 import interiorAnim from "./animations/interior.json";
 import paintAnim from "./animations/paint.json";
@@ -35,16 +22,12 @@ import diyAnim from "./animations/diy.json";
 import civilAnim from "./animations/civil.json";
 
 /* -------------------------------------------------------------------------- */
-/* 🎞 SHIMMER COMPONENT                                                       */
+/* 🌈 SHIMMER                                                                 */
 /* -------------------------------------------------------------------------- */
-interface ShimmerProps {
-  height?: string;
-}
-
-const Shimmer = ({ height }: ShimmerProps): React.ReactElement => (
+const Shimmer = ({ height = "100%" }: { height?: string }) => (
   <div
     className="relative overflow-hidden bg-gray-200 dark:bg-slate-700 rounded-xl"
-    style={{ height: height || "100%" }}
+    style={{ height }}
   >
     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 dark:via-white/10 to-transparent animate-[shimmer_1.6s_infinite]" />
     <style jsx>{`
@@ -61,145 +44,132 @@ const Shimmer = ({ height }: ShimmerProps): React.ReactElement => (
 );
 
 /* -------------------------------------------------------------------------- */
-/* 🎬 HERO VIDEO SEQUENCE                                                     */
+/* 🎞 HERO VIDEO — Cinematic Woodworking + Smart Autoplay                     */
 /* -------------------------------------------------------------------------- */
-function HeroVideoSequence(): React.ReactElement {
-  const localRef = useRef<HTMLVideoElement>(null);
-  const [stage, setStage] = useState<"local" | "youtube">("local");
-  const [ytReady, setYtReady] = useState(false);
-  const [blocked, setBlocked] = useState(false);
-  const [transitionPhase, setTransitionPhase] = useState(false);
+function HeroVideoSequence() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const { scrollY } = useScroll();
   const [loaded, setLoaded] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  const startedRef = useRef(false);
 
+  // attempt autoplay immediately
   useEffect(() => {
-    const video = localRef.current;
-    if (!video) return;
-
-    const tryPlay = async () => {
-      video.src =
-        "https://videos.pexels.com/video-files/857195/857195-hd_1920_1080_30fps.mp4";
-      video.muted = true;
-      video.playsInline = true;
-      try {
-        await video.play();
-        setLoaded(true);
-        setBlocked(false);
-      } catch {
-        setStage("youtube");
-        setBlocked(true);
-      }
-    };
-
-    tryPlay();
-    return () => video.pause();
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = true;
+    v.playsInline = true;
+    v.autoplay = true;
+    v.load();
+    v.play().catch(() => setBlocked(true));
   }, []);
 
+  // fallback: start after 20s if browser blocked autoplay
   useEffect(() => {
-    setTransitionPhase(true);
-    const t = setTimeout(() => setTransitionPhase(false), 1000);
-    return () => clearTimeout(t);
-  }, [stage]);
+    const timer = setTimeout(() => {
+      const v = videoRef.current;
+      if (v && !startedRef.current) {
+        v.play().catch(() => setBlocked(true));
+        startedRef.current = true;
+      }
+    }, 20000);
+    return () => clearTimeout(timer);
+  }, []);
 
-  const handleManualPlay = async (): Promise<void> => {
-    const v = localRef.current;
-    if (!v) return;
-    try {
-      v.muted = false;
-      await v.play();
-      setBlocked(false);
-    } catch {
-      setStage("youtube");
-    }
-  };
+  // pause/resume on scroll
+  useEffect(() => {
+    const unsubscribe = scrollY.onChange((y: number) => {
+      const v = videoRef.current;
+      if (!v) return;
+      if (y > 200 && !v.paused) v.pause();
+      else if (y <= 200 && v.paused && startedRef.current)
+        v.play().catch(() => {});
+    });
+    return () => unsubscribe();
+  }, [scrollY]);
 
   return (
-    <div className="absolute inset-0 overflow-hidden">
-      <AnimatePresence>
-        {!loaded && (
-          <motion.div
-            key="hero-shimmer"
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8 }}
-            className="absolute inset-0 z-20"
-          >
-            <Shimmer />
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <section className="relative w-full h-[75vh] flex items-center justify-center overflow-hidden">
+      {!loaded && (
+        <motion.div
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 0 }}
+          transition={{ duration: 1.2 }}
+          className="absolute inset-0 z-10"
+        >
+          <Shimmer />
+        </motion.div>
+      )}
 
-      <AnimatePresence mode="wait">
-        {stage === "local" ? (
-          <motion.video
-            key="local"
-            ref={localRef}
-            onCanPlay={() => setLoaded(true)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: loaded ? 1 : 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.2 }}
-            className="absolute top-1/2 left-1/2 w-[160%] md:w-full min-h-full -translate-x-1/2 -translate-y-1/2 object-cover"
-            loop
-            playsInline
-            muted
-            preload="auto"
-            poster="https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg"
-          />
-        ) : (
-          <motion.div
-            key="youtube"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: ytReady ? 1 : 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.2 }}
-            className="absolute inset-0 flex items-center justify-center"
-          >
-            <iframe
-              id="homefix-yt"
-              onLoad={() => {
-                setYtReady(true);
-                setLoaded(true);
-              }}
-              src="https://www.youtube.com/embed/4HW_ymYfC2I?autoplay=1&mute=1&controls=0&loop=1&playlist=4HW_ymYfC2I&modestbranding=1&showinfo=0"
-              title="HomeFix India Cinematic Reel"
-              className="absolute top-1/2 left-1/2 w-[160%] md:w-full h-full -translate-x-1/2 -translate-y-1/2 object-cover"
-              allow="autoplay; fullscreen; encrypted-media"
-              allowFullScreen
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <video
+        ref={videoRef}
+        muted
+        loop
+        playsInline
+        preload="auto"
+        autoPlay
+        onCanPlay={() => setLoaded(true)}
+        poster="https://images.pexels.com/photos/3815582/pexels-photo-3815582.jpeg"
+        className="absolute inset-0 w-full h-full object-cover"
+      >
+        <source
+          src="https://videos.pexels.com/video-files/5471927/5471927-uhd_2560_1440_25fps.mp4"
+          type="video/mp4"
+        />
+      </video>
 
       <motion.div
-        className="absolute inset-0 bg-black pointer-events-none"
+        className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/50 pointer-events-none"
         initial={{ opacity: 0 }}
-        animate={{ opacity: transitionPhase ? 1 : 0 }}
-        transition={{ duration: 0.8 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.4 }}
       />
 
+      <div className="relative z-20 text-center text-white px-4">
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1 }}
+          className="text-4xl md:text-6xl font-bold drop-shadow-xl"
+        >
+          Crafted by Hand, Perfected by HomeFix
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="text-lg md:text-xl mt-4 text-gray-200"
+        >
+          Experience the art of modern woodworking and precision design.
+        </motion.p>
+      </div>
+
       {blocked && (
-        <div className="absolute inset-0 flex items-center justify-center z-10">
+        <div className="absolute inset-0 flex items-center justify-center z-30">
           <button
-            onClick={handleManualPlay}
-            className="w-16 h-16 rounded-full bg-white/90 text-red-600 flex items-center justify-center shadow-lg"
+            onClick={() => {
+              const v = videoRef.current;
+              if (v) {
+                v.muted = true;
+                v.play().catch(() => null);
+                setBlocked(false);
+                startedRef.current = true;
+              }
+            }}
+            className="w-16 h-16 rounded-full bg-white/90 text-red-600 flex items-center justify-center shadow-lg hover:scale-110 transition"
           >
             ▶
           </button>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
 /* -------------------------------------------------------------------------- */
-/* 🧠 LAZY YOUTUBE EMBED                                                      */
+/* 🧩 LAZY YOUTUBE                                                            */
 /* -------------------------------------------------------------------------- */
-interface LazyYouTubeProps {
-  src: string;
-  title: string;
-}
-
-function LazyYouTube({ src, title }: LazyYouTubeProps): React.ReactElement {
+function LazyYouTube({ src, title }: { src: string; title: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -207,8 +177,8 @@ function LazyYouTube({ src, title }: LazyYouTubeProps): React.ReactElement {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
         setVisible(true);
         obs.disconnect();
       }
@@ -223,7 +193,7 @@ function LazyYouTube({ src, title }: LazyYouTubeProps): React.ReactElement {
   return (
     <div
       ref={ref}
-      className="relative rounded-2xl shadow-xl w-full md:w-[560px] aspect-video bg-black overflow-hidden"
+      className="relative rounded-2xl overflow-hidden w-full md:w-[560px] aspect-video bg-black shadow-xl"
     >
       {!loaded && <Shimmer />}
       {visible ? (
@@ -238,13 +208,7 @@ function LazyYouTube({ src, title }: LazyYouTubeProps): React.ReactElement {
         />
       ) : (
         <>
-          <Image
-            src={thumb}
-            alt={title}
-            fill
-            className="object-cover opacity-80"
-            sizes="(max-width:768px) 100vw, 560px"
-          />
+          <Image src={thumb} alt={title} fill className="object-cover opacity-80" />
           <div className="absolute inset-0 flex items-center justify-center">
             <button
               aria-label={`Play ${title}`}
@@ -262,113 +226,91 @@ function LazyYouTube({ src, title }: LazyYouTubeProps): React.ReactElement {
 /* -------------------------------------------------------------------------- */
 /* 🏠 HOMEPAGE MAIN                                                          */
 /* -------------------------------------------------------------------------- */
-export default function HomePage(): React.ReactElement {
-  const heroRef = useRef<HTMLDivElement>(null);
-  const diyRef = useRef<HTMLDivElement>(null);
-  const ctaRef = useRef<HTMLDivElement>(null);
-
-  // 🌈 Scroll motion hooks
+export default function HomePage() {
   const { scrollY } = useScroll();
-  const diyY = useSpring(useTransform(scrollY, [0, 800], [0, -100]), {
+  const diyY = useSpring(useTransform(scrollY, [0, 800], [0, -120]), {
     stiffness: 60,
     damping: 15,
   });
-  const ctaBgY = useSpring(useTransform(scrollY, [800, 1800], [0, -60]), {
+  const ctaY = useSpring(useTransform(scrollY, [800, 1800], [0, -80]), {
     stiffness: 60,
     damping: 15,
   });
 
   return (
     <div className="flex flex-col items-center overflow-x-hidden bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-slate-100 w-full">
-      {/* 🎬 HERO SECTION */}
-      <section
-        ref={heroRef}
-        className="relative w-full h-[70vh] md:h-[78vh] flex justify-center items-center overflow-hidden"
-      >
-        <HeroVideoSequence />
-        <motion.div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40" />
-        <motion.div className="absolute top-0 left-0 w-2/3 h-full bg-gradient-to-r from-yellow-200/10 via-yellow-100/20 to-transparent blur-3xl" />
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2 }}
-          className="relative z-10 text-center text-white px-4"
-        >
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg">
-            Welcome to HomeFix India
-          </h1>
-          <p className="text-lg md:text-xl mb-6 text-gray-200 max-w-2xl mx-auto">
-            Where craftsmanship meets technology — interiors, repairs, and DIY tools built on trust.
-          </p>
-          <Link
-            href="/checkout"
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl shadow-lg font-semibold transition"
-          >
-            Book a Service
-          </Link>
-        </motion.div>
-      </section>
+      {/* HERO */}
+      <HeroVideoSequence />
 
-      {/* 🧩 SERVICES */}
+      {/* SERVICES */}
       <section className="py-20 px-4 grid gap-8 md:grid-cols-3 max-w-6xl w-full">
-        {[fixAnim, interiorAnim, paintAnim, electricAnim, diyAnim, civilAnim].map(
-          (anim, i) => (
+        {[
+          { name: "Home Repairs", tagline: "Quick Fixes & Maintenance", anim: fixAnim },
+          { name: "Interior Design", tagline: "Modern Modular Spaces", anim: interiorAnim },
+          { name: "Painting & Finishes", tagline: "Vibrant Walls, Lasting Impressions", anim: paintAnim },
+          { name: "Electrical Works", tagline: "Safe & Smart Wiring", anim: electricAnim },
+          { name: "DIY Inspirations", tagline: "Learn, Build, Create", anim: diyAnim },
+          { name: "Civil & Renovation", tagline: "Foundations & Transformations", anim: civilAnim },
+        ].map((s, i) => (
+          <motion.div
+            key={s.name}
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: i * 0.15 }}
+            whileHover={{ scale: 1.05 }}
+            className="relative group rounded-2xl overflow-hidden bg-white dark:bg-slate-800 shadow-lg hover:shadow-2xl border border-transparent hover:border-[#9B5CF8]/40 transition-all duration-500"
+          >
             <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.15 }}
-              whileHover={{ scale: 1.05 }}
-              className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition transform hover:-translate-y-1"
-            >
-              <div className="p-6 flex flex-col items-center text-center">
-                <div className="relative w-28 h-28 mb-2">
-                  <Shimmer height="112px" />
-                  <Lottie animationData={anim} loop autoplay className="absolute inset-0" />
-                </div>
-                <h3 className="text-xl font-semibold mt-2">Service #{i + 1}</h3>
-                <p className="text-gray-600 dark:text-slate-300 mt-1">
-                  Crafted with precision and care.
-                </p>
+              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-[#5A5DF0]/10 to-[#EC6ECF]/10 blur-2xl"
+            />
+            <div className="relative p-6 flex flex-col items-center text-center z-10">
+              <div className="relative w-28 h-28 mb-2">
+                <Lottie animationData={s.anim} loop autoplay className="absolute inset-0" />
               </div>
-            </motion.div>
-          )
-        )}
+              <h3 className="text-xl font-semibold mt-2 text-[#5A5DF0] dark:text-[#EC6ECF]">{s.name}</h3>
+              <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">{s.tagline}</p>
+            </div>
+            <motion.div
+              className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-[#5A5DF0] to-[#EC6ECF]"
+              layoutId={`border-${i}`}
+            />
+          </motion.div>
+        ))}
       </section>
 
-      {/* 🛠 DIY PARALLAX SECTION */}
+      {/* DIY */}
       <motion.section
-        ref={diyRef}
         style={{ y: diyY }}
         className="relative bg-gray-100 dark:bg-slate-800 py-24 w-full px-4 transition-colors duration-500"
       >
-        <h2 className="text-3xl font-bold text-center mb-10">DIY Inspirations</h2>
+        <h2 className="text-3xl font-bold text-center mb-10 text-[#5A5DF0] dark:text-[#EC6ECF]">
+          DIY Inspirations
+        </h2>
         <div className="flex flex-col md:flex-row gap-8 justify-center items-center">
           <LazyYouTube src="https://www.youtube.com/embed/DeSDjjicGWY" title="DIY Project Ideas" />
-          <LazyYouTube src="https://www.youtube.com/embed/RvZyB4ZK0dI" title="HomeFix Project Reel" />
+          <LazyYouTube src="https://www.youtube.com/embed/S9dvDU5RmQU" title="HomeFix Project Reel" />
         </div>
       </motion.section>
 
-      {/* 🌇 CTA PARALLAX SECTION */}
+      {/* CTA */}
       <motion.section
-        ref={ctaRef}
-        style={{ y: ctaBgY }}
+        style={{ y: ctaY }}
         className="relative w-full h-[45vh] flex flex-col items-center justify-center text-center bg-[url('https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg')] bg-cover bg-center"
       >
         <div className="absolute inset-0 bg-black/60" />
-        <div className="relative z-10 text-white">
+        <div className="relative z-10 text-white px-4">
           <motion.h2
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-4xl font-bold mb-4"
+            className="text-3xl md:text-4xl font-bold mb-4"
           >
             Ready to Get Started?
           </motion.h2>
           <Link
             href="/checkout"
-            className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-xl text-white font-semibold"
+            className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-xl text-white font-semibold shadow-lg"
           >
             Book Your Service Now
           </Link>

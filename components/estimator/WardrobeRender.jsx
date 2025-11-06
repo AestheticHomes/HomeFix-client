@@ -1,64 +1,68 @@
 "use client";
 import React from "react";
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls, PerspectiveCamera, Environment } from "@react-three/drei";
+import { motion } from "framer-motion";
 import useEstimator from "@/components/estimator/store/estimatorStore";
 import UniPreviewCanvas from "@/components/common/UniPreviewCanvas";
+import WardrobeSvg2D from "@/components/estimator/WardrobeSvg2D";
 
 /* =========================================================
-   🔹 WARDROBE RENDER — Front Elevation (SVG + 3D placeholder)
+   🔹 3D PLACEHOLDER MODEL
    ========================================================= */
-function WardrobeSvg2D() {
-  const wardrobe = useEstimator((s) => s.wardrobe);
-  const PX = 0.22;
-  const totalW = (wardrobe.widthFt || 9) * 304.8; // ft→mm
-  const bottomH = (wardrobe.baseH || 7) * 304.8;
-  const loftH = (wardrobe.loftH || 3) * 304.8;
-  const module = 450;
-
-  const toPx = (mm) => mm * PX;
-  const moduleCount = Math.max(1, Math.round(totalW / module));
-  const moduleW = totalW / moduleCount;
-  const modules = Array.from({ length: moduleCount }, (_, i) => ({ x: i * moduleW, w: moduleW }));
-
-  return (
-    <svg viewBox="0 0 1200 600" className="w-full h-[400px] bg-[#f8f7ff] dark:bg-[#0d0b2b] rounded-xl border">
-      {/* Base carcass */}
-      <rect x={200} y={200} width={toPx(totalW)} height={toPx(bottomH)} fill="#EDE9FE" stroke="#9B5CF8" />
-      {/* Loft carcass */}
-      <rect x={200} y={200 - toPx(loftH) - 8} width={toPx(totalW)} height={toPx(loftH)} fill="#D6CCF8" stroke="#9B5CF8" />
-
-      {/* Door panels per module */}
-      {modules.map((m, i) => {
-        const x = 200 + toPx(m.x);
-        const w = toPx(m.w);
-        const side = i % 2 === 0 ? "right" : "left";
-        const handleX = side === "left" ? x + toPx(20) : x + w - toPx(20);
-
-        return (
-          <g key={i}>
-            <rect x={x} y={200} width={w} height={toPx(bottomH)} fill="none" stroke="#9B5CF8" strokeWidth={1.5} />
-            <line x1={handleX - 8} y1={200 + toPx(bottomH) / 2} x2={handleX + 8} y2={200 + toPx(bottomH) / 2} stroke="#9B5CF8" strokeWidth={2} />
-            <rect x={x} y={200 - toPx(loftH) - 8} width={w} height={toPx(loftH)} fill="none" stroke="#9B5CF8" strokeWidth={1.5} />
-            <line x1={handleX - 8} y1={200 - toPx(loftH) / 2} x2={handleX + 8} y2={200 - toPx(loftH) / 2} stroke="#9B5CF8" strokeWidth={2} />
-            <text x={x + w / 2} y={190 - toPx(loftH)} textAnchor="middle" fontSize="10" fill="#6C6AA8">{Math.round(m.w)} mm</text>
-          </g>
-        );
-      })}
-
-      <text x="50%" y="580" textAnchor="middle" fontSize="12" fill="#6C6AA8">Wardrobe (Elevation View)</text>
-    </svg>
-  );
-}
-
 function WardrobeModel3D() {
   return (
-    <mesh position={[0, 0.5, 0]}>
-      <boxGeometry args={[2, 2.5, 0.6]} />
-      <meshStandardMaterial color="#B9B9B9" metalness={0.3} roughness={0.6} />
-    </mesh>
+    <group>
+      {/* Base wardrobe block */}
+      <mesh position={[0, 1.25, 0]}>
+        <boxGeometry args={[2.4, 2.6, 0.6]} />
+        <meshStandardMaterial
+          color="#C9BCFF"
+          metalness={0.2}
+          roughness={0.5}
+        />
+      </mesh>
+
+      {/* Loft block */}
+      <mesh position={[0, 2.9, 0]}>
+        <boxGeometry args={[2.4, 0.8, 0.6]} />
+        <meshStandardMaterial
+          color="#BDAAFF"
+          metalness={0.25}
+          roughness={0.45}
+        />
+      </mesh>
+
+      {/* Subtle light glow */}
+      <pointLight position={[0, 3.5, 1]} intensity={0.8} color="#D3B8FF" />
+      <Environment preset="studio" />
+    </group>
   );
 }
 
+/* =========================================================
+   🔸 MAIN WARDROBE RENDER WRAPPER
+   ========================================================= */
 export default function WardrobeRender() {
-  const mode = useEstimator((s) => s.mode);
-  return <UniPreviewCanvas mode={mode} SvgComponent={WardrobeSvg2D} ModelComponent={WardrobeModel3D} />;
+  const mode = useEstimator((s) => s.mode); // '2d' or '3d'
+
+  return (
+    <div className="relative w-full h-full flex items-center justify-center">
+      <UniPreviewCanvas
+        mode={mode}
+        SvgComponent={WardrobeSvg2D}
+        ModelComponent={WardrobeModel3D}
+      />
+
+      {/* Optional overlay: label or mode indicator */}
+      <motion.div
+        className="absolute bottom-3 right-4 px-3 py-1.5 text-xs rounded-full bg-black/40 text-white backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.9 }}
+        transition={{ duration: 0.6 }}
+      >
+        {mode === "3d" ? "3D View — Wardrobe" : "2D Elevation — Wardrobe"}
+      </motion.div>
+    </div>
+  );
 }

@@ -29,57 +29,89 @@ function EntangledDualityToggle() {
         whileTap={{ scale: 0.96 }}
         onClick={() => setMode(is3d ? "2d" : "3d")}
         aria-label={is3d ? "Switch to 2D Plan" : "Switch to 3D View"}
-        className="relative h-10 w-[132px] rounded-full border border-white/25 bg-white/10 backdrop-blur-md shadow-md flex items-center justify-between px-4 overflow-hidden"
+        className="relative h-8 w-[118px] rounded-full border border-white/20 bg-white/10 backdrop-blur-md shadow-md flex items-center justify-between px-4 overflow-hidden"
       >
         {/* background tint */}
-        <div className={`absolute inset-0 rounded-full ${is3d ? "bg-[#EC6ECF]/10" : "bg-[#5A5DF0]/10"}`} />
-        <div className="absolute inset-0 rounded-full ring-1 ring-white/15" />
+        <div
+          className={`absolute inset-0 rounded-full ${
+            is3d ? "bg-[#EC6ECF]/10" : "bg-[#5A5DF0]/10"
+          }`}
+        />
+        <div className="absolute inset-0 rounded-full ring-1 ring-white/10" />
 
         {/* labels */}
-        <span className={`z-10 text-[11px] font-bold ${is3d ? "text-white/55" : "text-white"}`}>2D</span>
-        <span className={`z-10 text-[11px] font-bold ${is3d ? "text-white" : "text-white/55"}`}>3D</span>
+        <span
+          className={`z-10 text-[11px] font-semibold ${
+            is3d ? "text-white/50" : "text-white"
+          }`}
+        >
+          2D
+        </span>
+        <span
+          className={`z-10 text-[11px] font-semibold ${
+            is3d ? "text-white" : "text-white/50"
+          }`}
+        >
+          3D
+        </span>
 
         {/* orb track */}
         <motion.div
-          className="absolute top-1/2 -translate-y-1/2 h-8 w-[64px] rounded-full"
+          className="absolute inset-y-[2px] left-[5px] flex items-center justify-start"
           animate={{
-            x: is3d ? 60 : 0,
-            boxShadow: is3d
-              ? "0 0 18px rgba(236,110,207,0.55), inset 0 0 8px rgba(236,110,207,0.25)"
-              : "0 0 18px rgba(90,93,240,0.55), inset 0 0 8px rgba(90,93,240,0.25)",
+            x: is3d ? 52 : 0,
           }}
           transition={{ type: "spring", stiffness: 260, damping: 22 }}
-          style={{ left: 6, background: "transparent", pointerEvents: "none" }}
+          style={{
+            width: "52px",
+            height: "calc(100% - 4px)",
+            borderRadius: "9999px",
+            pointerEvents: "none",
+          }}
         >
           <motion.div
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            className="mx-auto flex items-center justify-center"
             animate={{
-              width: 20,
-              height: 20,
+              width: 14,
+              height: 14,
+              borderRadius: "9999px",
               background: is3d
                 ? "linear-gradient(135deg,#EC6ECF,#B96BFF)"
                 : "linear-gradient(135deg,#5A5DF0,#7A7DF7)",
               boxShadow: is3d
-                ? "0 0 18px rgba(236,110,207,0.95)"
-                : "0 0 18px rgba(90,93,240,0.95)",
+                ? "0 0 12px rgba(236,110,207,0.9), 0 0 2px rgba(236,110,207,0.4) inset"
+                : "0 0 12px rgba(90,93,240,0.9), 0 0 2px rgba(90,93,240,0.4) inset",
             }}
-            transition={{ duration: 0.8, repeat: Infinity }}
+            transition={{
+              duration: 1.4,
+              repeat: Infinity,
+              repeatType: "mirror",
+            }}
           />
         </motion.div>
 
         {/* tunneling flash */}
         <motion.div
           key={is3d ? "to3d" : "to2d"}
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
-          initial={{ opacity: 0, width: 0, height: 0, background: "white" }}
-          animate={{ opacity: [0, 1, 0], width: [0, 24, 0], height: [0, 24, 0] }}
+          className="absolute left-1/2 top-1/2 rounded-full"
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: [0, 1, 0], scale: [0, 1.2, 0] }}
           transition={{ duration: 0.45, ease: "easeOut", delay: 0.05 }}
-          style={{ filter: "blur(2px)", pointerEvents: "none" }}
+          style={{
+            background: "white",
+            width: 18,
+            height: 18,
+            filter: "blur(3px)",
+            pointerEvents: "none",
+            transform: "translate(-50%, -50%)",
+          }}
         />
       </motion.button>
     </div>
   );
 }
+
+
 
 /* 🧭 Pan/Zoom wrapper — anchored center, 80–100 % fit */
 function PanZoomWrapper({ children }) {
