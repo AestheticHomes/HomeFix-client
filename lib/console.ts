@@ -8,7 +8,7 @@
  *  - Timestamped & tagged console output
  *  - Auto-disable in production or when NEXT_PUBLIC_DEBUG_MODE=false
  */
-import { EDITH_LOG_EVENT } from "@/lib/edithEvents";
+
 
 
 export type LogLevel = "log" | "info" | "warn" | "error";

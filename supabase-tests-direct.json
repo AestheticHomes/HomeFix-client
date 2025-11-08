@@ -1,0 +1,50 @@
+{
+  "project_ref": "xnubmphixlpkyqfhghup",
+  "base_url": "https://xnubmphixlpkyqfhghup.supabase.co/functions/v1",
+  "anon_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhudWJtcGhpeGxwa3lxZmhnaHVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAyNTE0NjEsImV4cCI6MjA3NTgyNzQ2MX0.lzt96XR_xMUdDm3BRGpD40DBww8lUv09gyaTQm5sApc",
+  "tests": [
+    {
+      "name": "send-email-otp",
+      "description": "Send OTP email using verified domain aesthetichomes.net",
+      "endpoint": "send-email-otp",
+      "payload": { "email": "testuser@aesthetichomes.net" }
+    },
+    {
+      "name": "verify-email-otp",
+      "description": "Verify OTP received via email",
+      "endpoint": "verify-email-otp",
+      "payload": { "email": "testuser@aesthetichomes.net", "otp": "123456" }
+    },
+    {
+      "name": "send-booking-email-core",
+      "description": "Send booking confirmation email",
+      "endpoint": "send-booking-email-core",
+      "payload": {
+        "booking_id": "BK-1001",
+        "user_name": "Jagadish",
+        "email": "testuser@aesthetichomes.net",
+        "service": "Modular Kitchen",
+        "date": "2025-11-07",
+        "slot": "10:00 AM - 12:00 PM"
+      }
+    },
+    {
+      "name": "link-otp-user",
+      "description": "Link Supabase Auth user with OTP verification record",
+      "endpoint": "link-otp-user",
+      "payload": {
+        "user_id": "mock-user-001",
+        "email": "testuser@aesthetichomes.net"
+      }
+    },
+    {
+      "name": "email-queue-worker",
+      "description": "Trigger queue worker for testing email delivery pipeline",
+      "endpoint": "email-queue-worker",
+      "payload": {
+        "task": "test-trigger",
+        "message": "Diagnostic check from CLI"
+      }
+    }
+  ]
+}

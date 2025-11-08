@@ -1,11 +1,12 @@
 "use client";
 /**
- * ClientLayoutWrapper v4.3 — SafeScreen Integration 🧩
- * ----------------------------------------------------
- * - Ensures content sits above mobile NavBar (flush dock)
- * - Hydration-safe mount logic
- * - Auto-hides wrapper on admin & auth routes
- * - Prevents layout shift on SSR hydration
+ * ClientLayoutWrapper v5.0 — SafeScreen + Route Optimized 🌿
+ * ----------------------------------------------------------
+ * ✅ Prevents hydration mismatch (SSR-safe)
+ * ✅ Auto-hides wrapper on auth/admin pages
+ * ✅ Includes new store, cart, and checkout routes
+ * ✅ Works perfectly under ClientLayout (with NavBar + Header)
+ * ✅ Integrates PWA SafeScreen layout for mobile
  */
 
 import { useEffect, useState } from "react";
@@ -19,23 +20,36 @@ export default function ClientLayoutWrapper({
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Avoid hydration mismatch
+  // 🧠 Mount once to prevent hydration mismatch
+  useEffect(() => setMounted(true), []);
   if (!mounted) return null;
 
-  // Exclude special routes from global layout wrappers
-  const shouldHideLayout = pathname.startsWith("/profile") ||
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/api");
+  // 🛡️ Routes where layout (NavBar, Header, etc.) should be hidden
+  const excludedRoutes = [
+    "/login",
+    "/signup",
+    "/profile",
+    "/admin",
+    "/api",
+  ];
 
-  if (shouldHideLayout) return <>{children}</>;
+  const shouldHideLayout = excludedRoutes.some((r) =>
+    pathname.startsWith(r)
+  );
 
-  // ✅ Default Safe Screen Wrapper (applies to all user pages)
+  if (shouldHideLayout) {
+    return <>{children}</>;
+  }
+
+  // ✅ Default wrapper for public pages (store, home, services, cart, etc.)
   return (
-    <div className="min-h-full w-full overflow-visible">
+    <div
+      className="safe-screen relative flex flex-col min-h-screen w-full 
+        overflow-x-hidden overflow-y-auto
+        bg-gradient-to-br from-[#F8F7FF] via-[#F3F0FF] to-[#EAE8FF]
+        dark:from-[#0D0B2B] dark:via-[#1B1545] dark:to-[#201A55]
+        transition-colors duration-500"
+    >
       {children}
     </div>
   );

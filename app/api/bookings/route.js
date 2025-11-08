@@ -1,10 +1,14 @@
 /**
  * File: /app/api/bookings/route.js
- * Version: v3.6 — Auto-fetch user email & fix schema mismatch
+ * Version: v4.0 — SmartMail Integration (Edith Final)
+ * -----------------------------------------------
+ * ✅ Inserts booking record into Supabase
+ * ✅ Automatically triggers notification_queue via DB triggers
+ * ✅ Prepares optional invoice/layout uploads (future)
  */
 
-import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseClient";
+import { NextResponse } from "next/server";
 
 export async function POST(req) {
   try {
@@ -25,7 +29,7 @@ export async function POST(req) {
       professional_service,
       total_price,
       latitude,
-      longitude
+      longitude,
     } = body;
 
     if (!user_id) throw new Error("Missing user_id");
@@ -38,32 +42,28 @@ export async function POST(req) {
       .maybeSingle();
 
     if (profileErr) throw profileErr;
-
     console.log("👤 [Bookings] Profile fetched:", profile);
 
-    // ✅  Compute total from services if not provided
-    let computedTotal = 0;
-    if (Array.isArray(services)) {
-      computedTotal = services.reduce((sum, s) => {
-        const price = parseFloat(s.price || s.cost || 0);
-        const qty = parseInt(s.quantity || 1);
-        return sum + price * qty;
-      }, 0);
-    }
+    // ✅ Compute total if not passed
+    const computedTotal = Array.isArray(services)
+      ? services.reduce((sum, s) => {
+          const price = parseFloat(s.price || s.cost || 0);
+          const qty = parseInt(s.quantity || 1);
+          return sum + price * qty;
+        }, 0)
+      : 0;
 
     const totalFinal = total_price || computedTotal;
 
-    // ✅ Prepare site_location object (for better consistency)
+    // ✅ Prepare structured payload
     const site_location = {
       address: address || null,
       latitude: latitude || null,
       longitude: longitude || null,
     };
 
-    // ✅ Build booking record safely
     const bookingData = {
       user_id,
-      email: profile?.email || null,
       services,
       total_price: totalFinal,
       type,
@@ -71,26 +71,36 @@ export async function POST(req) {
       preferred_date: preferred_date || new Date().toISOString().split("T")[0],
       preferred_slot: preferred_slot || null,
       status: "upcoming",
-      created_at: new Date().toISOString(),
+      professional_service: professional_service || null,
+      site_location,
       address: address || null,
       latitude: latitude || null,
       longitude: longitude || null,
-      professional_service: professional_service || null,
-      site_location,
+      created_at: new Date().toISOString(),
     };
 
     console.log("🧾 [Bookings] Final Insert Payload:", bookingData);
 
-    // ✅ Insert booking
+    // ✅ Insert booking (trigger auto-runs)
     const { data, error } = await supabase
       .from("bookings")
       .insert([bookingData])
       .select();
 
     if (error) throw error;
+    const booking = data?.[0];
+    console.log("✅ [Bookings] Inserted successfully:", booking);
 
-    console.log("✅ [Bookings] Inserted successfully:", data);
-    return NextResponse.json({ success: true, data });
+    // 📨 [Optional] Future: enqueue invoice/layout upload here
+    // Example:
+    // await supabase.from("invoices").insert({
+    //   booking_id: booking.id,
+    //   invoice_url: invoiceUrl,
+    //   layout_url: layoutUrl,
+    //   total: totalFinal,
+    // });
+
+    return NextResponse.json({ success: true, data: booking });
   } catch (err) {
     console.error("💥 [Bookings API] Fatal error:", err);
     return NextResponse.json(

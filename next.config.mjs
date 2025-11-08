@@ -44,7 +44,7 @@ const nextConfig = {
       { protocol: "https", hostname: "i.ytimg.com" },
       { protocol: "https", hostname: "res.cloudinary.com" },
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
-      { protocol: "https", hostname: "cdn.homefixindia.in" },
+      { protocol: "https", hostname: "cdn.aesthetichomes.net" },
     ],
     unoptimized: false,
     minimumCacheTTL: 3600,

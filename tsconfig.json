@@ -82,7 +82,7 @@
     "types",
     "types/**/*.d.ts",
     ".next/types/**/*.ts"
-, "components/studio/RoomPlanner2DOLDS.jsx", "components/studio/RoomCanvas3d.jsx", "components/studio/EdithBot.tsx", "app/studio/oldpage.jsx", "app/studio/page.js"  ],
+, "components/studio/RoomPlanner2DOLDS.jsx", "components/studio/RoomCanvas3d.jsx", "components/studio/EdithBot.tsx", "app/studio/oldpage.jsx", "app/studio/page.js", "hooks/use-toast.tsx"  ],
   /* --------------------------------------------------------------------
    * 🚫 Exclude build caches & heavy directories
    * -------------------------------------------------------------------- */

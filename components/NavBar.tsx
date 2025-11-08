@@ -1,27 +1,32 @@
 "use client";
-
 /**
- * NavBar.tsx v5.3 — PWA Aurora Flush Dock 🌊
- * --------------------------------------------
- * ✅ Next.js 14 RouteImpl compatible
- * ✅ Vibrations (Haptics) + Framer Motion
- * ✅ iOS safe-area padding + blur
- * ✅ Typed tab routes
+ * ============================================================
+ * File: /components/ui/NavBar.tsx
+ * Version: v7.0 — HomeFix Aurora Dock 🌈
+ * ------------------------------------------------------------
+ * ✅ Full route navigation (Home, Services, Store, Bookings, Profile, Settings)
+ * ✅ Haptic + Framer Motion spring animations
+ * ✅ Aurora blur background + soft gradients
+ * ✅ Integrated cart badge (useCartStore)
+ * ✅ Dark/light adaptive, iOS safe-area friendly
+ * ============================================================
  */
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import dynamic from "next/dynamic";
-import type { Route } from "next";
+import { useEffect } from "react";
 import {
-  CalendarDays,
   Home,
   Layers3,
-  Settings,
   ShoppingCart,
+  Store,
+  CalendarDays,
+  User,
+  Settings,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useCartStore } from "@/components/store/cartStore";
 
 const ThemeToggle = dynamic(() => import("@/components/ThemeToggle"), {
   ssr: false,
@@ -29,116 +34,100 @@ const ThemeToggle = dynamic(() => import("@/components/ThemeToggle"), {
 
 export default function NavBar() {
   const pathname = usePathname();
-  const prefersReduced = useReducedMotion();
-  const vibrate = () => globalThis.navigator?.vibrate?.(15);
+  const prefersReducedMotion = useReducedMotion();
+  const vibrate = () => globalThis.navigator?.vibrate?.(20);
+  const { totalItems } = useCartStore();
 
-  // ✅ Typed route declarations to satisfy RouteImpl
-  const tabs: { name: string; href: Route; icon: any }[] = [
-    { name: "Home", href: "/" as Route, icon: Home },
-    { name: "Services", href: "/services" as Route, icon: Layers3 },
-    { name: "Bookings", href: "/bookings" as Route, icon: CalendarDays },
-    { name: "Settings", href: "/settings" as Route, icon: Settings },
+  // ✅ Tabs configuration
+  const tabs = [
+    { name: "Home", href: "/", icon: Home },
+    { name: "Services", href: "/services", icon: Layers3 },
+    { name: "Store", href: "/store", icon: Store },
+    { name: "Bookings", href: "/bookings", icon: CalendarDays },
+    { name: "Profile", href: "/profile", icon: User },
+    { name: "Settings", href: "/settings", icon: Settings },
   ];
 
   useEffect(() => {
-    // Optional analytics or route restore
+    // reserved for route analytics or dynamic title sync
   }, [pathname]);
 
   return (
     <nav
-      className="
+      className={`
         fixed bottom-0 left-0 right-0 z-navbar md:hidden
-        backdrop-blur-lg supports-[backdrop-filter]:bg-white/80
-        bg-white/90 dark:bg-slate-900/90
         border-t border-gray-200 dark:border-slate-800
-        shadow-[0_-2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_-2px_8px_rgba(0,0,0,0.25)]
+        backdrop-blur-2xl bg-white/70 dark:bg-slate-900/70
+        supports-[backdrop-filter]:bg-white/80
+        transition-all duration-500
         safe-area-inset-bottom
-      "
+      `}
       style={{
         height: "var(--mbnav-h, 72px)",
-        WebkitBackdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(16px)",
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
-      <div className="max-w-3xl mx-auto relative h-full flex items-center justify-between px-3">
-        {/* Left Tabs */}
-        <div className="flex gap-1 items-center">
-          {tabs.slice(0, 2).map(({ name, href, icon: Icon }) => {
-            const active = pathname === href;
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={vibrate}
-                aria-current={active ? "page" : undefined}
-                className={`group flex flex-col items-center justify-center 
-                            text-[11px] font-medium min-w-[60px] min-h-[48px] px-3 py-1.5 rounded-lg transition
-                            ${
-                              active
-                                ? "text-green-600 dark:text-emerald-400 bg-green-50/70 dark:bg-emerald-900/25"
-                                : "text-gray-400 hover:text-green-600 dark:hover:text-emerald-400"
-                            }`}
-              >
-                <motion.div
-                  whileTap={{ scale: prefersReduced ? 1 : 0.94 }}
-                  whileHover={{ scale: prefersReduced ? 1 : 1.08 }}
-                  className="relative"
-                >
-                  <Icon className="w-[20px] h-[20px]" />
-                </motion.div>
-                <span className="mt-0.5">{name}</span>
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* 🛒 Floating FAB (Cart) */}
-        <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-fab">
-          <Link href={"/cart" as Route} onClick={vibrate}>
-            <motion.button
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 240, damping: 20 }}
-              whileTap={{ scale: 0.94 }}
-              className="w-[64px] h-[64px] rounded-full bg-green-600 hover:bg-green-700
-                         text-white flex items-center justify-center shadow-2xl
-                         ring-4 ring-white/60 dark:ring-slate-900/60"
+      <div className="max-w-3xl mx-auto flex justify-around items-center h-full px-3">
+        {tabs.map(({ name, href, icon: Icon }) => {
+          const active = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              onClick={vibrate}
+              aria-current={active ? "page" : undefined}
+              className="relative flex flex-col items-center justify-center gap-0.5 w-[60px]"
             >
-              <ShoppingCart className="w-6 h-6" />
-            </motion.button>
-          </Link>
-        </div>
+              {/* 🔆 Active Background Glow */}
+              <AnimatePresence>
+                {active && (
+                  <motion.span
+                    layoutId="nav-active-glow"
+                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-accent-mid/25 to-accent-end/25 blur-md"
+                    transition={{ type: "spring", stiffness: 240, damping: 20 }}
+                  />
+                )}
+              </AnimatePresence>
 
-        {/* Right Tabs */}
-        <div className="flex gap-1 items-center">
-          {tabs.slice(2).map(({ name, href, icon: Icon }) => {
-            const active = pathname === href;
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={vibrate}
-                aria-current={active ? "page" : undefined}
-                className={`group flex flex-col items-center justify-center 
-                            text-[11px] font-medium min-w-[60px] min-h-[48px] px-3 py-1.5 rounded-lg transition
-                            ${
-                              active
-                                ? "text-green-600 dark:text-emerald-400 bg-green-50/70 dark:bg-emerald-900/25"
-                                : "text-gray-400 hover:text-green-600 dark:hover:text-emerald-400"
-                            }`}
+              {/* 🌟 Icon */}
+              <motion.div
+                whileTap={{ scale: prefersReducedMotion ? 1 : 0.9 }}
+                whileHover={{ scale: prefersReducedMotion ? 1 : 1.1 }}
+                transition={{ type: "spring", stiffness: 300, damping: 18 }}
+                className={`relative flex items-center justify-center w-9 h-9 rounded-xl transition-colors duration-300 ${
+                  active
+                    ? "text-green-600 dark:text-emerald-400 bg-green-100/50 dark:bg-emerald-900/30"
+                    : "text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-emerald-400"
+                }`}
               >
-                <motion.div
-                  whileTap={{ scale: prefersReduced ? 1 : 0.94 }}
-                  whileHover={{ scale: prefersReduced ? 1 : 1.08 }}
-                  className="relative"
-                >
-                  <Icon className="w-[20px] h-[20px]" />
-                </motion.div>
-                <span className="mt-0.5">{name}</span>
-              </Link>
-            );
-          })}
-        </div>
+                <Icon size={20} />
+
+                {/* 🛒 Cart badge */}
+                {name === "Store" && totalItems > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1 -right-1 text-[10px] font-semibold bg-green-600 text-white rounded-full w-4 h-4 flex items-center justify-center"
+                  >
+                    {totalItems}
+                  </motion.span>
+                )}
+              </motion.div>
+
+              {/* 📛 Label */}
+              <span
+                className={`text-[11px] font-medium ${
+                  active
+                    ? "text-green-600 dark:text-emerald-400"
+                    : "text-gray-500 dark:text-gray-400"
+                }`}
+              >
+                {name}
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );

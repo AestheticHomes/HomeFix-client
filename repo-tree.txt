@@ -1,7 +1,8 @@
 📂 .vscode  (1 items)
    📄 settings.json
-📂 app  (17 items)
-   📂 animations  (7 items)
+📂 app  (18 items)
+   📂 animations  (8 items)
+      📄 3dKitchen.json
       📄 civil.json
       📄 diy.json
       📄 electric.json
@@ -64,26 +65,32 @@
    📂 bookings  (2 items)
       📂 list  (1 items)
          📄 route.js
-      📄 page.js
+      📄 page.tsx
    📂 cart  (1 items)
       📄 page.js
    📂 checkout  (1 items)
-      📄 page.js
+      📄 page.tsx
    📂 devtools  (1 items)
       📄 page.js
+   📂 edith  (2 items)
+      📄 layout.tsx
+      📄 page.tsx
    📂 estimator  (1 items)
-      📄 page.jsx
+      📄 page.tsx
    📂 login  (1 items)
       📄 page.tsx
    📂 profile  (1 items)
       📄 page.tsx
-   📂 services  (1 items)
-      📄 page.js
+   📂 services  (2 items)
+      📂 [slug]  (1 items)
+         📄 page.js
+      📄 page.tsx
    📂 settings  (1 items)
       📄 page.tsx
-   📂 studio  (2 items)
+   📂 studio  (3 items)
       📄 layout.tsx
-      📄 page.jsx
+      📄 oldpage.jsx
+      📄 page.js
    📂 unauthorized  (1 items)
       📄 page.js
    📂 util  (1 items)
@@ -91,43 +98,68 @@
    📄 globals.css
    📄 layout.tsx
    📄 page.tsx
-📂 components  (35 items)
-   📂 estimator  (8 items)
+📂 components  (38 items)
+   📂 common  (2 items)
+      📄 UniPreviewCanvas.jsx
+      📄 useAutoFitSvg.js
+   📂 edith  (6 items)
+      📄 EdithLoader.tsx
+      📄 EdithToolsPanel.tsx
+      📄 EdithViewer.tsx
+      📄 EdithViewport.tsx
+      📄 index.ts
+      📄 useEdithStore.ts
+   📂 estimator  (14 items)
+      📂 blueprintSchema  (2 items)
+         📄 interpreter.js
+         📄 kitchenShapes.js
       📂 store  (1 items)
          📄 estimatorStore.js
+      📄 EstimatorForm.jsx
       📄 EstimatorShell.jsx
-      📄 KitchenEstimator.jsx
+      📄 KitchenRender.jsx
+      📄 KitchenScene3D.jsx
+      📄 KitchenSvg2D.jsx
+      📄 modelPreload.js
       📄 RateConfig.js
+      📄 SafeScene3D.jsx
       📄 SummaryPanel.jsx
-      📄 SvgKitchenPreview.jsx
-      📄 SvgWardrobePreview.jsx
-      📄 WardrobeEstimator.jsx
+      📄 WardrobeRender.jsx
+      📄 WardrobeScene3D.jsx
+      📄 WardrobeSvg2D.jsx
+   📂 store  (1 items)
+      📄 cartStore.ts
    📂 studio  (8 items)
       📂 store  (1 items)
          📄 plannerStore.js
-      📄 Edith.jsx
+      📄 EdithBot.tsx
       📄 PriceHUD.jsx
       📄 RoomPlanner2D_SVG.jsx
       📄 RoomPlanner3D.jsx
       📄 RoomShapeSelector.jsx
       📄 RoomSummary.jsx
       📄 Toolbar.jsx
-   📂 ui  (14 items)
+   📂 ui  (18 items)
       📄 badge.js
       📄 button.tsx
       📄 calendar.js
       📄 card.tsx
       📄 dialog.js
+      📄 drawer.tsx
       📄 HomeFixLogo.tsx
       📄 label.tsx
+      📄 MiniMapPreview.tsx
       📄 progress.js
+      📄 ServiceBookDrawer.tsx
+      📄 ServiceCartDrawer.tsx
       📄 switch.tsx
       📄 tabs.js
       📄 toast.jsx
       📄 toaster.jsx
       📄 UniversalHeader.tsx
       📄 use-toast.js
-   📄 AdminFAB.tsx
+   📂 utils  (1 items)
+      📄 cadFitView.js
    📄 AuthCenterDrawer.tsx
    📄 BaseDrawer.tsx
    📄 BookingDrawer.tsx
@@ -138,6 +170,7 @@
    📄 ClientLayoutWrapper.tsx
    📄 ClientRoot.tsx
    📄 Edith.tsx
+   📄 HeroCinematicVideo.tsx
    📄 HeroFX.js
    📄 HeroParallax.tsx
    📄 InstallFAB.js
@@ -152,12 +185,11 @@
    📄 RateCard.js
    📄 RootShell.tsx
    📄 ServiceCard.tsx
+   📄 ServicesSection.jsx
    📄 SessionHydrator.tsx
    📄 SessionSync.tsx
    📄 Sidebar.tsx
-   📄 studio.zip
    📄 ThemeToggle.tsx
-   📄 UniversalHeader.tsx
    📄 UserProvider.tsx
 📂 contexts  (3 items)
    📄 SidebarContext.tsx
@@ -170,7 +202,7 @@
    📄 use-toast.js
    📄 useDrawerSafeStyle.ts
    📄 useRoleGuard.js
-📂 lib  (13 items)
+📂 lib  (15 items)
    📂 assets  (1 items)
       📄 homefix-logo.ts
    📂 supabaseQueries  (3 items)
@@ -180,6 +212,7 @@
    📄 bookingUtils.js
    📄 console.ts
    📄 database.types.ts
+   📄 edithCache.ts
    📄 edithEvents.ts
    📄 goods.js
    📄 roles.ts
@@ -187,6 +220,7 @@
    📄 supabaseServerClient.ts
    📄 twilio.js
    📄 useAuth.ts
+   📄 useServices.ts
    📄 utils.ts
 📂 public  (8 items)
    📂 icons  (5 items)
@@ -197,10 +231,13 @@
       📄 vc.png
    📂 images  (1 items)
       📄 HomeFix.png
-   📂 models  (3 items)
+   📂 models  (6 items)
       📄 chair.glb
       📄 interior_scene.glb
+      📄 kitchen.glb
+      📄 placeholder.glb
       📄 sofa.glb
+      📄 wardrobe.glb
    📄 logo-homefix.svg
    📄 manifest.json
    📄 offline.html
@@ -245,7 +282,6 @@
 📄 .env.local
 📄 .gitattributes
 📄 .gitignore
-📄 build_trace_full.txt
 📄 build_trace.txt
 📄 CLEANUP_LOG.md
 📄 components.json

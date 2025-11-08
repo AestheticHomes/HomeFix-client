@@ -1,14 +1,14 @@
 "use client";
 /**
  * File: components/ui/UniversalHeader.tsx
- * EdithHeader v5.1 — Gemini Continuum Aura Edition 🌌
+ * EdithHeader v5.6 — Mobile PWA Services Drawer Edition 🌌
  * ---------------------------------------------------------
  * 🧭 Fixed top header shared across all HomeFix modules
  * 🧮 Context-aware navigation (Estimator / Viewer modes)
  * 🧿 Clickable Profile Aura → /profile
  * 🌓 Theme toggle + Fullscreen + Sync
+ * 🧰 Services Drawer for mobile PWA
  * ✨ Vibrant Edith aesthetic — Horizon gradient + blur
- * 📱 Fully mobile responsive (compact stacked layout)
  */
 
 import React, { useEffect, useState } from "react";
@@ -17,15 +17,24 @@ import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import HomeFixLogo from "@/components/ui/HomeFixLogo";
 import useEstimator from "@/components/estimator/store/estimatorStore";
-import { Sun, Moon, Maximize2, RefreshCw } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
+import { useCartStore } from "@/components/store/cartStore";
+import {
+  Sun,
+  Moon,
+  Maximize2,
+  RefreshCw,
+  ClipboardList,
+} from "lucide-react";
 import type { TargetAndTransition } from "framer-motion";
+
 export default function UniversalHeader(): React.ReactElement {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, setTheme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isSyncing, setSyncing] = useState(false);
-
+const totalItems = useCartStore((s) => s.totalItems);
   // ✅ Zustand estimator store — safely wrapped
   let setStep: (key: string) => void = () => {};
   let step: string = "";
@@ -48,7 +57,7 @@ export default function UniversalHeader(): React.ReactElement {
     pathname?.startsWith("/studio")
       ? "HomeFix Studio"
       : pathname?.startsWith("/store")
-      ? "HomeFix Store" 
+      ? "HomeFix Store"
       : pathname?.startsWith("/bookings")
       ? "My Bookings"
       : pathname?.startsWith("/services")
@@ -88,18 +97,22 @@ export default function UniversalHeader(): React.ReactElement {
   ];
 
   // 🔮 Shared aura animation
-const auraPulse: { initial: TargetAndTransition; animate: TargetAndTransition } = {
-  initial: { opacity: 0.6, scale: 1 },
-  animate: {
-    opacity: [0.6, 0.2, 0.6],
-    scale: [1, 1.25, 1],
-    transition: {
-      duration: 2.4,
-      repeat: Infinity,
-      ease: ["easeInOut"], // ✅ correct type
+  const auraPulse: {
+    initial: TargetAndTransition;
+    animate: TargetAndTransition;
+  } = {
+    initial: { opacity: 0.6, scale: 1 },
+    animate: {
+      opacity: [0.6, 0.2, 0.6],
+      scale: [1, 1.25, 1],
+      transition: {
+        duration: 2.4,
+        repeat: Infinity,
+        ease: ["easeInOut"],
+      },
     },
-  },
-};
+  };
+
   return (
     <motion.header
       className="fixed top-0 left-0 right-0 z-[60] flex flex-col
@@ -113,7 +126,7 @@ const auraPulse: { initial: TargetAndTransition; animate: TargetAndTransition } 
     >
       {/* 🌈 Primary Bar */}
       <div className="flex flex-wrap items-center justify-between px-4 sm:px-6 py-3 gap-3">
-        {/* Logo + tagline */}
+        {/* 🧱 Logo + tagline (Left) */}
         <div className="flex items-center gap-3">
           <HomeFixLogo size="sm" />
           <motion.span
@@ -126,7 +139,25 @@ const auraPulse: { initial: TargetAndTransition; animate: TargetAndTransition } 
           </motion.span>
         </div>
 
-        {/* Page Title */}
+{/* 🛒 Cart Button */}
+<button
+  onClick={() => router.push("/cart")}
+  className="relative flex items-center justify-center w-8 h-8 rounded-lg
+             bg-[#F8F7FF]/70 dark:bg-[#1B1545]/70 border border-[#9B5CF8]/20
+             hover:border-[#9B5CF8]/40 transition"
+  aria-label="Open Cart"
+>
+  <ShoppingCart className="text-[#5A5DF0] dark:text-[#EC6ECF]" size={16} />
+  {totalItems > 0 && (
+    <span className="absolute -top-1 -right-1 bg-[#EC6ECF] text-white text-[10px]
+                     font-semibold w-4 h-4 rounded-full flex items-center justify-center">
+      {totalItems}
+    </span>
+  )}
+</button>
+
+
+        {/* 🧭 Page Title */}
         <motion.h1
           className="text-sm sm:text-base font-semibold text-[#5A5DF0] dark:text-[#EC6ECF]
                      flex-1 text-center sm:text-left truncate"
@@ -138,7 +169,7 @@ const auraPulse: { initial: TargetAndTransition; animate: TargetAndTransition } 
           {pageTitle}
         </motion.h1>
 
-        {/* Action Buttons + Aura Profile */}
+        {/* ☀️ Actions + Profile Aura */}
         <div className="flex items-center gap-3 sm:gap-4">
           {isViewer && (
             <button
@@ -167,7 +198,7 @@ const auraPulse: { initial: TargetAndTransition; animate: TargetAndTransition } 
             </button>
           )}
 
-          {/* Theme toggle */}
+          {/* 🌗 Theme toggle */}
           <button
             onClick={toggleTheme}
             className="flex items-center justify-center w-8 h-8 rounded-lg
@@ -210,7 +241,7 @@ const auraPulse: { initial: TargetAndTransition; animate: TargetAndTransition } 
         </div>
       </div>
 
-      {/* 🔸 Secondary — Estimator Tabs */}
+      {/* 🔸 Secondary Estimator Tabs */}
       {isEstimator && (
         <motion.nav
           className="flex flex-wrap items-center justify-center gap-2 py-2 border-t border-[#9B5CF8]/20

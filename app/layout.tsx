@@ -2,13 +2,11 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import RootShell from "@/components/RootShell";
 import { ThemeProvider } from "next-themes";
-import { Toaster } from "@/components/ui/toaster";
-import UniversalHeader from "@/components/ui/UniversalHeader";
 import { Suspense } from "react";
 
-/* -------------------------------------------------------------------------- */
-/* 🧭 METADATA                                                                */
-/* -------------------------------------------------------------------------- */
+/* ------------------------------------------------------------ */
+/* 🧭 Metadata + Viewport                                       */
+/* ------------------------------------------------------------ */
 export const metadata: Metadata = {
   title: "HomeFix India",
   description: "Smart home services & interior platform by Aesthetic Homes",
@@ -24,9 +22,6 @@ export const metadata: Metadata = {
   },
 };
 
-/* -------------------------------------------------------------------------- */
-/* 📱 VIEWPORT (Next 14 Compliant)                                           */
-/* -------------------------------------------------------------------------- */
 export const viewport: Viewport = {
   themeColor: "#5A5DF0",
   width: "device-width",
@@ -35,22 +30,24 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-/* -------------------------------------------------------------------------- */
-/* 🏗️ ROOT LAYOUT – Edith Framework                                          */
-/* -------------------------------------------------------------------------- */
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+/* ------------------------------------------------------------ */
+/* 🌿 Root Layout (Server Component)                            */
+/* ------------------------------------------------------------ */
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`
-          relative min-h-screen antialiased overflow-x-hidden
+        className="relative min-h-screen antialiased overflow-x-hidden
           bg-gradient-to-br from-[#F8F7FF] via-[#F2F0FF] to-[#EAE8FF]
           dark:from-[#0D0B2B] dark:via-[#1B1545] dark:to-[#201A55]
           text-[#2A2A66] dark:text-[#E0D6FF]
           selection:bg-[#9B5CF8]/20 selection:text-[#5A5DF0]
-          transition-colors duration-500
-        `}
+          transition-colors duration-500"
       >
         <ThemeProvider
           attribute="class"
@@ -58,28 +55,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           enableSystem
           disableTransitionOnChange
         >
-          {/* 🌐 Core Shell Wrapper */}
-          <RootShell>
-            {/* 🧭 Edith Horizon Header */}
-            <Suspense fallback={null}>
-              <UniversalHeader />
-            </Suspense>
-
-            {/* 📄 Page Content */}
-            <main
-              className={`
-                relative z-0 flex flex-col
-                min-h-[calc(100vh-72px)]
-                pt-[72px] pb-safe-bottom
-                w-full overflow-x-hidden
-              `}
-            >
-              {children}
-            </main>
-          </RootShell>
-
-          {/* 🔔 Toast Notifications */}
-          <Toaster />
+          <Suspense fallback={null}>
+            <RootShell>{children}</RootShell>
+          </Suspense>
         </ThemeProvider>
       </body>
     </html>

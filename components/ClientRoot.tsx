@@ -14,7 +14,7 @@ import { CartProvider } from "@/components/CartContext";
 import ClientLayoutWrapper from "@/components/ClientLayoutWrapper";
 import SessionHydrator from "@/components/SessionHydrator";
 import NavBar from "@/components/NavBar";
-import AdminFAB from "@/components/AdminFAB";
+
 import AuthCenterDrawer from "@/components/AuthCenterDrawer";
 import { Loader2 } from "lucide-react";
 
@@ -65,8 +65,7 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
         <CartProvider>
           <ClientLayoutWrapper>
             <SessionHydrator />
-            <AdminFAB />
-
+           
             {/* 🧭 Main Content (Sidebar handled by LayoutContent) */}
             <main
               id="app-content"

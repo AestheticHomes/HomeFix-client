@@ -1,84 +1,82 @@
 "use client";
+
 /**
- * HomeFix India — Login/Signup v13.0 (Aurora Tier) 🌿
+ * ============================================================
+ * File: /app/login/page.tsx
+ * Version: v14.4 — Enter Key + Smooth OTP UX 🌿
  * ------------------------------------------------------------
- * ✅ Modern, future-proof OTP login with session persistence
- * ✅ Auto-redirects if already logged in
- * ✅ Haptic feedback + Framer Motion transitions
- * ✅ Ready for mobile, desktop, and future PWA shells
+ * ✅ Press "Enter" auto-sends or verifies OTP
+ * ✅ Auto-focus OTP input on switch
+ * ✅ Supabase /api/link-otp-user linkage
+ * ✅ Remember Me checked (persistent)
+ * ✅ Haptic feedback + robust logging
+ * ============================================================
  */
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Check, Phone, UserRound } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Check, Phone } from "lucide-react";
+import { toast } from "sonner";
 import { useUser } from "@/contexts/UserContext";
 import OTPInput from "@/components/OTPInput";
 import { supabase } from "@/lib/supabaseClient";
+import { useOtpManager } from "@/hooks/useOtpManager";
 
 export default function LoginPage() {
-  const { toast } = useToast();
   const { user, login } = useUser();
   const router = useRouter();
+  const { sendOtp, verifyOtp, loading: otpLoading, verifying: otpVerifying } =
+    useOtpManager();
 
   const [panel, setPanel] = useState<"form" | "otp" | "success">("form");
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(localStorage.getItem("hf_last_phone") || "");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
-  const [verifying, setVerifying] = useState(false);
   const otpRefs = useRef<HTMLInputElement[]>([]);
-
   const phoneDigits = phone.replace(/\D/g, "");
 
   /* ------------------------------------------------------------
      🚀 Auto-redirect if already logged in
   ------------------------------------------------------------ */
   useEffect(() => {
-    async function checkSession() {
+    (async () => {
       const cached = JSON.parse(localStorage.getItem("user") || "null");
-      if (cached?.phone_verified || cached?.id) {
-        toast({
-          title: "Welcome back!",
-          description: "You're already logged in.",
-        });
+      if (cached?.loggedIn || cached?.phone_verified) {
+        console.log("🔁 [Login] Cached session detected:", cached.phone);
         router.replace("/profile");
         return;
       }
-
-      const { data: auth } = await supabase.auth.getUser();
-      if (auth?.user) {
-        toast({ title: "Welcome back!", description: "Session restored." });
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) {
+        console.log("🌱 [Login] Supabase user active:", data.user.id);
         router.replace("/profile");
       }
-    }
-    checkSession();
-  }, [router, toast]);
+    })();
+  }, [router]);
 
   /* ------------------------------------------------------------
      📩 Send OTP
   ------------------------------------------------------------ */
-  async function sendOtp() {
+  async function handleSendOtp() {
     if (phoneDigits.length !== 10) {
-      toast({ title: "Enter valid 10-digit number", variant: "destructive" });
+      toast.error("Please enter a valid 10-digit mobile number.");
       return;
     }
+
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: `+91${phoneDigits}`, name }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "Failed");
-
-      toast({ title: "OTP sent", description: `+91 ${phoneDigits}` });
-      navigator.vibrate?.(30);
-      setPanel("otp");
-    } catch {
-      toast({ title: "Failed to send OTP", variant: "destructive" });
+      const success = await sendOtp(phoneDigits, "phone");
+      if (success) {
+        toast.success(`OTP sent successfully to +91 ${phoneDigits}`);
+        console.log("📨 [OTP] Sent to +91", phoneDigits);
+        navigator.vibrate?.(30);
+        setPanel("otp");
+        setTimeout(() => otpRefs.current[0]?.focus(), 200);
+      } else throw new Error("Send failed");
+    } catch (err) {
+      console.error("❌ [OTP] Send failed:", err);
+      toast.error("Failed to send OTP. Please try again.");
       navigator.vibrate?.([80, 40, 80]);
     } finally {
       setLoading(false);
@@ -86,52 +84,110 @@ export default function LoginPage() {
   }
 
   /* ------------------------------------------------------------
-     🔐 Verify OTP
-  ------------------------------------------------------------ */
-  async function verifyOtp() {
-    if (otp.length !== 6) return toast({ title: "Enter 6-digit OTP" });
-    setVerifying(true);
-    try {
-      const res = await fetch("/api/auth/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: `+91${phoneDigits}`, otp }),
-      });
-      const data = await res.json();
-      if (!res.ok || !(data.success || data.verified)) {
-        throw new Error("Invalid OTP");
-      }
-
-      const userData = {
-        id: data.user_id || Date.now().toString(),
-        name,
-        phone: `+91${phoneDigits}`,
-        phone_verified: true,
-        loggedOut: false,
-      };
-
-      login(userData, true);
-      localStorage.setItem("user", JSON.stringify(userData));
-      document.cookie =
-        `hf_user_phone=${userData.phone}; Path=/; Max-Age=604800`;
-
-      toast({ title: "Welcome to HomeFix", description: "Login successful" });
-      navigator.vibrate?.([60, 40, 120]);
-      setPanel("success");
-
-      setTimeout(() => {
-        router.replace("/profile");
-      }, 1500);
-    } catch {
-      toast({ title: "Invalid OTP", variant: "destructive" });
-      navigator.vibrate?.([120]);
-    } finally {
-      setVerifying(false);
-    }
+   🔐 Verify OTP + Supabase Upsert
+------------------------------------------------------------ */
+async function handleVerifyOtp() {
+  if (otp.length !== 6) {
+    toast.error("Please enter the 6-digit OTP.");
+    return;
   }
 
+  try {
+    const verified = await verifyOtp(otp, phoneDigits, "phone");
+    if (!verified) throw new Error("Invalid OTP");
+
+    const phoneFull = `+91${phoneDigits}`;
+    let userId = Date.now().toString();
+
+    // 🔗 Step 1 — Check if user already exists in Supabase
+    const { data: existing, error: fetchErr } = await supabase
+      .from("user_profiles")
+      .select("id,name,phone,email,address,phone_verified,email_verified,latitude,longitude,role")
+      .eq("phone", phoneFull)
+      .maybeSingle();
+
+    if (fetchErr) console.warn("⚠️ [Login] Fetch existing failed:", fetchErr);
+
+    // 🔗 Step 2 — If no record, insert a new one
+    let profileData = existing;
+    if (!existing) {
+      const { data: inserted, error: insertErr } = await supabase
+        .from("user_profiles")
+        .insert([
+          {
+            phone: phoneFull,
+            phone_verified: true,
+            created_at: new Date().toISOString(),
+            role: "client",
+          },
+        ])
+        .select()
+        .single();
+
+      if (insertErr) throw insertErr;
+      profileData = inserted;
+      userId = inserted.id;
+      console.log("🧩 [Login] New profile created:", inserted);
+    } else {
+      userId = existing.id;
+      // Update verification flag if needed
+      if (!existing.phone_verified) {
+        await supabase
+          .from("user_profiles")
+          .update({ phone_verified: true })
+          .eq("id", existing.id);
+      }
+    }
+
+    // 🔗 Step 3 — Cache & Login via Context
+    const userData = {
+      id: userId,
+      phone: phoneFull,
+      phone_verified: true,
+      email: profileData?.email || "",
+      name: profileData?.name || "",
+      address: profileData?.address || "",
+      latitude: profileData?.latitude,
+      longitude: profileData?.longitude,
+      role: profileData?.role || "client",
+      loggedIn: true,
+    };
+
+    login(userData, true);
+    localStorage.setItem("user", JSON.stringify(userData));
+    document.cookie = `hf_user_phone=${userData.phone}; Path=/; Max-Age=604800`;
+    document.cookie = `hf_user_id=${userId}; Path=/; Max-Age=604800`;
+
+    console.log("✅ [Login] Linked & logged in user:", userData);
+    toast.success("Welcome to HomeFix — Login successful!");
+    navigator.vibrate?.([60, 40, 120]);
+    setPanel("success");
+
+    setTimeout(() => router.replace("/profile"), 1500);
+  } catch (err) {
+    console.error("❌ [Login] Verify failed:", err);
+    toast.error("Invalid OTP or server error. Please try again.");
+    navigator.vibrate?.([120]);
+  }
+}
+
   /* ------------------------------------------------------------
-     🎨 Panels (Form / OTP / Success)
+     ⌨️ Handle Enter key globally
+  ------------------------------------------------------------ */
+  useEffect(() => {
+    function handleKeyPress(e: KeyboardEvent) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (panel === "form") handleSendOtp();
+        if (panel === "otp") handleVerifyOtp();
+      }
+    }
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [panel, phone, otp]);
+
+  /* ------------------------------------------------------------
+     🎨 Panels
   ------------------------------------------------------------ */
   const FormPanel = (
     <div className="p-6 sm:p-8 relative">
@@ -143,22 +199,9 @@ export default function LoginPage() {
         Welcome to HomeFix
       </h2>
 
-      {/* Name */}
-      <label className="text-sm text-gray-500">Name</label>
+      {/* 📱 Phone Field */}
+      <label className="text-sm text-gray-500">Mobile Number</label>
       <div className="flex items-center gap-2 border rounded-xl px-3 py-2 mb-3 bg-white dark:bg-slate-800">
-        <UserRound size={18} className="text-emerald-600" />
-        <input
-          type="text"
-          placeholder="Your Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="flex-1 bg-transparent outline-none text-sm"
-        />
-      </div>
-
-      {/* Phone */}
-      <label className="text-sm text-gray-500">Phone</label>
-      <div className="flex items-center gap-2 border rounded-xl px-3 py-2 mb-4 bg-white dark:bg-slate-800">
         <Phone size={18} className="text-emerald-600" />
         <input
           type="tel"
@@ -166,36 +209,41 @@ export default function LoginPage() {
           placeholder="10-digit mobile number"
           value={phone}
           onChange={(e) =>
-            setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+            setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
+          }
           className="flex-1 bg-transparent outline-none text-sm"
         />
       </div>
 
+      {/* 🔒 Remember Me (always checked) */}
+      <label className="flex items-center gap-2 mb-5 text-sm text-gray-500">
+        <input type="checkbox" checked readOnly className="accent-emerald-600" />
+        <span>Remember me</span>
+      </label>
+
       <button
-        onClick={sendOtp}
-        disabled={loading}
+        onClick={handleSendOtp}
+        disabled={loading || otpLoading}
         className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition active:scale-[0.97]"
       >
-        {loading ? "Sending..." : "Send OTP"}
+        {loading || otpLoading ? "Sending..." : "Send OTP"}
       </button>
     </div>
   );
 
   const OtpPanel = (
     <div className="p-6 sm:p-8 text-center">
-      <h2 className="text-lg font-semibold text-emerald-700 mb-2">
-        Verify OTP
-      </h2>
+      <h2 className="text-lg font-semibold text-emerald-700 mb-2">Verify OTP</h2>
       <p className="text-sm text-gray-600 mb-2">
         Enter OTP sent to +91 {phoneDigits}
       </p>
       <OTPInput otp={otp} setOtp={setOtp} refs={otpRefs} />
       <button
-        onClick={verifyOtp}
-        disabled={verifying}
+        onClick={handleVerifyOtp}
+        disabled={otpVerifying}
         className="w-full mt-4 py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold transition active:scale-[0.97]"
       >
-        {verifying ? "Verifying..." : "Verify OTP"}
+        {otpVerifying ? "Verifying..." : "Verify OTP"}
       </button>
     </div>
   );
@@ -216,16 +264,6 @@ export default function LoginPage() {
   /* ------------------------------------------------------------
      🧱 Layout
   ------------------------------------------------------------ */
-  const Card = (
-    <AnimatePresence mode="wait">
-      {panel === "form" && <motion.div key="form">{FormPanel}</motion.div>}
-      {panel === "otp" && <motion.div key="otp">{OtpPanel}</motion.div>}
-      {panel === "success" && (
-        <motion.div key="success">{SuccessPanel}</motion.div>
-      )}
-    </AnimatePresence>
-  );
-
   return (
     <main className="min-h-screen flex items-end sm:items-center justify-center bg-gray-50 dark:bg-slate-900">
       <motion.div
@@ -234,7 +272,13 @@ export default function LoginPage() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl"
       >
-        {Card}
+        <AnimatePresence mode="wait">
+          {panel === "form" && <motion.div key="form">{FormPanel}</motion.div>}
+          {panel === "otp" && <motion.div key="otp">{OtpPanel}</motion.div>}
+          {panel === "success" && (
+            <motion.div key="success">{SuccessPanel}</motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </main>
   );

@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * File: /app/unauthorized/page.js
  * Purpose: (auto-added during Portable Cleanup) — add a concise, human-readable purpose for this file.
