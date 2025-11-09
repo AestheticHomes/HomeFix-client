@@ -2,9 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ================================================================
-   🌗 BASE THEME + TYPOGRAPHY — Gemini Continuum Core
-   ================================================================ */
+/* ============================================================
+   🌗 HOMEFIX UNIVERSAL THEME — Edith Continuum v5.0
+   ------------------------------------------------------------
+   ✅ Unified light/dark color model
+   ✅ Safe z-index and backdrop layering
+   ✅ Store / Product cards fully opaque under dark mode
+   ✅ Reduced redundant rules (v4.4 + v4.8 + v4.9 merged)
+   ============================================================ */
+
+/* ---------------------- Base Layer ----------------------- */
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -14,14 +21,12 @@
   }
 
   body {
-    @apply font-sans antialiased text-gray-900 dark:text-gray-100
-      transition-colors duration-500 ease-out;
+    @apply font-sans antialiased text-gray-900 dark:text-gray-100 transition-colors duration-500 ease-out;
     background-color: #ffffff;
     background-image: linear-gradient(to bottom right, #fafafa, #f0f2ff);
     background-attachment: fixed;
   }
 
-  /* Dark mode adaptive gradient */
   :root.dark body {
     background-color: #0f0c29;
     background-image: linear-gradient(
@@ -32,12 +37,19 @@
     );
   }
 
-  /* Adaptive text and heading colors */
-  h1, h2, h3, h4, h5, h6, p, label, span, div {
-    @apply text-gray-900 dark:text-gray-100 transition-colors duration-200;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  label,
+  span,
+  div {
+    @apply transition-colors duration-200 text-gray-900 dark:text-gray-100;
   }
 
-  /* Subtle text utilities */
   .text-muted {
     @apply text-gray-600 dark:text-gray-400;
   }
@@ -46,101 +58,12 @@
   }
 
   a {
-    @apply text-emerald-600 hover:text-emerald-700
-      dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors;
+    @apply text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors;
   }
 }
 
-/* ================================================================
-   📱 SAFE-SCREEN LAYOUT + PWA SAFE AREAS
-   ================================================================ */
+/* ------------------- Z-Index Hierarchy ------------------- */
 :root {
-  --mbnav-h: 72px;
-  --mbnav-h-safe: calc(var(--mbnav-h) + env(safe-area-inset-bottom));
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --navbar-height: 72px;
-  --radius-xl: 1.25rem;
-  --transition-fast: 0.18s ease;
-  --gradient-light: linear-gradient(to bottom right, #fafafa, #f0f2ff);
-  --gradient-dark: linear-gradient(180deg, #0f0c29, #302b63, #24243e);
-}
-
-html,
-body {
-  min-height: 100%;
-  overflow: auto;
-  overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
-  -webkit-tap-highlight-color: transparent;
-}
-
-main,
-.page-root {
-  padding-bottom: var(--mbnav-h-safe) !important;
-}
-
-.safe-area {
-  padding-top: var(--safe-top);
-  padding-bottom: var(--safe-bottom);
-}
-
-.safe-screen {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  min-height: calc(100vh - var(--navbar-height) - var(--safe-bottom));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  background: inherit;
-  padding-bottom: var(--mbnav-h-safe);
-  z-index: var(--z-content);
-}
-
-/* ================================================================
-   🎯 TOUCH / FOCUS FEEDBACK
-   ================================================================ */
-.nav-touch-highlight {
-  transition:
-    box-shadow var(--transition-fast),
-    transform 0.12s ease,
-    background-color 0.12s ease;
-}
-.nav-touch-highlight:active {
-  transform: translateY(1px) scale(0.98);
-}
-.nav-focus-ring:focus {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
-  border-radius: 8px;
-}
-
-/* ================================================================
-   🌈 SMOOTH SCROLLBAR — Themed
-   ================================================================ */
-.scrollbar-thin {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(155, 92, 248, 0.25) transparent;
-}
-.scrollbar-thin::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(155, 92, 248, 0.25);
-  border-radius: 999px;
-  transition: background 0.2s ease;
-}
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(155, 92, 248, 0.45);
-}
-
-/* ================================================================
-   🧱 Z-INDEX SYSTEM LAYERS
-   ================================================================ */
-:root {
-  --z-content: 1;
   --z-navbar: 7000;
   --z-fab: 8000;
   --z-drawer: 9000;
@@ -148,87 +71,170 @@ main,
   --z-modal: 9999;
 }
 
-.z-content { z-index: var(--z-content) !important; }
-.z-navbar  { z-index: var(--z-navbar) !important; }
-.z-fab     { z-index: var(--z-fab) !important; }
-.z-drawer  { z-index: var(--z-drawer) !important; }
-.z-toast   { z-index: var(--z-toast) !important; }
-.z-modal   { z-index: var(--z-modal) !important; }
-
-/* ================================================================
-   🧩 DRAWER + OVERLAY FIXES
-   ================================================================ */
-.safe-screen-overlay,
-body > div[role="dialog"],
-body > div[data-drawer-root],
-body > div[data-overlay],
-[data-overlay-root],
-[data-drawer-overlay] {
-  position: fixed !important;
-  inset: 0 !important;
-  z-index: var(--z-drawer) !important;
-}
-
-/* Nav always pinned below overlays */
 nav,
 .mobile-dock,
-.bottom-nav,
-[data-nav-root] {
-  position: fixed !important;
-  bottom: 0;
-  left: 0;
-  right: 0;
+.bottom-nav {
   z-index: var(--z-navbar) !important;
 }
 
-/* ================================================================
-   🍏 PWA & iOS SAFE OPTIMIZATION
-   ================================================================ */
-@supports (padding: env(safe-area-inset-top)) {
-  :root {
-    --safe-top: env(safe-area-inset-top);
-    --safe-bottom: env(safe-area-inset-bottom);
-  }
+/* ------------------- Theme Colors ------------------- */
+:root {
+  --color-bg-light: #ffffff;
+  --color-bg-dark: #0d1117;
+  --color-text-light: #0f172a;
+  --color-text-dark: #f9fafb;
+  --color-border-light: #e5e7eb;
+  --color-border-dark: #1f2937;
 }
 
-html, body {
-  -webkit-touch-callout: none;
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
+/* Light / Dark modes */
+html[data-theme="light"],
+:root[data-theme="light"] {
+  color-scheme: light;
+  background-color: var(--color-bg-light);
+  color: var(--color-text-light);
 }
 
-/* ================================================================
-   ✨ MOTION, GLOW & ENTRY EFFECTS
-   ================================================================ */
-.glow-soft {
-  box-shadow: 0 0 18px rgba(155, 92, 248, 0.25);
-}
-.glow-green {
-  box-shadow: 0 0 14px rgba(34, 197, 94, 0.35);
+html[data-theme="dark"],
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-dark);
 }
 
-.animate-fade {
-  animation: fadeIn 0.4s ease both;
-}
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ------------------- Cards / Modals ------------------- */
+.card,
+.drawer,
+.modal,
+.sheet {
+  @apply shadow-lg transition-colors duration-200 rounded-2xl;
+  backdrop-filter: saturate(150%) blur(10px);
 }
 
-/* ================================================================
-   🌌 UNIVERSAL HIGHLIGHT UTILITIES
-   ================================================================ */
-.highlight-light {
-  background: rgba(90, 93, 240, 0.1);
-  border: 1px solid rgba(90, 93, 240, 0.15);
+/* ------------------- Inputs ------------------- */
+input,
+textarea,
+select {
+  @apply w-full px-3 py-2 rounded-lg border outline-none;
+  background-color: transparent !important;
+  color: inherit !important;
 }
-.highlight-dark {
-  background: rgba(236, 110, 207, 0.08);
-  border: 1px solid rgba(236, 110, 207, 0.15);
+
+/* ------------------- Toasts ------------------- */
+[data-sonner-toast] {
+  border-radius: 0.75rem !important;
+  font-weight: 500 !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+  z-index: var(--z-toast) !important;
+  padding: 0.85rem 1rem !important;
+}
+
+/* ============================================================
+   🛍️ HOMEFIX STORE — Unified Styling (v5.0)
+   ------------------------------------------------------------
+   Combines v4.4 + v4.8 + v4.9 for a clean, non-transparent,
+   bright and tactile storefront aesthetic.
+   ============================================================ */
+
+/* 🏠 Store Page Container */
+.page-store {
+  position: relative;
+  isolation: isolate;
+  background: none !important;
+  z-index: 9100;
+}
+
+/* 💎 Product Grid */
+.store-grid,
+[data-store-root],
+#store-root {
+  background: var(--color-bg-light);
+}
+:root.dark .store-grid,
+:root[data-theme="dark"] .store-grid {
+  background: linear-gradient(180deg, #0b0a1a 0%, #14122a 80%, #191437 100%);
+}
+
+/* 🧱 Product Card */
+.product-card {
+  border-radius: 1.25rem;
+  overflow: hidden;
+  transition: all 0.35s ease;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  mix-blend-mode: normal !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .product-card {
+  background-color: #141625 !important;
+  color: #f8fafc !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(155, 92, 248, 0.25);
+}
+
+/* 🖼️ Product Image */
+.product-card img {
+  opacity: 1 !important;
+  filter: brightness(1.12) contrast(1.12) saturate(1.05);
+  transition: filter 0.3s ease, transform 0.3s ease;
+}
+.product-card:hover img {
+  transform: scale(1.05);
+  filter: brightness(1.2) contrast(1.15);
+}
+
+/* 🧾 Typography */
+.product-card h3 {
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  color: inherit;
+}
+.product-card p,
+.product-card span {
+  font-size: 0.8rem;
+  color: inherit;
+}
+.product-card .price {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #059669;
+}
+[data-theme="dark"] .product-card .price {
+  color: #34d399;
+}
+
+/* 🪶 Buttons */
+.product-card button {
+  border-radius: 0.75rem;
+  transition: all 0.25s ease;
+}
+.product-card button:hover {
+  filter: brightness(1.05);
+}
+.product-card .add-btn {
+  background: linear-gradient(to right, #059669, #10b981);
+  color: #fff;
+}
+.product-card .add-btn:disabled {
+  opacity: 0.6;
+  background: #4b5563;
+}
+[data-theme="dark"] .product-card .add-btn {
+  background: linear-gradient(to right, #34d399, #10b981);
+}
+
+/* 🩶 Out of stock */
+.product-card .out-badge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 6px;
 }

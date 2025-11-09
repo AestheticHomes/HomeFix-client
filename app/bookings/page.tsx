@@ -1,21 +1,22 @@
 "use client";
 /**
  * File: /app/bookings/page.tsx
- * Version: v5.0 🌿 HomeFix India — “MiniMap Validation Build”
+ * Version: v5.1 🌿 HomeFix India — “MiniMap Validation + Session Fix Build”
  * ------------------------------------------------------------
  * ✅ Displays bookings with verified MiniMap preview
  * ✅ Tabs (All / Upcoming / In Progress / Completed / etc.)
  * ✅ Secure Supabase fetch per user
  * ✅ Integrated Reschedule drawer
+ * ✅ Fix: False login screen (rehydration from cache)
  */
 
-import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { useUser } from "@/contexts/UserContext";
-import { format } from "date-fns";
-import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Calendar, Clock, Package, Settings2 } from "lucide-react";
 import MiniMapPreview from "@/components/ui/MiniMapPreview";
+import { useUser } from "@/contexts/UserContext";
+import { supabase } from "@/lib/supabaseClient";
+import { format } from "date-fns";
+import { AnimatePresence, motion } from "framer-motion";
+import { Calendar, Clock, Loader2, Package, Settings2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 /* -------------------------------------------------------------------------- */
 /* 🕒 Constants */
@@ -53,20 +54,44 @@ export default function MyBookingsPage() {
   const [toast, setToast] = useState("");
 
   /* -------------------------------------------------------------------------- */
-  /* ✅ Fetch bookings */
+  /* ✅ Session Fix: Rehydrate user from cache if context not ready */
   /* -------------------------------------------------------------------------- */
   useEffect(() => {
     if (!isLoaded) return;
-    if (!isLoggedIn || !user?.id) {
-      setBookings([]);
-      setLoading(false);
-      return;
+    if (!isLoggedIn || !user) {
+      const cached = localStorage.getItem("user");
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed?.id && parsed?.phone_verified) {
+            console.log("♻️ [Bookings] Restoring user session from cache...");
+            window.dispatchEvent(
+              new CustomEvent("edith:rehydrateUser", { detail: parsed })
+            );
+          }
+        } catch (err) {
+          console.warn("⚠️ [Bookings] Invalid cached user data:", err);
+        }
+      }
     }
+  }, [isLoaded, isLoggedIn, user]);
+
+  /* -------------------------------------------------------------------------- */
+  /* ✅ Fetch bookings (only after session confirmed) */
+  /* -------------------------------------------------------------------------- */
+  useEffect(() => {
+    const cached =
+      typeof window !== "undefined"
+        ? JSON.parse(localStorage.getItem("user") || "null")
+        : null;
+
+    const userId = user?.id || cached?.id;
+    if (!userId) return;
 
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/api/bookings/list?user_id=${user.id}`);
+        const res = await fetch(`/api/bookings/list?user_id=${userId}`);
         const json = await res.json();
         if (json.success) setBookings(json.bookings || []);
       } catch (err) {
@@ -101,12 +126,17 @@ export default function MyBookingsPage() {
   }, [bookings]);
 
   /* -------------------------------------------------------------------------- */
-  /* 🧭 Session states */
+  /* 🧭 Session states (fixed to use cachedUser fallback) */
   /* -------------------------------------------------------------------------- */
-  if (!isLoaded)
+  const cachedUser =
+    typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("user") || "null")
+      : null;
+
+  if (!isLoaded && !cachedUser)
     return <CenteredScreen message="Initializing session..." spinner />;
-  if (!isLoggedIn || !user)
-    return <LoginScreen />;
+
+  if ((!isLoggedIn || !user) && !cachedUser) return <LoginScreen />;
 
   if (loading)
     return <CenteredScreen message="Fetching your bookings..." spinner />;
@@ -119,7 +149,11 @@ export default function MyBookingsPage() {
       <h1 className="text-3xl font-bold mb-6">My Bookings</h1>
 
       {/* Tabs with counts */}
-      <Tabs activeTab={activeTab} setActiveTab={setActiveTab} counts={statusCounts} />
+      <Tabs
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        counts={statusCounts}
+      />
 
       {/* Booking List */}
       {filtered.length ? (
@@ -288,7 +322,9 @@ function BookingCard({
       className="p-4 rounded-xl shadow-sm border bg-white dark:bg-slate-800 dark:border-slate-700 flex flex-col gap-3"
     >
       <div className="flex justify-between items-center">
-        <h2 className="font-semibold">{services[0]?.name || "Service Booking"}</h2>
+        <h2 className="font-semibold">
+          {services[0]?.name || "Service Booking"}
+        </h2>
         <span
           className={`text-xs font-semibold uppercase px-3 py-1 rounded-full ${
             booking.status === "cancelled"
@@ -348,24 +384,23 @@ function BookingCard({
           ₹{Number(booking.total_price).toLocaleString()}
         </p>
         <div className="flex gap-2">
-          {booking.status !== "cancelled" &&
-            booking.status !== "completed" && (
-              <>
-                <button
-                  onClick={onReschedule}
-                  className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200"
-                >
-                  <Settings2 className="inline w-3 h-3 mr-1" />
-                  Reschedule
-                </button>
-                <button
-                  onClick={onCancel}
-                  className="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-lg hover:bg-red-200"
-                >
-                  Cancel
-                </button>
-              </>
-            )}
+          {booking.status !== "cancelled" && booking.status !== "completed" && (
+            <>
+              <button
+                onClick={onReschedule}
+                className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200"
+              >
+                <Settings2 className="inline w-3 h-3 mr-1" />
+                Reschedule
+              </button>
+              <button
+                onClick={onCancel}
+                className="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-lg hover:bg-red-200"
+              >
+                Cancel
+              </button>
+            </>
+          )}
         </div>
       </div>
     </motion.div>
@@ -446,7 +481,9 @@ function RescheduleDrawer({
         transition={{ duration: 0.2 }}
       >
         <div className="w-[90%] max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-5 space-y-4">
-          <h3 className="text-xl font-semibold text-center">Reschedule Booking</h3>
+          <h3 className="text-xl font-semibold text-center">
+            Reschedule Booking
+          </h3>
 
           <input
             type="date"

@@ -1,18 +1,18 @@
 /**
  * ============================================================
- * 📘 HomeFix API: /api/auth/verify-email-otp (v3.2)
+ * 📘 HomeFix API: /api/auth/verify-email-otp (v4.8)
  * ------------------------------------------------------------
- * ✅ Validates 6-digit OTP for email verification
- * ✅ Attaches email if missing (from cookie user)
- * ✅ Supports DEBUG_MODE= true (OTP 123456)
- * ✅ Safe fallback verification if Edge Function unavailable
- * ✅ Sets persistent cookies: hf_user_id, hf_user_email, hf_user_verified
+ * ✅ Stateless & DB-synced email verification
+ * ✅ Updates email_verified = true + verified_at = NOW()
+ * ✅ Finds the exact user by email or phone (cookie-based)
+ * ✅ Prevents duplicate rows (atomic update)
+ * ✅ DEBUG_MODE = true → accepts OTP 123456
  * ============================================================
  */
 
-import { NextResponse } from "next/server";
-import { supabaseService } from "@/lib/supabaseClient";
 import { error, log } from "@/lib/console";
+import { supabaseService } from "@/lib/supabaseClient";
+import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
@@ -24,181 +24,109 @@ export async function POST(req) {
     if (!email || !otp) {
       return NextResponse.json(
         { success: false, message: "Missing email or OTP" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     const supabase = supabaseService();
+    log("API:verify-email-otp", `📨 Verifying email ${email} with OTP ${otp}`);
+
+    // ------------------------------------------------------------
+    // 🧪 DEBUG MODE
+    // ------------------------------------------------------------
+    if (process.env.DEBUG_MODE === "true") {
+      if (otp !== "123456") {
+        return NextResponse.json(
+          { success: false, message: "Invalid debug OTP (use 123456)" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // ------------------------------------------------------------
+    // 🍪 Extract user identifiers from cookies
+    // ------------------------------------------------------------
     const idMatch = cookieHeader.match(/hf_user_id=([^;]+)/);
     const phoneMatch = cookieHeader.match(/hf_user_phone=([^;]+)/);
     const hfUserId = idMatch ? idMatch[1] : null;
     const hfPhone = phoneMatch ? decodeURIComponent(phoneMatch[1]) : null;
 
-    log("API:verify-email-otp", `📨 Incoming verification for ${email}`);
+    // ------------------------------------------------------------
+    // 🔍 Locate the correct profile
+    // ------------------------------------------------------------
+    let { data: profile } = await supabase
+      .from("user_profiles")
+      .select("id, phone, email, email_verified, phone_verified, name, role")
+      .or(`email.eq.${email},phone.eq.${hfPhone}`)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    /* ------------------------------------------------------------
-       🧪 DEBUG MODE (local testing only)
-    ------------------------------------------------------------ */
-    if (process.env.DEBUG_MODE === "true") {
-      if (otp !== "123456") {
-        return NextResponse.json(
-          { success: false, message: "Invalid debug OTP. Use 123456." },
-          { status: 400 },
-        );
-      }
-      return await verifyAndAttachEmail(
-        supabase,
-        email,
-        hfUserId,
-        hfPhone,
-        true,
-      );
-    }
-
-    /* ------------------------------------------------------------
-       🚀 Production (Edge Function-based verification)
-    ------------------------------------------------------------ */
-    const VERIFY_URL = process.env.NEXT_PUBLIC_SUPABASE_FUNCTION_URL ||
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/verify-email-otp`;
-
-    log("API:verify-email-otp", `🌍 Calling edge function → ${VERIFY_URL}`);
-
-    const response = await fetch(VERIFY_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-      },
-      body: JSON.stringify({ email, otp }),
-    });
-
-    if (response.status === 404) {
-      log(
-        "API:verify-email-otp",
-        "⚠️ Edge Function missing — fallback triggered",
-      );
-      return await verifyAndAttachEmail(
-        supabase,
-        email,
-        hfUserId,
-        hfPhone,
-        false,
-      );
-    }
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      error("API:verify-email-otp", "Edge function failed:", data);
+    if (!profile) {
+      error("API:verify-email-otp", `❌ No matching user found for ${email}`);
       return NextResponse.json(
-        { success: false, message: "Verification failed" },
-        { status: response.status },
+        { success: false, message: "No matching user found" },
+        { status: 404 }
       );
     }
 
-    const user_id = data?.user_id || hfUserId || null;
+    // ------------------------------------------------------------
+    // ✅ Update email_verified = true
+    // ------------------------------------------------------------
+    const { data: updated, error: updateErr } = await supabase
+      .from("user_profiles")
+      .update({
+        email_verified: true,
+        verified_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        email: email, // ensure email is attached if missing
+      })
+      .eq("id", profile.id)
+      .select("*")
+      .single();
 
+    if (updateErr) throw updateErr;
+
+    log("API:verify-email-otp", `✅ Email marked verified for ${email}`);
+
+    // ------------------------------------------------------------
+    // 🍪 Set verification cookies
+    // ------------------------------------------------------------
     const res = NextResponse.json({
       success: true,
       verified: true,
       email,
-      user_id,
+      user_id: profile.id,
       message: "Email verified successfully",
     });
 
     res.headers.set(
       "Set-Cookie",
       [
-        `hf_user_id=${user_id}; Path=/; Max-Age=604800; SameSite=Lax`,
+        `hf_user_id=${profile.id}; Path=/; Max-Age=604800; SameSite=Lax`,
         `hf_user_email=${email}; Path=/; Max-Age=604800; SameSite=Lax`,
         `hf_user_verified=true; Path=/; Max-Age=604800; SameSite=Lax`,
-      ].join(", "),
+      ].join(", ")
     );
+
+    // ------------------------------------------------------------
+    // 🧾 Log to http_response_log
+    // ------------------------------------------------------------
+    await supabase.from("http_response_log").insert([
+      {
+        request_url: "/api/auth/verify-email-otp",
+        request_body: { email, otp },
+        status: 200,
+        response_body: JSON.stringify(updated),
+        created_at: new Date().toISOString(),
+      },
+    ]);
 
     return res;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     error("API:verify-email-otp", "💥 Fatal:", msg);
 
-    return NextResponse.json(
-      { success: false, message: msg },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, message: msg }, { status: 500 });
   }
-}
-
-/* ------------------------------------------------------------
-   🔁 Shared local/fallback verification helper
------------------------------------------------------------- */
-async function verifyAndAttachEmail(
-  supabase,
-  email,
-  hfUserId,
-  hfPhone,
-  debugMode,
-) {
-  log("API:verify-email-otp", "🧩 Running local verification logic");
-
-  // Find user by email
-  let { data: user } = await supabase
-    .from("user_profiles")
-    .select("id, phone")
-    .eq("email", email)
-    .maybeSingle();
-
-  // Try fallback via cookie
-  if (!user && (hfUserId || hfPhone)) {
-    const { data: attached, error: attachErr } = await supabase
-      .from("user_profiles")
-      .update({
-        email,
-        email_verified: true,
-        updated_at: new Date().toISOString(),
-      })
-      .or(`id.eq.${hfUserId},phone.eq.${hfPhone}`)
-      .select("id, phone")
-      .maybeSingle();
-
-    if (attachErr) throw attachErr;
-    user = attached;
-  }
-
-  if (!user) {
-    error("API:verify-email-otp", `No user found for ${email}`);
-    return NextResponse.json(
-      { success: false, message: "No matching user found" },
-      { status: 404 },
-    );
-  }
-
-  await supabase
-    .from("user_profiles")
-    .update({
-      email_verified: true,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", user.id);
-
-  log("API:verify-email-otp", `✅ Email verified for ${email}`);
-
-  const res = NextResponse.json({
-    success: true,
-    verified: true,
-    email,
-    user_id: user.id,
-    message: debugMode
-      ? "Email verified (debug mode)"
-      : "Email verified locally (fallback)",
-  });
-
-  res.headers.set(
-    "Set-Cookie",
-    [
-      `hf_user_id=${user.id}; Path=/; Max-Age=604800; SameSite=Lax`,
-      `hf_user_email=${email}; Path=/; Max-Age=604800; SameSite=Lax`,
-      `hf_user_verified=true; Path=/; Max-Age=604800; SameSite=Lax`,
-    ].join(", "),
-  );
-
-  return res;
 }

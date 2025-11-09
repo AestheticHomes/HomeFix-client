@@ -6,7 +6,7 @@
  * ✅ Strict mode auto-toggle
  * ✅ Path aliases for Edith ecosystem
  * ✅ Production-safe (no source maps, console stripping)
- * ✅ Hardened image host list
+ * ✅ Hardened image host list (Unsplash + Cloudinary + Supabase)
  */
 
 import nextPWA from "next-pwa";
@@ -39,12 +39,20 @@ const nextConfig = {
 
   images: {
     remotePatterns: [
+      // ✅ Core existing hosts
       { protocol: "https", hostname: "images.pexels.com" },
       { protocol: "https", hostname: "img.youtube.com" },
       { protocol: "https", hostname: "i.ytimg.com" },
       { protocol: "https", hostname: "res.cloudinary.com" },
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
       { protocol: "https", hostname: "cdn.aesthetichomes.net" },
+
+      // ✅ NEW: Unsplash (product demo images)
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "plus.unsplash.com" },
+
+      // ✅ Optional: Supabase storage (if you serve images from Supabase later)
+      { protocol: "https", hostname: "*.supabase.co" },
     ],
     unoptimized: false,
     minimumCacheTTL: 3600,

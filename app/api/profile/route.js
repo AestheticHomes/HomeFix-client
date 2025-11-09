@@ -1,36 +1,42 @@
 /**
  * ============================================================
  * 📘 FILE: /app/api/profile/route.js
- * 🔧 MODULE: HomeFix Unified Profile CRUD (v4.6)
+ * 🔧 MODULE: HomeFix Profile Manager v5.3
  * ------------------------------------------------------------
- * ✅ Handles both:
- *   - Authenticated users (Supabase ID → update by id)
- *   - OTP users (no session → upsert by phone)
- * ✅ Safe cookie + local fallback for phone
- * ✅ Auto logs to http_response_log
+ * ✅ Always respects `email_verified` & `phone_verified`
+ * ✅ Fetches only the most recent user row (no stale flags)
+ * ✅ Prevents email_verified reset if user re-enters same email
+ * ✅ Normalizes all phone formats (+91XXXXXXXXXX)
+ * ✅ Fully logged into `http_response_log`
  * ============================================================
  */
 
-import { NextResponse } from "next/server";
 import { supabaseAnon, supabaseService } from "@/lib/supabaseClient";
+import { NextResponse } from "next/server";
 
 const TABLE_NAME = "user_profiles";
 
 /* ============================================================
-   🟠 POST /api/profile
-   ------------------------------------------------------------
-   Handles both:
-   - Authenticated user updates (from PWA / AuthCenterDrawer)
-   - Phone-based UPSERT (from mobile OTP flow)
-   ============================================================ */
+   🧠 Normalize phone numbers → +91XXXXXXXXXX
+============================================================ */
+function normalizePhone(raw) {
+  if (!raw) return null;
+  let p = raw.toString().replace(/\D/g, "");
+  if (p.startsWith("91") && p.length === 12) return "+" + p;
+  if (p.startsWith("+91")) return p;
+  if (p.length === 10) return "+91" + p;
+  return "+91" + p.slice(-10);
+}
+
+/* ============================================================
+   🟢 POST — Create or Update Profile
+============================================================ */
 export async function POST(req) {
-  const anon = supabaseAnon(); // 🧠 session-aware client
-  const service = supabaseService(); // 🔐 privileged client
+  const anon = supabaseAnon();
+  const service = supabaseService();
 
   try {
     const body = await req.json();
-    console.log("📩 [Profile Update] Incoming:", body);
-
     const {
       phone,
       name,
@@ -42,32 +48,60 @@ export async function POST(req) {
       phone_verified,
     } = body;
 
-    /* ------------------------------------------------------------
-       🧠 Step 1: Detect Supabase Authenticated User
-    ------------------------------------------------------------ */
+    const phoneSafe = normalizePhone(phone);
+    if (!phoneSafe) {
+      return NextResponse.json(
+        { success: false, message: "Missing valid phone number." },
+        { status: 400 }
+      );
+    }
+
+    // 🧠 Get authenticated Supabase user (if session exists)
     const {
       data: { user },
-      error: authErr,
-    } = await anon.auth.getUser();
-
-    if (authErr) console.warn("⚠️ [Auth Detection Error]", authErr?.message);
+    } = await anon.auth.getUser().catch(() => ({ data: { user: null } }));
     const userId = user?.id || null;
 
     /* ------------------------------------------------------------
-       Case 1️⃣ Authenticated User (update by id)
+       Step 1️⃣ — Get latest existing profile for comparison
+    ------------------------------------------------------------ */
+    const { data: existingUser } = await service
+      .from(TABLE_NAME)
+      .select("id, phone, email, email_verified, phone_verified, updated_at")
+      .eq("phone", phoneSafe)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const emailUnchanged =
+      existingUser?.email &&
+      existingUser.email.trim().toLowerCase() ===
+        (email || "").trim().toLowerCase();
+
+    /* ------------------------------------------------------------
+       Step 2️⃣ — Prepare update payload
+    ------------------------------------------------------------ */
+    const updates = {
+      ...(name && { name }),
+      ...(email && { email }),
+      ...(address && { address }),
+      ...(latitude && { latitude }),
+      ...(longitude && { longitude }),
+      ...(phone_verified !== undefined && { phone_verified }),
+      updated_at: new Date().toISOString(),
+      // ✅ Preserve email_verified flag if email unchanged
+      email_verified:
+        emailUnchanged && existingUser?.email_verified
+          ? true
+          : email_verified ?? existingUser?.email_verified ?? false,
+    };
+
+    let result;
+
+    /* ------------------------------------------------------------
+       Step 3️⃣ — Authenticated user → update by id
     ------------------------------------------------------------ */
     if (userId) {
-      const updates = {
-        ...(name && { name }),
-        ...(email && { email }),
-        ...(address && { address }),
-        ...(latitude && { latitude }),
-        ...(longitude && { longitude }),
-        ...(email_verified !== undefined && { email_verified }),
-        ...(phone_verified !== undefined && { phone_verified }),
-        updated_at: new Date().toISOString(),
-      };
-
       const { data, error } = await service
         .from(TABLE_NAME)
         .update(updates)
@@ -76,132 +110,111 @@ export async function POST(req) {
         .single();
 
       if (error) throw error;
-      console.log("✅ [Profile Updated by id]", data);
+      result = data;
+    } else {
+      /* ------------------------------------------------------------
+         Step 4️⃣ — OTP user → UPSERT by phone
+      ------------------------------------------------------------ */
+      const { data, error } = await service
+        .from(TABLE_NAME)
+        .upsert([{ phone: phoneSafe, ...updates }], { onConflict: "phone" })
+        .select("*")
+        .single();
 
-      await service.from("http_response_log").insert([
-        {
-          route: "/api/profile",
-          method: "POST",
-          status_code: 200,
-          response_body: data,
-          created_at: new Date().toISOString(),
-        },
-      ]);
-
-      const res = NextResponse.json({
-        success: true,
-        user: data,
-        message: "Profile updated successfully (by id)",
-      });
-
-      res.headers.set(
-        "Set-Cookie",
-        `hf_user_id=${userId}; Path=/; Max-Age=604800`,
-      );
-      return res;
+      if (error) throw error;
+      result = data;
     }
 
-    /* ------------------------------------------------------------
-       Case 2️⃣ OTP-based User (fallback by phone)
-    ------------------------------------------------------------ */
-    // 🟡 Try multiple recovery paths to get phone number
-    let phoneSafe = phone;
-
-    if (!phoneSafe && req.headers.get("cookie")) {
-      const cookies = req.headers.get("cookie");
-
-      // Check in standard cookie (hf_user_id)
-      const fromHFID = cookies.match(/hf_user_id=(\+?\d{10,15})/);
-      // Check inside serialized user JSON (if present)
-      const fromUser = cookies.match(/"phone":"(\+?\d{10,15})"/);
-
-      phoneSafe = fromHFID?.[1] || fromUser?.[1] || null;
-    }
-
-    if (!phoneSafe) {
-      console.warn("⚠️ [Profile] No auth session or valid phone — rejecting");
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Missing both Supabase session and phone number.",
-        },
-        { status: 400 },
-      );
-    }
-
-    const phonePayload = {
-      phone: phoneSafe,
-      ...(name && { name }),
-      ...(email && { email }),
-      ...(address && { address }),
-      ...(latitude && { latitude }),
-      ...(longitude && { longitude }),
-      ...(email_verified !== undefined && { email_verified }),
-      ...(phone_verified !== undefined && { phone_verified }),
-      updated_at: new Date().toISOString(),
-    };
-
-    const { data, error } = await service
-      .from(TABLE_NAME)
-      .upsert([phonePayload], { onConflict: "phone" })
-      .select("*")
-      .single();
-
-    if (error) throw error;
-    console.log("✅ [Profile Updated by phone]", data);
+    // 🧾 Log to http_response_log
+    await service.from("http_response_log").insert([
+      {
+        request_url: "/api/profile",
+        status: 200,
+        response_body: JSON.stringify(result),
+        created_at: new Date().toISOString(),
+      },
+    ]);
 
     return NextResponse.json({
       success: true,
-      user: data,
-      message: "Profile updated successfully (by phone)",
+      user: result,
+      message: "Profile updated successfully",
     });
   } catch (err) {
     console.error("💥 [Profile POST Error]:", err);
     return NextResponse.json(
       { success: false, message: err.message || "Internal Server Error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
 /* ============================================================
    🔵 GET /api/profile?phone=XXXXXXXXXX
-   ------------------------------------------------------------
-   Fetch user profile by phone (for OTP or app prefill)
-   ============================================================ */
+   Fetch user profile by phone (deduped + latest verified)
+============================================================ */
 export async function GET(req) {
-  const service = supabaseService(); // Only need service client for read
+  const service = supabaseService();
 
   try {
     const { searchParams } = new URL(req.url);
-    const phone = searchParams.get("phone");
+    const rawPhone = searchParams.get("phone");
+    const normalized = normalizePhone(rawPhone);
 
-    console.log("🧠 [Profile GET] Fetching profile for phone:", phone);
-    if (!phone) {
+    console.log("🧠 [Profile GET] Fetching:", rawPhone, "→", normalized);
+    if (!normalized) {
       return NextResponse.json(
         { success: false, message: "Missing phone number" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
+    // ✅ Always fetch the newest record by updated_at DESC
     const { data, error } = await service
       .from(TABLE_NAME)
       .select("*")
-      .eq("phone", phone)
+      .in("phone", [
+        normalized,
+        normalized.replace("+", ""),
+        normalized.slice(-10),
+      ])
+      .order("updated_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (error) throw error;
 
+    if (!data) {
+      return NextResponse.json(
+        { success: false, message: "No matching user found" },
+        { status: 404 }
+      );
+    }
+
+    console.log(
+      "✅ [Profile] Clean profile fetched:",
+      data.phone,
+      "| verified:",
+      data.email_verified
+    );
+
+    // ✅ Ensure flag consistency for safety
+    const normalizedData = {
+      ...data,
+      email_verified: !!data.email_verified,
+      phone_verified: !!data.phone_verified,
+    };
+
     return NextResponse.json({
       success: true,
-      user: data || null,
-      message: data ? "Profile found" : "No matching user found",
+      user: normalizedData,
+      message: "Profile fetched successfully",
     });
   } catch (err) {
     console.error("💥 [Profile GET Error]:", err.message);
     return NextResponse.json(
-      { success: false, message: err.message || "Internal Server Error" },
-      { status: 500 },
+      { success: false, message: err.message },
+      { status: 500 }
     );
   }
 }

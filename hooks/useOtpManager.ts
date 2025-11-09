@@ -1,17 +1,17 @@
 "use client";
 /**
  * ============================================================
- * File: /hooks/useOtpManager.ts
- * Version: v2.4 — Edith Toast Safe Build
+ * 🌿 HomeFix — useOtpManager (v3.0 Unified Toast Edition)
  * ------------------------------------------------------------
- * ✅ Uses Sonner-compliant toast syntax
- * ✅ sendOtp & verifyOtp return boolean
- * ✅ Haptic + console logs retained
+ * ✅ Uses global useToast() (no duplicate toasts)
+ * ✅ Clean API endpoints: send & verify for phone/email
+ * ✅ Boolean returns for easy UI binding
+ * ✅ Haptic feedback and verbose logging retained
  * ============================================================
  */
 
-import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 interface UseOtpManager {
   sendOtp: (target: string, type: "phone" | "email") => Promise<boolean>;
@@ -35,27 +35,34 @@ export function useOtpManager(): UseOtpManager {
     };
   }
 
-  const { toast } = useToast();
+  const { success, error, info } = useToast();
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
 
-  // ============================================================
-  // 📩 Send OTP
-  // ============================================================
-  async function sendOtp(target: string, type: "phone" | "email"): Promise<boolean> {
+  /* ------------------------------------------------------------
+     📩 Send OTP
+  ------------------------------------------------------------ */
+  async function sendOtp(
+    target: string,
+    type: "phone" | "email"
+  ): Promise<boolean> {
     if (!target) {
-      toast.error("Provide a valid target before sending OTP.");
+      error("Please provide a valid target before sending OTP.");
       return false;
     }
 
     setLoading(true);
+
     try {
       const endpoint =
-        type === "phone" ? "/api/auth/otp" : "/api/auth/send-email-otp";
+        type === "phone" ? "/api/auth/phone-otp" : "/api/auth/send-email-otp";
+
       const payload =
         type === "phone"
           ? { phone: `+91${target}`, action: "send" }
           : { email: target };
+
+      console.log(`📨 [useOtpManager] Sending ${type} OTP →`, payload);
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -64,43 +71,51 @@ export function useOtpManager(): UseOtpManager {
       });
 
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.message || "Failed");
+      if (!res.ok || !data.success)
+        throw new Error(data.message || "Failed to send OTP");
 
-      toast.success(
-        `OTP sent successfully to ${type === "phone" ? `+91 ${target}` : target}`
+      success(
+        `OTP sent successfully to ${
+          type === "phone" ? `+91 ${target}` : target
+        }`
       );
       navigator.vibrate?.(30);
       return true;
-    } catch (err) {
-      console.error("💥 [sendOtp]", err);
-      toast.error(`Failed to send ${type.toUpperCase()} OTP`);
+    } catch (err: any) {
+      console.error("💥 [useOtpManager:sendOtp]", err);
+      error(`Failed to send ${type.toUpperCase()} OTP. Please try again.`);
+      navigator.vibrate?.([80, 40, 80]);
       return false;
     } finally {
       setLoading(false);
     }
   }
 
-  // ============================================================
-  // ✅ Verify OTP
-  // ============================================================
+  /* ------------------------------------------------------------
+     🔐 Verify OTP
+  ------------------------------------------------------------ */
   async function verifyOtp(
     otp: string,
     target: string,
     type: "phone" | "email"
   ): Promise<boolean> {
     if (!otp || otp.length !== 6) {
-      toast.error("Please enter a valid 6-digit OTP.");
+      error("Please enter a valid 6-digit OTP.");
       return false;
     }
 
     setVerifying(true);
+
     try {
       const endpoint =
-        type === "phone" ? "/api/auth/verify" : "/api/auth/verify-email-otp";
+        type === "phone" ? "/api/auth/phone-otp" : "/api/auth/verify-email-otp";
+
       const payload =
         type === "phone"
           ? { phone: `+91${target}`, otp }
           : { email: target, otp };
+
+      console.log(`🔍 [useOtpManager] Verifying ${type} OTP →`, payload);
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -109,16 +124,17 @@ export function useOtpManager(): UseOtpManager {
       });
 
       const data = await res.json();
-      if (!res.ok || !(data.success || data.verified)) {
+      if (!res.ok || !(data.success || data.verified))
         throw new Error(data.message || "Invalid OTP");
-      }
 
-      toast.success(`${type === "phone" ? "Phone" : "Email"} verified successfully`);
+      success(
+        `${type === "phone" ? "Phone" : "Email"} verified successfully ✅`
+      );
       navigator.vibrate?.([60, 40, 120]);
       return true;
-    } catch (err) {
-      console.error("💥 [verifyOtp]", err);
-      toast.error("Invalid OTP. Please try again.");
+    } catch (err: any) {
+      console.error("💥 [useOtpManager:verifyOtp]", err);
+      error("Invalid OTP. Please try again.");
       navigator.vibrate?.([120]);
       return false;
     } finally {

@@ -2,30 +2,42 @@
 /**
  * ============================================================
  * File: /components/AuthCenterDrawer.tsx
- * Version: v12.8 — Sonner Toast Safe Build 🌿
+ * Version: v13.0 — LiveSync Verified Edition 🌿
  * ------------------------------------------------------------
- * ✅ Uses Sonner API (no {title,...})
- * ✅ Matches Edith v2.4 OTP flow
- * ✅ Vibration + success UX preserved
+ * ✅ Triggers `profile-updated` event after any change (name/email/verify)
+ * ✅ Auto-normalizes phone number before save
+ * ✅ Merges API response into cache + context
+ * ✅ Ensures real-time profile reload on /profile
+ * ✅ Toast-safe + haptic feedback retained
  * ============================================================
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { Check, Mail, Phone, UserRound } from "lucide-react";
+import OTPInput from "@/components/OTPInput";
 import {
   Drawer,
   DrawerContent,
+  DrawerDescription,
   DrawerHeader,
   DrawerTitle,
-  DrawerDescription,
 } from "@/components/ui/drawer";
-import OTPInput from "@/components/OTPInput";
-import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
+import { useToast } from "@/hooks/use-toast";
 import { useOtpManager } from "@/hooks/useOtpManager";
+import { AnimatePresence, motion } from "framer-motion";
+import { Check, Mail, Phone, UserRound } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Panel = "form" | "phone-otp" | "email-otp" | "success";
+
+/* 🔧 Helper: Normalize phone */
+function normalizePhone(raw: string): string {
+  if (!raw) return "";
+  let p = raw.replace(/\D/g, "");
+  if (p.startsWith("91") && p.length === 12) return "+" + p;
+  if (p.length === 10) return "+91" + p;
+  if (p.startsWith("+91")) return p;
+  return "+91" + p.slice(-10);
+}
 
 export default function AuthCenterDrawer({
   open,
@@ -68,7 +80,10 @@ export default function AuthCenterDrawer({
     const cached = JSON.parse(localStorage.getItem("user") || "null");
     const pre = cached || user || {};
     setName(pre.name || pre.full_name || "");
-    const p = (pre.phone || "").toString().replace(/\D/g, "").replace(/^91/, "");
+    const p = (pre.phone || "")
+      .toString()
+      .replace(/\D/g, "")
+      .replace(/^91/, "");
     setPhone(p || "");
     setOrigPhone(pre.phone || p || "");
     setPhoneVerified(!!pre.phone_verified || pre.loggedOut === false);
@@ -79,14 +94,15 @@ export default function AuthCenterDrawer({
   }, [open, user, initialMode]);
 
   /* ------------------------------------------------------------
-     Save Name + Email
+     Save Name + Email (with LiveSync dispatch)
   ------------------------------------------------------------ */
   async function saveNameEmail() {
     setSaving(true);
     try {
       const cached = JSON.parse(localStorage.getItem("user") || "{}");
-      const phoneSafe =
-        cached?.phone || (phoneDigits ? `+91${phoneDigits}` : null);
+      const phoneSafe = normalizePhone(
+        cached?.phone || (phoneDigits ? `+91${phoneDigits}` : "")
+      );
 
       if (!phoneSafe) {
         error("Verify your phone before saving.");
@@ -94,29 +110,39 @@ export default function AuthCenterDrawer({
         return;
       }
 
-      const payload = { name, email, phone: phoneSafe };
+      const payload = {
+        name: name.trim(),
+        email: email.trim(),
+        phone: phoneSafe,
+      };
+
       const res = await fetch("/api/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        cache: "no-store",
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.message || "Save failed");
 
-      const updatedUser = { ...cached, ...payload };
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || "Save failed");
+
+      const updatedUser = { ...cached, ...data.user };
       localStorage.setItem("user", JSON.stringify(updatedUser));
       login(updatedUser, true);
-      document.cookie = `hf_user_phone=${phoneSafe}; Path=/; Max-Age=604800`;
 
-      success("Profile saved successfully.");
+      // ✅ LiveSync trigger — ProfilePage listens to this event
+      window.dispatchEvent(new Event("profile-updated"));
+
+      success("Profile updated successfully!");
       navigator.vibrate?.(20);
       setPanel("success");
+
       setTimeout(() => {
         setPanel("form");
         onClose?.();
       }, 1200);
     } catch (err: any) {
-      console.error("💥 [saveNameEmail Error]", err.message);
+      console.error("💥 [saveNameEmail]", err.message);
       error("Failed to save changes.");
     } finally {
       setSaving(false);
@@ -124,7 +150,7 @@ export default function AuthCenterDrawer({
   }
 
   /* ------------------------------------------------------------
-     OTP Flow via useOtpManager()
+     OTP Flow (LiveSync integrated)
   ------------------------------------------------------------ */
   const handlePhoneOtpSend = async () => {
     const ok = await sendOtp(phoneDigits, "phone");
@@ -136,6 +162,7 @@ export default function AuthCenterDrawer({
     if (verified) {
       setPhoneVerified(true);
       setOrigPhone(`+91${phoneDigits}`);
+      window.dispatchEvent(new Event("profile-updated")); // ✅ LiveSync
       setPanel("success");
       setTimeout(() => setPanel("form"), 1500);
     }
@@ -150,6 +177,7 @@ export default function AuthCenterDrawer({
     const verified = await verifyOtp(otp, email, "email");
     if (verified) {
       setEmailVerified(true);
+      window.dispatchEvent(new Event("profile-updated")); // ✅ LiveSync
       setPanel("success");
       setTimeout(() => setPanel("form"), 1500);
     }
@@ -242,8 +270,18 @@ export default function AuthCenterDrawer({
               placeholder="you@example.com"
               value={email}
               onChange={(e) => {
-                setEmail(e.target.value);
-                if (emailVerified) setEmailVerified(false);
+                const newEmail = e.target.value.trim();
+                setEmail(newEmail);
+
+                // ✅ Keep verified if user re-enters same verified email
+                const cached = JSON.parse(localStorage.getItem("user") || "{}");
+                const cachedEmail = cached?.email?.trim()?.toLowerCase();
+
+                if (cachedEmail && newEmail.toLowerCase() === cachedEmail) {
+                  setEmailVerified(true);
+                } else {
+                  setEmailVerified(false);
+                }
               }}
               className="flex-1 bg-transparent outline-none text-sm"
             />

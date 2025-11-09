@@ -1,24 +1,26 @@
 "use client";
 
 /**
- * HomeFix India — Profile v3.8 🌿
+ * ============================================================
+ * 🧩 FILE: /app/profile/page.tsx
+ * VERSION: v4.1 — Edith Toast-Safe + VerifiedSync Build 🌿
  * ------------------------------------------------------------
- * ✅ Fixes infinite “Loading your profile…” hang
- * ✅ Adds visible runtime logs (Supabase / Fallback / Logout)
- * ✅ Works offline gracefully with cached user
- * ✅ Logout now clears Supabase + cache + cookies + state
- * ✅ Toast + vibration feedback
+ * ✅ Uses Edith unified toast system (no duplicates)
+ * ✅ Fetches live data from /api/profile?phone=...
+ * ✅ Syncs instantly after AuthCenterDrawer edits
+ * ✅ Offline fallback retained
+ * ✅ Logout + location save cleaned
+ * ============================================================
  */
 
-import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import MapPicker from "@/components/MapPicker";
 import AuthCenterDrawer from "@/components/AuthCenterDrawer";
-import { supabase } from "@/lib/supabaseClient";
-import { error as logError, info as logInfo, warn as logWarn } from "@/lib/console";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import MapPicker from "@/components/MapPicker";
 import { useUser } from "@/contexts/UserContext";
+import { useToast } from "@/hooks/use-toast";
+import { error as logError } from "@/lib/console";
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface ProfileData {
   id?: string;
@@ -36,192 +38,174 @@ interface ProfileData {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { logout } = useUser(); // ✅ Uses context-aware logout
+  const { logout } = useUser();
+  const { success, error, info } = useToast();
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [coords, setCoords] = useState({ lat: 13.0827, lng: 80.2707 });
   const [address, setAddress] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerMode, setDrawerMode] = useState<"form" | "phone-otp" | "email-otp">("form");
+  const [drawerMode, setDrawerMode] = useState<
+    "form" | "phone-otp" | "email-otp"
+  >("form");
   const [editingAddress, setEditingAddress] = useState(false);
 
   /* ------------------------------------------------------------
-     📦 Prefetch Profile (Supabase → Cookie → Cache)
+     🧠 Shared: Hydrate data into state + cache
   ------------------------------------------------------------ */
-  useEffect(() => {
-    let cancelled = false;
+  function hydrate(data: any) {
+    const merged = {
+      ...data,
+      name: data.name || data.full_name,
+      email_verified: !!data.email_verified,
+      phone_verified: !!data.phone_verified,
+    };
+    setProfile(merged);
+    setAddress(merged.address || "");
+    if (merged.latitude && merged.longitude)
+      setCoords({ lat: merged.latitude, lng: merged.longitude });
+    localStorage.setItem("user", JSON.stringify(merged));
+  }
 
-    async function prefetchProfile() {
-      if (typeof window === "undefined") return;
+  /* ------------------------------------------------------------
+     🔁 Fetch Latest Profile (live from API)
+  ------------------------------------------------------------ */
+  async function prefetchProfile() {
+    console.log("♻️ [Profile] Prefetch initiated...");
 
-      console.log("🧭 [Profile] Prefetch started — awaiting Supabase user...");
+    try {
+      const cookies = Object.fromEntries(
+        (document.cookie || "")
+          .split("; ")
+          .filter(Boolean)
+          .map((c) => {
+            const i = c.indexOf("=");
+            return [c.substring(0, i), decodeURIComponent(c.substring(i + 1))];
+          })
+      );
 
-      try {
-        // ⏱ Timeout-safe Supabase getUser
-        const timeout = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout: Supabase stalled")), 5000)
-        );
-
-        const { data: sb } = (await Promise.race([
-          supabase.auth.getUser(),
-          timeout,
-        ]).catch(() => ({ data: undefined }))) as any;
-
-        const supaUser = sb?.user ?? null;
-        const cookies = Object.fromEntries(
-          (document.cookie || "")
-            .split("; ")
-            .filter(Boolean)
-            .map((c) => {
-              const i = c.indexOf("=");
-              return [c.substring(0, i), decodeURIComponent(c.substring(i + 1))];
-            })
-        );
-
-        const cookiePhone = cookies["hf_user_phone"];
-        const cookieId = cookies["hf_user_id"];
-
-        // Case 0️⃣ — No session → try local cache
-        if (!supaUser && !cookiePhone && !cookieId) {
-          console.log("📦 [Profile] No Supabase/cookie session — using local cache");
-          const cached = JSON.parse(localStorage.getItem("user") || "null");
-          if (cached) {
-            hydrate(cached);
-            toast("📴 Offline Mode", { description: "Loaded cached profile." });
-          }
-          return;
-        }
-
-        // Case 1️⃣ — Supabase user found
-        if (supaUser?.id) {
-          console.log("🔗 [Profile] Found Supabase session:", supaUser.id);
-          const { data, error } = await supabase
-            .from("user_profiles")
-            .select(
-              "id,name,full_name,phone,email,email_verified,phone_verified,address,latitude,longitude,role"
-            )
-            .eq("id", supaUser.id)
-            .maybeSingle();
-
-          if (error) throw error;
-          if (data) {
-            hydrate(data);
-            console.log("✅ [Profile] Hydrated from Supabase table");
-            return;
-          }
-        }
-
-        // Case 2️⃣ — Cookie fallback
-        if (cookiePhone) {
-          console.log("🍪 [Profile] Trying cookie fallback:", cookiePhone);
-          const resp = await fetch(`/api/profile?phone=${cookiePhone}`);
-          if (resp.ok) {
-            const json = await resp.json();
-            if (json?.user) {
-              hydrate(json.user);
-              console.log("✅ [Profile] Hydrated via /api/profile fallback");
-              return;
-            }
-          }
-          console.warn("⚠️ [Profile] Cookie fetch failed — falling back to cache");
-          const cached = JSON.parse(localStorage.getItem("user") || "null");
-          if (cached) {
-            hydrate(cached);
-            toast("📴 Offline Mode", { description: "Loaded cached profile." });
-          }
-        }
-      } catch (err) {
-        console.error("💥 [Profile] Prefetch failed:", err);
+      const cookiePhone = cookies["hf_user_phone"];
+      if (!cookiePhone) {
+        console.warn("⚠️ [Profile] No cookie phone — using cache fallback");
         const cached = JSON.parse(localStorage.getItem("user") || "null");
         if (cached) {
           hydrate(cached);
-          toast("📴 Offline Mode", { description: "Loaded cached profile." });
+          info("📴 Offline Mode: Loaded cached profile.");
         }
-      } finally {
-        if (!cancelled) {
-          console.log("✅ [Profile] Prefetch complete.");
-          setLoading(false);
-        }
+        return;
       }
-    }
 
-    function hydrate(data: any) {
-      const merged = { ...data, name: data.name || data.full_name };
-      setProfile(merged);
-      setAddress(merged.address || "");
-      if (merged.latitude && merged.longitude)
-        setCoords({ lat: merged.latitude, lng: merged.longitude });
-      localStorage.setItem("user", JSON.stringify(merged));
-    }
+      const resp = await fetch(`/api/profile?phone=${cookiePhone}`, {
+        cache: "no-store",
+      });
+      const json = await resp.json();
 
+      if (json?.user) {
+        const fresh = {
+          ...json.user,
+          email_verified: !!json.user.email_verified,
+          phone_verified: !!json.user.phone_verified,
+        };
+        hydrate(fresh);
+        console.log(
+          `✅ [Profile] Hydrated from API — Verified: ${
+            fresh.email_verified ? "✅" : "❌"
+          }`
+        );
+      } else {
+        console.warn("⚠️ [Profile] No user found, fallback to cache");
+        const cached = JSON.parse(localStorage.getItem("user") || "null");
+        if (cached) hydrate(cached);
+      }
+    } catch (err) {
+      console.error("💥 [Profile] Prefetch failed:", err);
+      const cached = JSON.parse(localStorage.getItem("user") || "null");
+      if (cached) {
+        hydrate(cached);
+        info("📴 Offline Mode: Loaded cached profile.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  /* ------------------------------------------------------------
+     🚀 Initial Mount + LiveSync Listener
+  ------------------------------------------------------------ */
+  useEffect(() => {
     prefetchProfile();
-    return () => {
-      cancelled = true;
-    };
+
+    function handleProfileUpdated() {
+      console.log("🔁 [Profile] Received profile-updated event");
+      prefetchProfile();
+    }
+
+    window.addEventListener("profile-updated", handleProfileUpdated);
+    return () =>
+      window.removeEventListener("profile-updated", handleProfileUpdated);
   }, []);
 
   /* ------------------------------------------------------------
-     📍 Save Location
+     📍 Save Location (and trigger refresh)
   ------------------------------------------------------------ */
   async function saveLocation() {
     if (!profile) return;
+
     try {
       const updates = { address, latitude: coords.lat, longitude: coords.lng };
-      const { error: updateErr } = await supabase
-        .from("user_profiles")
-        .update(updates)
-        .eq("id", profile.id);
+      const res = await fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: profile.phone, ...updates }),
+      });
 
-      if (updateErr) throw updateErr;
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
 
-      const updated = { ...profile, ...updates };
-      setProfile(updated);
-      localStorage.setItem("user", JSON.stringify(updated));
-
-      toast.success("Location saved successfully.");
-      logInfo("[PROFILE] Location saved", updates);
+      hydrate(data.user);
+      success("📍 Location saved successfully.");
       navigator.vibrate?.(20);
       setEditingAddress(false);
-    } catch (e) {
+      window.dispatchEvent(new Event("profile-updated"));
+    } catch (e: any) {
       logError("[PROFILE] Save failed", e);
-      toast.error("Failed to save location.");
+      error("Failed to save location. Try again.");
       navigator.vibrate?.([120]);
     }
   }
 
   /* ------------------------------------------------------------
-   🚪 Logout handler — with Supabase fallback fix
------------------------------------------------------------- */
-async function handleLogout() {
-  console.log("🚪 [Profile] logout initiated...");
+     🚪 Logout handler
+  ------------------------------------------------------------ */
+  async function handleLogout() {
+    console.log("🚪 [Profile] logout initiated...");
 
-  try {
-    // Try normal Supabase signout but cap to 2 seconds
-    const timeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Supabase signOut timeout")), 2000)
-    );
+    try {
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Supabase signOut timeout")), 2000)
+      );
 
-    await Promise.race([logout(), timeout])
-      .then(() => console.log("✅ [Profile] logout() resolved"))
-      .catch((e) => console.warn("⚠️ [Profile] logout fallback:", e.message));
+      await Promise.race([logout(), timeout])
+        .then(() => console.log("✅ [Profile] logout() resolved"))
+        .catch((e) => console.warn("⚠️ [Profile] logout fallback:", e.message));
 
-    // Always clear caches regardless
-    localStorage.removeItem("user");
-    sessionStorage.removeItem("user");
-    document.cookie = "hf_user_phone=; Path=/; Max-Age=0";
-    document.cookie = "hf_user_id=; Path=/; Max-Age=0";
+      // 🧹 Clear local cache + cookies
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
+      document.cookie = "hf_user_phone=; Path=/; Max-Age=0";
+      document.cookie = "hf_user_id=; Path=/; Max-Age=0";
 
-    toast.success("You’ve been logged out.");
-    navigator.vibrate?.([60, 40, 120]);
+      success("You’ve been logged out.");
+      navigator.vibrate?.([60, 40, 120]);
 
-    console.log("✅ [Profile] Cache + cookies cleared, redirecting → /login");
-    router.replace("/login");
-  } catch (err) {
-    console.error("💥 [Profile] Logout failed:", err);
-    toast.error("Logout failed — please retry.");
+      console.log("✅ [Profile] Redirecting → /login");
+      router.replace("/login");
+    } catch (err) {
+      console.error("💥 [Profile] Logout failed:", err);
+      error("Logout failed — please retry.");
+    }
   }
-}
 
   /* ------------------------------------------------------------
      🧱 Render
@@ -299,7 +283,6 @@ async function handleLogout() {
             </button>
           )}
 
-          {/* 🚪 Logout Button */}
           <button
             onClick={handleLogout}
             className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium ml-auto"

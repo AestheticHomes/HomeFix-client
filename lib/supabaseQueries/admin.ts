@@ -1,36 +1,39 @@
 /**
- * File: /lib/supabaseQueries/admin.ts
- * Version: v4.5 — HomeFix Admin Query Core 🌿
+ * ============================================================
+ * 📘 FILE: /lib/supabaseQueries/admin.ts
+ * 🔧 MODULE: HomeFix Admin Query Core v4.8 — Unified Toast Edition
  * ------------------------------------------------------------
- * ✅ Uses unified Sonner toast (no title/variant object syntax)
+ * ✅ Uses unified useToast() hook (no direct Sonner imports)
+ * ✅ Prevents duplicate toasts across Admin UI
  * ✅ Type-safe with admin.types.ts
  * ✅ Logs via Edith console wrappers
  * ✅ Dispatches “edith:bookingUpdate” custom event safely
+ * ============================================================
  */
 
 "use client";
 
+import { useToast } from "@/hooks/use-toast";
+import { error, info, log, warn } from "@/lib/console";
 import { supabase } from "@/lib/supabaseClient";
 import type {
   AdminBooking,
   AdminChartPoint,
   AdminStats,
 } from "@/lib/supabaseQueries/admin.types";
-import { toast } from "sonner";
-import { error, info, log, warn } from "@/lib/console";
 
-/* ------------------------------------------------------------
+/* ============================================================
    🧩 Core: Fetch Admin Dashboard Data
------------------------------------------------------------- */
+============================================================ */
 export async function fetchAdminDashboardData(): Promise<{
   stats: AdminStats;
   bookings: AdminBooking[];
   chartData: AdminChartPoint[];
 }> {
+  const { success, error: toastError } = useToast();
+
   try {
-    /* ---------------------------------------
-       1️⃣ Aggregate Counts
-    ---------------------------------------- */
+    // 1️⃣ Aggregate Counts
     const [{ count: sCount }, { count: bCount }, { count: uCount }] =
       await Promise.all([
         supabase.from("services").select("id", { count: "exact", head: true }),
@@ -47,9 +50,7 @@ export async function fetchAdminDashboardData(): Promise<{
       users: uCount || 0,
     };
 
-    /* ---------------------------------------
-       2️⃣ Latest Bookings (Normalized)
-    ---------------------------------------- */
+    // 2️⃣ Latest Bookings
     const { data: latest, error: bErr } = await supabase
       .from("bookings")
       .select(
@@ -63,7 +64,7 @@ export async function fetchAdminDashboardData(): Promise<{
           email,
           user_profiles ( name, phone, email ),
           services ( title )
-        `,
+        `
       )
       .order("created_at", { ascending: false })
       .limit(5);
@@ -97,9 +98,7 @@ export async function fetchAdminDashboardData(): Promise<{
             : b.user_profiles?.phone ?? null,
       })) ?? [];
 
-    /* ---------------------------------------
-       3️⃣ Booking Trends (Monthly)
-    ---------------------------------------- */
+    // 3️⃣ Booking Trends
     const { data: all, error: cErr } = await supabase
       .from("bookings")
       .select("created_at")
@@ -117,24 +116,29 @@ export async function fetchAdminDashboardData(): Promise<{
       }, {}) ?? {};
 
     const chartData: AdminChartPoint[] = Object.entries(grouped).map(
-      ([month, count]) => ({ month, count }),
+      ([month, count]) => ({ month, count })
     );
 
+    log("AdminDashboard", "✅ Dashboard data fetched successfully.");
     return { stats, bookings, chartData };
   } catch (err: any) {
-    console.error("❌ [AdminQueries] fetchAdminDashboardData failed:", err);
-    toast.error(`Error loading admin data: ${err.message || "Unexpected error"}`);
+    error("AdminDashboard", "❌ Fetch failed:", err);
+    toastError(
+      `Error loading admin data: ${err.message || "Unexpected error"}`
+    );
     throw err;
   }
 }
 
-/* ------------------------------------------------------------
-   🧰 Utility: Update Booking Status (v4.5 + Edith logging)
------------------------------------------------------------- */
+/* ============================================================
+   🧰 Utility: Update Booking Status (v4.8)
+============================================================ */
 export async function updateBookingStatus(
   id: number,
-  newStatus: string,
+  newStatus: string
 ): Promise<boolean> {
+  const { success, error: toastError, info: toastInfo } = useToast();
+
   log("Bookings", `Attempting status update → ${id} → ${newStatus}`);
 
   try {
@@ -147,25 +151,25 @@ export async function updateBookingStatus(
 
     if (dbError) {
       error("Bookings", "Supabase update error:", dbError.message);
-      toast.error(`Update failed: ${dbError.message}`);
+      toastError(`Update failed: ${dbError.message}`);
       return false;
     }
 
     if (!data) {
       warn("Bookings", "No rows updated for booking:", id);
-      toast.warning(`Booking not found for ID #${id}`);
+      toastInfo(`Booking not found for ID #${id}`);
       return false;
     }
 
-    info("Bookings", `✅ Booking #${id} updated →`, newStatus);
-    toast.success(`Booking #${id} updated — status: ${newStatus}`);
+    info("Bookings", `✅ Booking #${id} updated → ${newStatus}`);
+    success(`Booking #${id} updated — status: ${newStatus}`);
 
-    // Dispatch a global Edith event for live Admin UI
+    // 🪶 Dispatch a global Edith event
     try {
       window.dispatchEvent(
         new CustomEvent("edith:bookingUpdate", {
           detail: { id, status: newStatus, ts: Date.now() },
-        }),
+        })
       );
     } catch (evtErr) {
       warn("Edith", "Failed to dispatch bookingUpdate event:", evtErr);
@@ -174,7 +178,9 @@ export async function updateBookingStatus(
     return true;
   } catch (err: any) {
     error("Bookings", "Unexpected exception:", err);
-    toast.error(`Unexpected error: ${err.message || "Could not update booking"}`);
+    toastError(
+      `Unexpected error: ${err.message || "Could not update booking"}`
+    );
     return false;
   }
 }

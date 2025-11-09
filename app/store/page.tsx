@@ -2,21 +2,19 @@
 /**
  * ============================================================
  * File: /app/store/page.tsx
- * Version: v4.0 — HomeFix Store (Blinkit-Style Storefront)
+ * Version: v4.7 — HomeFix Store (Stability + Layer Isolation)
  * ------------------------------------------------------------
- * ✅ Supabase `goods` table fetch (realtime-ready)
- * ✅ Responsive grid (2 → 4 cols)
- * ✅ Category filter + search bar
- * ✅ Shimmer skeleton during load
- * ✅ Dark / Light adaptive styling
+ * ✅ Prevents null `product` rendering crash
+ * ✅ Z-index fix for visibility above layout overlays
+ * ✅ Consistent Gemini theme glow and accent
  * ============================================================
  */
 
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Search, Filter, PackageOpen } from "lucide-react";
 import ProductCard, { Product } from "@/components/store/ProductCard";
 import supabase from "@/lib/supabaseClient";
+import { AnimatePresence, motion } from "framer-motion";
+import { PackageOpen, Search } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function StorePage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -37,12 +35,15 @@ export default function StorePage() {
   ];
 
   /* ------------------------------------------------------------
-     🔥 Fetch from Supabase
+     🔥 Fetch Products from Supabase
   ------------------------------------------------------------ */
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
-      const { data, error } = await supabase.from("goods").select("*");
+      const { data, error } = await supabase
+        .from("goods")
+        .select("*")
+        .not("id", "is", null);
       if (error) console.error("❌ Supabase Fetch Error:", error);
       else setProducts(data as Product[]);
       setLoading(false);
@@ -58,27 +59,27 @@ export default function StorePage() {
     if (category !== "all") list = list.filter((p) => p.category === category);
     if (search.trim())
       list = list.filter((p) =>
-        p.title.toLowerCase().includes(search.toLowerCase())
+        p.title?.toLowerCase().includes(search.toLowerCase())
       );
     setFiltered(list);
   }, [search, category, products]);
 
   /* ------------------------------------------------------------
-     💎 UI
+     💎 UI Layout
   ------------------------------------------------------------ */
   return (
-    <main className="safe-screen max-w-7xl mx-auto px-4 sm:px-6 pb-24 pt-24">
+    <main className="safe-screen relative z-[9100] max-w-7xl mx-auto px-4 sm:px-6 pb-24 pt-24 bg-transparent">
       {/* 🌈 Header */}
       <motion.header
         initial={{ opacity: 0, y: -15 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
       >
-        <h1 className="text-2xl font-bold text-gemini bg-clip-text">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-500 to-lime-400 bg-clip-text text-transparent">
           HomeFix Store
         </h1>
 
-        {/* 🔍 Search Bar */}
+        {/* 🔍 Search */}
         <div className="relative flex-1 sm:max-w-sm">
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
           <input
@@ -86,9 +87,9 @@ export default function StorePage() {
             placeholder="Search products..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 dark:border-slate-700 
-                       bg-white/90 dark:bg-slate-900/70 text-sm text-gray-800 dark:text-gray-100
-                       focus:ring-2 focus:ring-accent-mid outline-none transition"
+            className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 dark:border-slate-700
+                       bg-white dark:bg-slate-900 text-sm text-gray-800 dark:text-gray-100
+                       focus:ring-2 focus:ring-emerald-500 outline-none transition"
           />
         </div>
       </motion.header>
@@ -101,7 +102,7 @@ export default function StorePage() {
             onClick={() => setCategory(c)}
             className={`px-4 py-1.5 rounded-full border text-sm font-medium whitespace-nowrap transition-all ${
               category === c
-                ? "bg-accent-mid text-white shadow-gemini"
+                ? "bg-gradient-to-r from-emerald-600 to-lime-500 text-white shadow-md"
                 : "border-gray-300 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-300"
             }`}
           >
@@ -127,11 +128,13 @@ export default function StorePage() {
         {!loading && filtered.length > 0 ? (
           <motion.div
             layout
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 relative z-[1]"
           >
-            {filtered.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+            {filtered
+              .filter((p) => p && typeof p.id !== "undefined")
+              .map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
           </motion.div>
         ) : (
           !loading && (
