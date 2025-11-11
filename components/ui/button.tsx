@@ -1,30 +1,41 @@
 "use client";
 /**
- * File: /components/ui/button.tsx
- * Purpose: Final type-safe motion-enabled button for HomeFix India.
- * Fixes prop conflicts between React + Framer Motion.
+ * ============================================================
+ * 🎨 EdithButton — HomeFix UI Core v7.4
+ * ------------------------------------------------------------
+ * ✅ Type-safe (React + Framer Motion)
+ * ✅ Light & Dark adaptive theme
+ * ✅ Edith glow + depth transitions
+ * ✅ Icon / loading support
+ * ============================================================
  */
 
-import * as React from "react";
+import clsx from "clsx";
 import { motion, type HTMLMotionProps } from "framer-motion";
 import { Loader2 } from "lucide-react";
-import clsx from "clsx";
+import * as React from "react";
 
-/**
- * Combined type — safely merges React + Framer props
- */
+/* ------------------------------------------------------------
+   🔧 Types
+------------------------------------------------------------ */
 type MergedButtonProps = HTMLMotionProps<"button"> &
   React.ButtonHTMLAttributes<HTMLButtonElement> & {
     icon?: React.ElementType;
     isLoading?: boolean;
-    variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
-    size?: "sm" | "md" | "lg";
-    children?: React.ReactNode; // 🔧 override to resolve MotionValue conflicts
+    variant?:
+      | "primary"
+      | "secondary"
+      | "outline"
+      | "ghost"
+      | "danger"
+      | "destructive";
+    size?: "sm" | "md" | "lg" | "icon";
+    children?: React.ReactNode;
   };
 
-/**
- * Motion + Tailwind + Accessible Button Component
- */
+/* ------------------------------------------------------------
+   🎨 Edith Button
+------------------------------------------------------------ */
 export const Button = React.forwardRef<HTMLButtonElement, MergedButtonProps>(
   (
     {
@@ -41,26 +52,40 @@ export const Button = React.forwardRef<HTMLButtonElement, MergedButtonProps>(
     },
     ref
   ) => {
-    const baseStyles =
-      "inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] select-none";
+    /* ------------------------------------------------------------
+       🌗 Theme Styles (Edith-aware)
+       Uses custom CSS variables:
+       --edith-primary, --edith-surface, --edith-text
+       These can be defined in globals.css or Tailwind config.
+    ------------------------------------------------------------ */
+
+    const baseStyles = clsx(
+      "inline-flex items-center justify-center font-medium rounded-2xl select-none relative",
+      "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--edith-accent)] focus-visible:ring-offset-2",
+      "transition-all duration-200 active:scale-[0.98]",
+      disabled && "opacity-60 cursor-not-allowed"
+    );
 
     const variants: Record<string, string> = {
       primary:
-        "bg-green-600 text-white hover:bg-green-700 focus-visible:ring-green-500 shadow-sm hover:shadow-md",
+        "bg-[var(--edith-primary)] text-[var(--edith-on-primary)] shadow-[0_2px_10px_rgba(90,93,240,0.35)] hover:shadow-[0_3px_14px_rgba(90,93,240,0.45)] dark:shadow-[0_2px_10px_rgba(236,110,207,0.3)] hover:dark:shadow-[0_3px_14px_rgba(236,110,207,0.45)]",
       secondary:
-        "bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600 focus-visible:ring-slate-400",
+        "bg-[var(--edith-surface)] text-[var(--edith-text)] border border-[var(--edith-border)] hover:bg-[var(--edith-surface-hover)]",
       outline:
-        "border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-slate-100 hover:bg-gray-100 dark:hover:bg-slate-800 focus-visible:ring-slate-400",
+        "border border-[var(--edith-border)] text-[var(--edith-text)] hover:bg-[var(--edith-surface-hover)] dark:hover:bg-[var(--edith-surface-dark-hover)]",
       ghost:
-        "bg-transparent text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 focus-visible:ring-slate-400",
+        "bg-transparent text-[var(--edith-text)] hover:bg-[var(--edith-surface-hover)] dark:hover:bg-[var(--edith-surface-dark-hover)]",
       danger:
-        "bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500",
+        "bg-red-600 text-white hover:bg-red-700 shadow-[0_2px_8px_rgba(220,38,38,0.35)]",
+      destructive:
+        "bg-gradient-to-r from-red-500 to-rose-600 text-white hover:from-red-600 hover:to-rose-700 shadow-[0_2px_8px_rgba(220,38,38,0.35)]",
     };
 
     const sizes: Record<string, string> = {
       sm: "px-3 py-1.5 text-sm",
       md: "px-4 py-2 text-base",
       lg: "px-6 py-3 text-lg",
+      icon: "p-2 w-10 h-10 justify-center",
     };
 
     const showIcon = isLoading || Icon;
@@ -70,20 +95,30 @@ export const Button = React.forwardRef<HTMLButtonElement, MergedButtonProps>(
         ref={ref}
         type={type}
         whileTap={{ scale: disabled ? 1 : 0.96 }}
-        whileHover={{ scale: disabled ? 1 : 1.02 }}
+        whileHover={{
+          scale: disabled ? 1 : 1.02,
+          y: disabled ? 0 : -1,
+          boxShadow: disabled ? undefined : "0 6px 12px rgba(90,93,240,0.25)",
+        }}
         disabled={disabled || isLoading}
         onClick={onClick}
         className={clsx(
           baseStyles,
           variants[variant],
           sizes[size],
-          disabled && "opacity-60 cursor-not-allowed",
+          "transition-shadow ease-out",
           className
         )}
         {...props}
       >
+        {/* Left Icon / Loader */}
         {showIcon && (
-          <span className="mr-2 inline-flex items-center justify-center">
+          <span
+            className={clsx(
+              "inline-flex items-center justify-center",
+              children ? "mr-2" : ""
+            )}
+          >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
@@ -91,7 +126,9 @@ export const Button = React.forwardRef<HTMLButtonElement, MergedButtonProps>(
             )}
           </span>
         )}
-        <span>{children}</span>
+
+        {/* Label */}
+        {children && <span className="whitespace-nowrap">{children}</span>}
       </motion.button>
     );
   }

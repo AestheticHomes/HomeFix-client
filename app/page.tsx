@@ -1,35 +1,41 @@
 "use client";
-import React, { useEffect, useRef, useState, useMemo } from "react";
-import {
-  motion,
-  useScroll,
-  useTransform,
-  useSpring,
-} from "framer-motion";
-import dynamic from "next/dynamic";
-import Link from "next/link";
-import Image from "next/image";
+/**
+ * =============================================================
+ * HomePage v4.2 — Gemini Unified Theme 🌗
+ * -------------------------------------------------------------
+ * ✅ True theme sync (no hardcoded gray/surface colors)
+ * ✅ Brand gradients kept (#5A5DF0 → #EC6ECF)
+ * ✅ Smooth transitions & shimmer maintained
+ * ✅ Works with global CSS variables (v6.1+)
+ * =============================================================
+ */
+
 import InstallFAB from "@/components/InstallFAB";
-import ServicesSection from "@/components/ServicesSection";
+import { motion, useScroll, useSpring, useTransform } from "framer-motion";
+import dynamic from "next/dynamic";
+import Image from "next/image";
+import Link from "next/link";
+import Footer from "@/components/ui/Footer";
+import { useEffect, useRef, useState } from "react";
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
 // 🎬 Local animations
+import civilAnim from "./animations/civil.json";
+import diyAnim from "./animations/diy.json";
+import electricAnim from "./animations/electric.json";
 import fixAnim from "./animations/fix.json";
 import interiorAnim from "./animations/interior.json";
 import paintAnim from "./animations/paint.json";
-import electricAnim from "./animations/electric.json";
-import diyAnim from "./animations/diy.json";
-import civilAnim from "./animations/civil.json";
 
 /* -------------------------------------------------------------------------- */
 /* 🌈 SHIMMER                                                                 */
 /* -------------------------------------------------------------------------- */
 const Shimmer = ({ height = "100%" }: { height?: string }) => (
   <div
-    className="relative overflow-hidden bg-gray-200 dark:bg-slate-700 rounded-xl"
+    className="relative overflow-hidden rounded-xl bg-[var(--surface-light)] dark:bg-[var(--surface-dark)]"
     style={{ height }}
   >
-    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 dark:via-white/10 to-transparent animate-[shimmer_1.6s_infinite]" />
+    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 dark:via-white/10 to-transparent animate-[shimmer_1.6s_infinite]" />
     <style jsx>{`
       @keyframes shimmer {
         0% {
@@ -53,7 +59,6 @@ function HeroVideoSequence() {
   const [blocked, setBlocked] = useState(false);
   const startedRef = useRef(false);
 
-  // attempt autoplay immediately
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -64,7 +69,6 @@ function HeroVideoSequence() {
     v.play().catch(() => setBlocked(true));
   }, []);
 
-  // fallback: start after 20s if browser blocked autoplay
   useEffect(() => {
     const timer = setTimeout(() => {
       const v = videoRef.current;
@@ -76,7 +80,6 @@ function HeroVideoSequence() {
     return () => clearTimeout(timer);
   }, []);
 
-  // pause/resume on scroll
   useEffect(() => {
     const unsubscribe = scrollY.onChange((y: number) => {
       const v = videoRef.current;
@@ -119,7 +122,7 @@ function HeroVideoSequence() {
       </video>
 
       <motion.div
-        className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/50 pointer-events-none"
+        className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40 pointer-events-none"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1.4 }}
@@ -193,7 +196,7 @@ function LazyYouTube({ src, title }: { src: string; title: string }) {
   return (
     <div
       ref={ref}
-      className="relative rounded-2xl overflow-hidden w-full md:w-[560px] aspect-video bg-black shadow-xl"
+      className="relative rounded-2xl overflow-hidden w-full md:w-[560px] aspect-video bg-[var(--surface-dark)] shadow-xl"
     >
       {!loaded && <Shimmer />}
       {visible ? (
@@ -208,7 +211,12 @@ function LazyYouTube({ src, title }: { src: string; title: string }) {
         />
       ) : (
         <>
-          <Image src={thumb} alt={title} fill className="object-cover opacity-80" />
+          <Image
+            src={thumb}
+            alt={title}
+            fill
+            className="object-cover opacity-80"
+          />
           <div className="absolute inset-0 flex items-center justify-center">
             <button
               aria-label={`Play ${title}`}
@@ -238,19 +246,48 @@ export default function HomePage() {
   });
 
   return (
-    <div className="flex flex-col items-center overflow-x-hidden bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-slate-100 w-full">
+    <div
+      className="flex flex-col items-center overflow-x-hidden w-full 
+                    bg-[var(--surface-light)] dark:bg-[var(--surface-dark)]
+                    text-[var(--text-primary-light)] dark:text-[var(--text-primary-dark)]
+                    transition-colors duration-500"
+    >
       {/* HERO */}
       <HeroVideoSequence />
 
       {/* SERVICES */}
       <section className="py-20 px-4 grid gap-8 md:grid-cols-3 max-w-6xl w-full">
         {[
-          { name: "Home Repairs", tagline: "Quick Fixes & Maintenance", anim: fixAnim },
-          { name: "Interior Design", tagline: "Modern Modular Spaces", anim: interiorAnim },
-          { name: "Painting & Finishes", tagline: "Vibrant Walls, Lasting Impressions", anim: paintAnim },
-          { name: "Electrical Works", tagline: "Safe & Smart Wiring", anim: electricAnim },
-          { name: "DIY Inspirations", tagline: "Learn, Build, Create", anim: diyAnim },
-          { name: "Civil & Renovation", tagline: "Foundations & Transformations", anim: civilAnim },
+          {
+            name: "Home Repairs",
+            tagline: "Quick Fixes & Maintenance",
+            anim: fixAnim,
+          },
+          {
+            name: "Interior Design",
+            tagline: "Modern Modular Spaces",
+            anim: interiorAnim,
+          },
+          {
+            name: "Painting & Finishes",
+            tagline: "Vibrant Walls, Lasting Impressions",
+            anim: paintAnim,
+          },
+          {
+            name: "Electrical Works",
+            tagline: "Safe & Smart Wiring",
+            anim: electricAnim,
+          },
+          {
+            name: "DIY Inspirations",
+            tagline: "Learn, Build, Create",
+            anim: diyAnim,
+          },
+          {
+            name: "Civil & Renovation",
+            tagline: "Foundations & Transformations",
+            anim: civilAnim,
+          },
         ].map((s, i) => (
           <motion.div
             key={s.name}
@@ -259,17 +296,25 @@ export default function HomePage() {
             viewport={{ once: true }}
             transition={{ delay: i * 0.15 }}
             whileHover={{ scale: 1.05 }}
-            className="relative group rounded-2xl overflow-hidden bg-white dark:bg-slate-800 shadow-lg hover:shadow-2xl border border-transparent hover:border-[#9B5CF8]/40 transition-all duration-500"
+            className="relative group rounded-2xl overflow-hidden
+                       bg-[var(--surface-light)] dark:bg-[var(--surface-dark)]
+                       shadow-lg hover:shadow-2xl border border-transparent hover:border-[#9B5CF8]/40
+                       transition-all duration-500"
           >
-            <motion.div
-              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-[#5A5DF0]/10 to-[#EC6ECF]/10 blur-2xl"
-            />
+            <motion.div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-[#5A5DF0]/10 to-[#EC6ECF]/10 blur-2xl" />
             <div className="relative p-6 flex flex-col items-center text-center z-10">
               <div className="relative w-28 h-28 mb-2">
-                <Lottie animationData={s.anim} loop autoplay className="absolute inset-0" />
+                <Lottie
+                  animationData={s.anim}
+                  loop
+                  autoplay
+                  className="absolute inset-0"
+                />
               </div>
-              <h3 className="text-xl font-semibold mt-2 text-[#5A5DF0] dark:text-[#EC6ECF]">{s.name}</h3>
-              <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">{s.tagline}</p>
+              <h3 className="text-xl font-semibold mt-2 text-[#5A5DF0] dark:text-[#EC6ECF]">
+                {s.name}
+              </h3>
+              <p className="text-sm mt-1 opacity-80">{s.tagline}</p>
             </div>
             <motion.div
               className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-[#5A5DF0] to-[#EC6ECF]"
@@ -279,17 +324,24 @@ export default function HomePage() {
         ))}
       </section>
 
-      {/* DIY */}
+      {/* DIY SECTION */}
       <motion.section
         style={{ y: diyY }}
-        className="relative bg-gray-100 dark:bg-slate-800 py-24 w-full px-4 transition-colors duration-500"
+        className="relative py-24 w-full px-4 transition-colors duration-500
+                   bg-[var(--surface-light)] dark:bg-[var(--surface-dark)]"
       >
         <h2 className="text-3xl font-bold text-center mb-10 text-[#5A5DF0] dark:text-[#EC6ECF]">
           DIY Inspirations
         </h2>
         <div className="flex flex-col md:flex-row gap-8 justify-center items-center">
-          <LazyYouTube src="https://www.youtube.com/embed/DeSDjjicGWY" title="DIY Project Ideas" />
-          <LazyYouTube src="https://www.youtube.com/embed/S9dvDU5RmQU" title="HomeFix Project Reel" />
+          <LazyYouTube
+            src="https://www.youtube.com/embed/DeSDjjicGWY"
+            title="DIY Project Ideas"
+          />
+          <LazyYouTube
+            src="https://www.youtube.com/embed/S9dvDU5RmQU"
+            title="HomeFix Project Reel"
+          />
         </div>
       </motion.section>
 
@@ -318,9 +370,7 @@ export default function HomePage() {
       </motion.section>
 
       <InstallFAB />
-      <footer className="py-8 text-center text-gray-500 dark:text-gray-400 text-sm border-t border-gray-200 dark:border-slate-700 w-full">
-        © {new Date().getFullYear()} HomeFix India · Built with ❤️ in Chennai
-      </footer>
+      <Footer />
     </div>
   );
 }

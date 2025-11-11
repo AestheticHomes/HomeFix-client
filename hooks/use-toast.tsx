@@ -2,51 +2,76 @@
 /**
  * ============================================================
  * 🪶 FILE: /hooks/use-toast.tsx
- * VERSION: v4.7 — Edith Adaptive Toast Engine 🌙☀️
+ * VERSION: v5.0 — Edith SafeViewport Toast Engine 🌗
  * ------------------------------------------------------------
- * ✅ Single-instance toast system (no duplicates)
- * ✅ Dark/Light adaptive background + text color
- * ✅ Always above header (z-[9999])
- * ✅ API: toast.success / toast.error / toast.info
+ * ✅ Always within header/navbar safe region
+ * ✅ Auto theme-adaptive (dark/light)
+ * ✅ Dynamic top offset = var(--header-h)
+ * ✅ Dynamic bottom guard = var(--mbnav-h)
+ * ✅ Smooth fade/slide animation
  * ============================================================
  */
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { toast as sonner, Toaster } from "sonner";
 
 export function ToastProvider() {
+  // 🔄 Keep top offset synced with CSS vars
+  useEffect(() => {
+    const updateOffset = () => {
+      const headerH =
+        parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue(
+            "--header-h"
+          )
+        ) || 64;
+      const topOffset = headerH + 12; // little breathing room
+      document.documentElement.style.setProperty(
+        "--toast-safe-top",
+        `${topOffset}px`
+      );
+    };
+    updateOffset();
+    window.addEventListener("resize", updateOffset);
+    return () => window.removeEventListener("resize", updateOffset);
+  }, []);
+
   return (
     <Toaster
       position="top-center"
+      offset="var(--toast-safe-top, 76px)"
       toastOptions={{
         style: {
           borderRadius: "12px",
           padding: "14px 18px",
           fontSize: "0.95rem",
-          zIndex: 9999,
           fontWeight: 500,
+          zIndex: 90, // stays below header z[70]+10 safety margin
           transition: "all 0.3s ease",
+          margin: "6px 0",
+          maxWidth: "min(92vw, 400px)",
         },
         className:
-          "shadow-lg dark:bg-zinc-900 dark:text-zinc-100 bg-white text-zinc-900",
+          "shadow-xl backdrop-blur-xl bg-white/80 dark:bg-zinc-900/80 text-zinc-900 dark:text-zinc-100 border border-black/5 dark:border-white/5",
       }}
+      closeButton
       richColors
       expand
+      duration={2600}
+      visibleToasts={3}
     />
   );
 }
 
 export function useToast() {
-  // Track last message to prevent duplicate triggers
   const lastToastRef = useRef<string | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const showToast = useCallback(
     (message: string, type: "success" | "error" | "info" = "info") => {
       if (!message) return;
-
-      // 🔁 Prevent duplicate identical messages for 2s
       if (lastToastRef.current === message) return;
+
       lastToastRef.current = message;
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(
@@ -54,18 +79,19 @@ export function useToast() {
         2000
       );
 
-      // 🎨 Adaptive theme check
       const theme = document.documentElement.classList.contains("dark")
         ? "dark"
         : "light";
 
       const baseStyle = {
-        background: theme === "dark" ? "#18181b" : "#f9fafb",
-        color: theme === "dark" ? "#f3f4f6" : "#111827",
+        background:
+          theme === "dark" ? "rgba(24,24,27,0.9)" : "rgba(255,255,255,0.95)",
+        color: theme === "dark" ? "#fafafa" : "#111827",
         border:
           theme === "dark"
             ? "1px solid rgba(255,255,255,0.08)"
             : "1px solid rgba(0,0,0,0.08)",
+        backdropFilter: "blur(8px)",
       };
 
       switch (type) {

@@ -1,22 +1,17 @@
 "use client";
 /**
- * Sidebar v10.0 — HomeFix Gemini Continuum Stable Edition 🌌
+ * Sidebar v10.5 — HomeFix Gemini Continuum Unified 🌗
  * ------------------------------------------------------------
- * ✅ Removed horizontal scrollbars
- * ✅ Smooth spring animation (no jerk)
- * ✅ Correct logout with Supabase & context refresh
- * ✅ Avatar uses real user initials from context/localStorage
- * ✅ Visual polish: subtle hover glow & soft reflections
+ * ✅ Full integration with globals.css v6.1+ palette
+ * ✅ True-light / Gemini-dark base with readable text
+ * ✅ Smooth spring animation & no overflow flicker
+ * ✅ Hover glow retains Edith gradient energy
  */
 
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/lib/supabaseClient";
 import { motion } from "framer-motion";
-import dynamic from "next/dynamic";
-import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-
 import {
   Box,
   Calculator,
@@ -31,6 +26,9 @@ import {
   ShoppingCart,
   Store,
 } from "lucide-react";
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 
 const ThemeToggle = dynamic(() => import("@/components/ThemeToggle"), {
   ssr: false,
@@ -39,7 +37,7 @@ const ThemeToggle = dynamic(() => import("@/components/ThemeToggle"), {
 const NAV = [
   { href: "/", label: "Home", Icon: Home },
   { href: "/services", label: "Services", Icon: ClipboardList },
-  { href: "/bookings", label: "Bookings", Icon: CalendarDays },
+  { href: "/my-space", label: "Bookings", Icon: CalendarDays },
   {
     href: "/estimator",
     label: "Online Estimator",
@@ -55,31 +53,24 @@ const NAV = [
 export default function Sidebar() {
   const { collapsed, setCollapsed } = useSidebar();
   const { user: contextUser } = useUser();
-
   const [user, setUser] = useState<{ name?: string; phone?: string } | null>(
     null
   );
   const widthPx = collapsed ? 80 : 256;
 
-  /* ------------------------------------------------------------
-     🧠 Hydrate user info from context/localStorage
-  ------------------------------------------------------------ */
+  /* 🧠 Hydrate user */
   useEffect(() => {
     const cached = localStorage.getItem("user");
-    if (contextUser) {
-      setUser(contextUser);
-    } else if (cached) {
+    if (contextUser) setUser(contextUser);
+    else if (cached)
       try {
         setUser(JSON.parse(cached));
       } catch {
         localStorage.removeItem("user");
       }
-    }
   }, [contextUser]);
 
-  /* ------------------------------------------------------------
-     🚪 Logout handler (Supabase + Client clear)
-  ------------------------------------------------------------ */
+  /* 🚪 Logout */
   const handleLogout = useCallback(async () => {
     try {
       await supabase.auth.signOut();
@@ -93,13 +84,11 @@ export default function Sidebar() {
     }
   }, []);
 
-  /* ------------------------------------------------------------
-     🎨 UI & Animation
-  ------------------------------------------------------------ */
   const avatarLetter = user?.name?.[0]?.toUpperCase() || "G";
 
   return (
     <motion.aside
+      data-theme-transition
       role="complementary"
       aria-expanded={!collapsed}
       layout
@@ -112,17 +101,20 @@ export default function Sidebar() {
       }}
       onMouseEnter={() => collapsed && setCollapsed(false)}
       onMouseLeave={() => setCollapsed(true)}
+      style={{
+        background: "var(--sidebar-surface)",
+        color: "var(--sidebar-text)",
+        transition: "background 0.4s ease, color 0.4s ease",
+      }}
       className={`
-        relative flex flex-col h-[calc(100vh-64px)]
-        overflow-y-auto overflow-x-hidden
-        border-r border-[#9B5CF8]/30
-        bg-gradient-to-b from-[#F8F7FF] via-[#F3EEFF] to-[#EEE9FF]
-        dark:from-[#0D0A24] dark:via-[#19123A] dark:to-[#221651]
-        shadow-[inset_0_0_25px_rgba(155,92,248,0.1)]
-        backdrop-blur-2xl transition-all duration-500
-      `}
+    relative flex flex-col h-[calc(100vh-64px)]
+    overflow-y-auto overflow-x-hidden
+    border-r border-[#9B5CF8]/25
+    shadow-[inset_0_0_20px_rgba(155,92,248,0.08)]
+    backdrop-blur-xl transition-all duration-500
+  `}
     >
-      {/* 🌈 Energy Flow Band */}
+      {/* 🌈 Energy Glow Band */}
       <motion.div
         className="absolute inset-y-0 left-0 w-[4px] rounded-r-full pointer-events-none"
         animate={{
@@ -135,14 +127,13 @@ export default function Sidebar() {
             "0 0 20px rgba(236,110,207,0.4)",
           ],
         }}
-        transition={{ repeat: Infinity, duration: 5.5, ease: "easeInOut" }}
+        transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
       />
 
       {/* ✨ Header */}
       <div
-        className="relative flex items-center justify-center px-4 py-4 border-b border-[#9B5CF8]/25 
-                   bg-white/60 dark:bg-[#141026]/40 backdrop-blur-xl
-                   shadow-[0_0_10px_rgba(155,92,248,0.08)]"
+        className="relative flex items-center justify-center px-4 py-4 border-b border-[#9B5CF8]/20 
+                   bg-surface-light/80 dark:bg-surface-dark/70 backdrop-blur-xl"
       >
         <motion.button
           aria-label="Toggle sidebar"
@@ -151,19 +142,22 @@ export default function Sidebar() {
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           transition={{ type: "spring", stiffness: 240, damping: 18 }}
-          className="absolute -right-3 top-5 z-50 rounded-full bg-white dark:bg-slate-900 border
-                     border-slate-300 dark:border-slate-700 shadow-md p-1 hover:border-[#9B5CF8]/40
-                     hover:bg-[#F8F6FF]/80 dark:hover:bg-[#1A143A]/60 transition-all duration-300"
+          className="absolute -right-3 top-5 z-50 rounded-full 
+                     bg-surface-light dark:bg-surface-dark 
+                     border border-slate-200 dark:border-slate-700 
+                     shadow-md p-1 hover:border-[#9B5CF8]/40
+                     hover:bg-[#F4F2FF]/80 dark:hover:bg-[#1A143A]/60
+                     transition-all duration-300"
         >
           {collapsed ? (
             <ChevronRight
               size={18}
-              className="text-slate-600 dark:text-slate-300"
+              className="text-gray-600 dark:text-gray-300"
             />
           ) : (
             <ChevronLeft
               size={18}
-              className="text-slate-600 dark:text-slate-300"
+              className="text-gray-600 dark:text-gray-300"
             />
           )}
         </motion.button>
@@ -171,7 +165,7 @@ export default function Sidebar() {
 
       {/* 🧭 Navigation */}
       <div className="flex-1 px-2 py-4 space-y-1 relative select-none">
-        {NAV.map(({ href, label, Icon, badge }, index) => (
+        {NAV.map(({ href, label, Icon, badge }) => (
           <motion.div
             key={href}
             whileHover={{ scale: 1.03, x: 3 }}
@@ -180,7 +174,7 @@ export default function Sidebar() {
             <Link
               href={href}
               className="group flex items-center gap-3 px-3 py-2 rounded-xl
-                         text-[#5A5DF0] dark:text-[#EC6ECF]
+                         text-primary-light dark:text-primary-dark
                          hover:bg-gradient-to-r hover:from-[#5A5DF0]/10 hover:to-[#EC6ECF]/10
                          hover:shadow-[0_0_10px_rgba(155,92,248,0.25)]
                          transition-all duration-300 ease-out"
@@ -202,8 +196,8 @@ export default function Sidebar() {
                     <span
                       className={`text-[10px] px-1.5 py-0.5 rounded-md ml-2 ${
                         badge === "Live"
-                          ? "bg-green-500/20 text-green-300"
-                          : "bg-amber-500/20 text-amber-300"
+                          ? "bg-green-500/20 text-green-700 dark:text-green-300"
+                          : "bg-amber-500/20 text-amber-700 dark:text-amber-300"
                       }`}
                     >
                       {badge}
@@ -217,7 +211,7 @@ export default function Sidebar() {
       </div>
 
       {/* 👤 Footer */}
-      <div className="border-t border-[#9B5CF8]/25 bg-white/60 dark:bg-[#1B1635]/40 backdrop-blur-lg p-4 relative">
+      <div className="border-t border-[#9B5CF8]/20 bg-surface-light/80 dark:bg-surface-dark/70 backdrop-blur-lg p-4">
         <div className="flex items-center justify-between mb-2">
           <motion.div
             whileHover={{ scale: 1.08 }}
@@ -243,10 +237,10 @@ export default function Sidebar() {
           {!collapsed && (
             <div className="flex items-center justify-between flex-1 ml-3">
               <div className="flex flex-col leading-tight">
-                <span className="text-sm font-medium text-[#232056] dark:text-white">
+                <span className="text-sm font-medium">
                   {user?.name || "Guest"}
                 </span>
-                <span className="text-xs text-[#6C6AA8] dark:text-[#A19FCC]">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
                   Member
                 </span>
               </div>
@@ -259,8 +253,8 @@ export default function Sidebar() {
           <motion.button
             whileTap={{ scale: 0.96 }}
             onClick={handleLogout}
-            className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-lg text-[#EC6ECF]
-                       hover:bg-[#EC6ECF]/10 transition-all"
+            className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-lg 
+                       text-[#EC6ECF] hover:bg-[#EC6ECF]/10 transition-all"
           >
             <LogOut size={16} />
             {!collapsed && <span className="text-sm">Logout</span>}

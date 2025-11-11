@@ -1,40 +1,33 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* ============================================================
-   🌗 HOMEFIX UNIVERSAL THEME — Edith Continuum v5.0
+   🌗 HOMEFIX INDIA — EDITH CONTINUUM v7.0
    ------------------------------------------------------------
-   ✅ Unified light/dark color model
-   ✅ Safe z-index and backdrop layering
-   ✅ Store / Product cards fully opaque under dark mode
-   ✅ Reduced redundant rules (v4.4 + v4.8 + v4.9 merged)
+   ✅ Unified color + surface + Aurora logic
+   ✅ Theme-aware variables (light/dark parity)
+   ✅ Clean gradient inheritance for all surfaces
+   ✅ Built-in Gemini Aurora Continuum pulse system
    ============================================================ */
 
-/* ---------------------- Base Layer ----------------------- */
+/* ------------------------------------------------------------
+   🌐 BASE TYPOGRAPHY & GLOBAL BEHAVIOR
+------------------------------------------------------------ */
 @layer base {
   html {
+    color-scheme: light;
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     transition: background-color 0.4s ease, color 0.4s ease;
   }
-
-  body {
-    @apply font-sans antialiased text-gray-900 dark:text-gray-100 transition-colors duration-500 ease-out;
-    background-color: #ffffff;
-    background-image: linear-gradient(to bottom right, #fafafa, #f0f2ff);
-    background-attachment: fixed;
+  html.dark {
+    color-scheme: dark;
   }
 
-  :root.dark body {
-    background-color: #0f0c29;
-    background-image: linear-gradient(
-      180deg,
-      #0f0c29 0%,
-      #302b63 50%,
-      #24243e 100%
-    );
+  body {
+    @apply font-sans transition-colors duration-500 ease-out;
+    color: var(--text-primary);
+    background: var(--surface-base);
   }
 
   h1,
@@ -42,199 +35,273 @@
   h3,
   h4,
   h5,
-  h6,
-  p,
-  label,
-  span,
-  div {
-    @apply transition-colors duration-200 text-gray-900 dark:text-gray-100;
+  h6 {
+    font-weight: 700;
+    color: var(--text-primary);
   }
 
-  .text-muted {
-    @apply text-gray-600 dark:text-gray-400;
-  }
-  .text-subtle {
-    @apply text-gray-500 dark:text-gray-300;
+  p,
+  span,
+  div,
+  label,
+  small,
+  strong,
+  b {
+    color: var(--text-secondary);
   }
 
   a {
-    @apply text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors;
+    color: var(--accent-success);
+    transition: color 0.3s ease;
+  }
+  a:hover {
+    color: var(--accent-primary);
   }
 }
 
-/* ------------------- Z-Index Hierarchy ------------------- */
-:root {
-  --z-navbar: 7000;
-  --z-fab: 8000;
-  --z-drawer: 9000;
-  --z-toast: 9500;
-  --z-modal: 9999;
+/* ------------------------------------------------------------
+   🎨 THEME TOKEN SYSTEM — Edith + Gemini Unified
+------------------------------------------------------------ */
+@layer base {
+  :root {
+    /* SURFACES */
+    --surface-base: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+    --surface-card: linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%);
+    --surface-overlay: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+
+    /* TEXT */
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+
+    /* ACCENTS */
+    --accent-primary: #5a5df0;
+    --accent-secondary: #ec6ecf;
+    --accent-tertiary: #9b5cf8;
+    --accent-success: #22c55e;
+    --accent-danger: #ef4444;
+    --accent-warning: #f59e0b;
+    --accent-info: #3b82f6;
+
+    /* DEPTH + EFFECTS */
+    --shadow-elevation: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --selection-bg: rgba(91, 115, 255, 0.25);
+    --selection-text: #111827;
+
+    /* Layout constants */
+    --header-h: 72px;
+    --mbnav-h: 72px;
+
+    /* Edith UI tokens */
+    --edith-primary: var(--accent-primary);
+    --edith-accent: var(--accent-primary);
+    --edith-on-primary: #ffffff;
+    --edith-surface: #ffffff;
+    --edith-surface-hover: #f4f5ff;
+    --edith-border: #e3e4ea;
+    --edith-text: #1c1c1e;
+  }
+
+  html.dark {
+    --surface-base: linear-gradient(180deg, #0b0a1a 0%, #17152f 100%);
+    --surface-card: linear-gradient(180deg, #181828 0%, #1f2035 100%);
+    --surface-overlay: linear-gradient(180deg, #1b1d32 0%, #2a2d4f 100%);
+
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+
+    --accent-primary: #ec6ecf;
+    --accent-secondary: #5a5df0;
+    --accent-tertiary: #9b5cf8;
+    --accent-success: #4ade80;
+    --accent-danger: #f87171;
+    --accent-warning: #fbbf24;
+    --accent-info: #60a5fa;
+
+    --shadow-elevation: 0 4px 16px rgba(0, 0, 0, 0.6);
+    --selection-bg: rgba(236, 110, 207, 0.3);
+    --selection-text: #f8fafc;
+
+    /* Edith dark */
+    --edith-primary: var(--accent-primary);
+    --edith-accent: var(--accent-primary);
+    --edith-on-primary: #1a1b1e;
+    --edith-surface: #1b1b1e;
+    --edith-surface-hover: #2a2a2d;
+    --edith-border: #2f2f33;
+    --edith-text: #e8e8ee;
+  }
 }
 
-nav,
-.mobile-dock,
-.bottom-nav {
-  z-index: var(--z-navbar) !important;
+/* ------------------------------------------------------------
+   🌈 GEMINI AURORA CONTINUUM — Animated Pulse
+------------------------------------------------------------ */
+@keyframes aurora-pulse {
+  0% {
+    --aurora-gradient: linear-gradient(
+      to bottom,
+      var(--accent-primary),
+      var(--accent-secondary)
+    );
+  }
+  50% {
+    --aurora-gradient: linear-gradient(
+      to bottom,
+      var(--accent-secondary),
+      var(--accent-tertiary)
+    );
+  }
+  100% {
+    --aurora-gradient: linear-gradient(
+      to bottom,
+      var(--accent-primary),
+      var(--accent-secondary)
+    );
+  }
 }
 
-/* ------------------- Theme Colors ------------------- */
-:root {
-  --color-bg-light: #ffffff;
-  --color-bg-dark: #0d1117;
-  --color-text-light: #0f172a;
-  --color-text-dark: #f9fafb;
-  --color-border-light: #e5e7eb;
-  --color-border-dark: #1f2937;
+.gemini-aurora {
+  background: var(--aurora-gradient);
+  animation: aurora-pulse 8s ease-in-out infinite;
+  background-size: 100% 200%;
 }
 
-/* Light / Dark modes */
-html[data-theme="light"],
-:root[data-theme="light"] {
-  color-scheme: light;
-  background-color: var(--color-bg-light);
-  color: var(--color-text-light);
+/* ------------------------------------------------------------
+   🌫️ DEPTH, GLOW & BACKGROUND ATMOSPHERE
+------------------------------------------------------------ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 20%,
+    rgba(255, 255, 255, 0.2),
+    rgba(0, 0, 0, 0.05)
+  );
+  opacity: 0.4;
+  pointer-events: none;
+}
+html.dark body::before {
+  background: radial-gradient(
+    circle at 50% 30%,
+    rgba(255, 255, 255, 0.05),
+    rgba(0, 0, 0, 0.7)
+  );
+  opacity: 0.25;
 }
 
-html[data-theme="dark"],
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  background-color: var(--color-bg-dark);
-  color: var(--color-text-dark);
-}
+/* ------------------------------------------------------------
+   🧭 COMPONENTS (cards, buttons, scrollbars, etc.)
+------------------------------------------------------------ */
 
-/* ------------------- Cards / Modals ------------------- */
+/* Cards / Modals */
 .card,
+.booking-card,
+.product-card,
 .drawer,
 .modal,
 .sheet {
-  @apply shadow-lg transition-colors duration-200 rounded-2xl;
-  backdrop-filter: saturate(150%) blur(10px);
-}
-
-/* ------------------- Inputs ------------------- */
-input,
-textarea,
-select {
-  @apply w-full px-3 py-2 rounded-lg border outline-none;
-  background-color: transparent !important;
-  color: inherit !important;
-}
-
-/* ------------------- Toasts ------------------- */
-[data-sonner-toast] {
-  border-radius: 0.75rem !important;
-  font-weight: 500 !important;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
-  z-index: var(--z-toast) !important;
-  padding: 0.85rem 1rem !important;
-}
-
-/* ============================================================
-   🛍️ HOMEFIX STORE — Unified Styling (v5.0)
-   ------------------------------------------------------------
-   Combines v4.4 + v4.8 + v4.9 for a clean, non-transparent,
-   bright and tactile storefront aesthetic.
-   ============================================================ */
-
-/* 🏠 Store Page Container */
-.page-store {
-  position: relative;
-  isolation: isolate;
-  background: none !important;
-  z-index: 9100;
-}
-
-/* 💎 Product Grid */
-.store-grid,
-[data-store-root],
-#store-root {
-  background: var(--color-bg-light);
-}
-:root.dark .store-grid,
-:root[data-theme="dark"] .store-grid {
-  background: linear-gradient(180deg, #0b0a1a 0%, #14122a 80%, #191437 100%);
-}
-
-/* 🧱 Product Card */
-.product-card {
+  background: var(--surface-card);
+  color: var(--text-primary);
   border-radius: 1.25rem;
-  overflow: hidden;
-  transition: all 0.35s ease;
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-  mix-blend-mode: normal !important;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-elevation);
+  transition: all 0.4s ease;
 }
-
-[data-theme="dark"] .product-card {
-  background-color: #141625 !important;
-  color: #f8fafc !important;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+html.dark .card,
+html.dark .booking-card,
+html.dark .product-card,
+html.dark .drawer,
+html.dark .modal,
+html.dark .sheet {
+  border-color: rgba(255, 255, 255, 0.08);
 }
-
+.card:hover,
+.booking-card:hover,
 .product-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(155, 92, 248, 0.25);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+}
+html.dark .card:hover,
+html.dark .booking-card:hover,
+html.dark .product-card:hover {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.7);
 }
 
-/* 🖼️ Product Image */
-.product-card img {
-  opacity: 1 !important;
-  filter: brightness(1.12) contrast(1.12) saturate(1.05);
-  transition: filter 0.3s ease, transform 0.3s ease;
-}
-.product-card:hover img {
-  transform: scale(1.05);
-  filter: brightness(1.2) contrast(1.15);
-}
-
-/* 🧾 Typography */
-.product-card h3 {
-  font-weight: 600;
-  font-size: 0.95rem;
-  line-height: 1.3;
-  color: inherit;
-}
-.product-card p,
-.product-card span {
+/* Buttons */
+.btn {
   font-size: 0.8rem;
-  color: inherit;
-}
-.product-card .price {
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: #059669;
-}
-[data-theme="dark"] .product-card .price {
-  color: #34d399;
-}
-
-/* 🪶 Buttons */
-.product-card button {
-  border-radius: 0.75rem;
+  font-weight: 500;
+  border-radius: 0.6rem;
+  padding: 0.45rem 0.9rem;
   transition: all 0.25s ease;
 }
-.product-card button:hover {
-  filter: brightness(1.05);
-}
-.product-card .add-btn {
-  background: linear-gradient(to right, #059669, #10b981);
+.btn-primary {
+  background: linear-gradient(
+    90deg,
+    var(--accent-primary),
+    var(--accent-secondary)
+  );
   color: #fff;
 }
-.product-card .add-btn:disabled {
-  opacity: 0.6;
-  background: #4b5563;
+.btn-primary:hover {
+  filter: brightness(1.1);
 }
-[data-theme="dark"] .product-card .add-btn {
-  background: linear-gradient(to right, #34d399, #10b981);
+.btn-outline {
+  border: 1px solid color-mix(in srgb, currentColor 60%, transparent);
+  background: transparent;
+}
+.btn-outline:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
 }
 
-/* 🩶 Out of stock */
-.product-card .out-badge {
-  background: #ef4444;
-  color: #fff;
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 6px;
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(155, 92, 248, 0.35);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(155, 92, 248, 0.55);
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(155, 92, 248, 0.45);
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(155, 92, 248, 0.7);
+}
+
+/* ------------------------------------------------------------
+   ✨ SELECTION & AUTO CONTRAST
+------------------------------------------------------------ */
+::selection {
+  background: var(--selection-bg);
+  color: var(--selection-text);
+}
+
+[data-contrast="auto"],
+.card,
+.booking-card,
+.product-card,
+button {
+  color: color-mix(in srgb, currentColor 90%, black 10%);
+}
+html.dark [data-contrast="auto"],
+html.dark .card,
+html.dark .booking-card,
+html.dark .product-card,
+html.dark button {
+  color: color-mix(in srgb, currentColor 90%, white 10%);
+}
+
+/* ------------------------------------------------------------
+   🩵 UNIVERSAL TRANSITION
+------------------------------------------------------------ */
+html,
+body,
+aside,
+main,
+[data-theme-transition] {
+  transition: background 0.4s ease, color 0.4s ease;
 }

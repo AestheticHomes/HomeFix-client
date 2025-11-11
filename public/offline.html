@@ -1,8 +1,46 @@
+<!-- /public/offline.html -->
 <!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8" /><title>Offline</title></head>
-<body style="text-align:center;padding:2rem;">
-  <h2>You're offline</h2>
-  <p>Check your internet connection and try again.</p>
-</body>
+<html lang="en" class="dark:bg-[#0b0a1a] bg-[#fafafa]">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Offline | HomeFix India</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100dvh;
+        text-align: center;
+        color: #5a5df0;
+        background: var(--surface-light, #fafafa);
+      }
+      .card {
+        padding: 2rem;
+        border-radius: 1.25rem;
+        background: rgba(255, 255, 255, 0.7);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        max-width: 320px;
+      }
+      .card.dark {
+        background: rgba(15, 12, 41, 0.6);
+        color: #ec6ecf;
+      }
+      img {
+        width: 80px;
+        height: 80px;
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card dark">
+      <img src="/icons/icon-192x192.png" alt="HomeFix Logo" />
+      <h2>You're Offline</h2>
+      <p>Please check your connection and try again.</p>
+      <small>HomeFix India — Powered by Edith Technologies</small>
+    </div>
+  </body>
 </html>

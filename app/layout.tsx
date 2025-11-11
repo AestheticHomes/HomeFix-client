@@ -1,38 +1,49 @@
-import "./globals.css";
+import { RootShell } from "@/components/layout";
 import type { Metadata, Viewport } from "next";
-import RootShell from "@/components/RootShell";
 import { ThemeProvider } from "next-themes";
-import { Suspense } from "react";
+import "./globals.css";
 
-/* ------------------------------------------------------------ */
-/* 🧭 Metadata + Viewport                                       */
-/* ------------------------------------------------------------ */
+/* ------------------------------------------------------------
+   🧭 Metadata + Viewport — Edith SafeViewport v10.1
+------------------------------------------------------------ */
 export const metadata: Metadata = {
   title: "HomeFix India",
-  description: "Smart home services & interior platform by Aesthetic Homes",
+  description:
+    "Smart home services & interior design platform by Aesthetic Homes.",
   manifest: "/manifest.json",
   icons: {
     icon: "/icons/icon-192x192.png",
     apple: "/icons/icon-512x512.png",
   },
+  applicationName: "HomeFix India",
   appleWebApp: {
     capable: true,
     title: "HomeFix India",
     statusBarStyle: "black-translucent",
   },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#5A5DF0",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#5A5DF0" },
+    { media: "(prefers-color-scheme: dark)", color: "#EC6ECF" },
+  ],
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
 };
 
-/* ------------------------------------------------------------ */
-/* 🌿 Root Layout (Server Component)                            */
-/* ------------------------------------------------------------ */
+/* ------------------------------------------------------------
+   🌗 Root Layout (Server) — SafeViewport host
+   ------------------------------------------------------------
+   ✅ RootShell owns header/sidebar/nav/scroll
+   ✅ Body safe for PWA + iOS
+   ✅ No double padding or hidden overflow
+------------------------------------------------------------ */
 export default function RootLayout({
   children,
 }: {
@@ -40,14 +51,27 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* ✅ PWA Essentials */}
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/icons/icon-192x192.png" sizes="192x192" />
+        <link rel="apple-touch-icon" href="/icons/icon-512x512.png" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="application-name" content="HomeFix India" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+      </head>
+
       <body
         suppressHydrationWarning
-        className="relative min-h-screen antialiased overflow-x-hidden
-          bg-gradient-to-br from-[#F8F7FF] via-[#F2F0FF] to-[#EAE8FF]
-          dark:from-[#0D0B2B] dark:via-[#1B1545] dark:to-[#201A55]
-          text-[#2A2A66] dark:text-[#E0D6FF]
-          selection:bg-[#9B5CF8]/20 selection:text-[#5A5DF0]
-          transition-colors duration-500"
+        className="antialiased
+                   bg-[var(--surface-light)] dark:bg-[var(--surface-dark)]
+                   text-[var(--text-primary-light)] dark:text-[var(--text-primary-dark)]
+                   selection:bg-[var(--edith-selection-bg-light)] selection:text-[var(--edith-selection-text-light)]
+                   dark:selection:bg-[var(--edith-selection-bg-dark)] dark:selection:text-[var(--edith-selection-text-dark)]
+                   transition-colors duration-500"
       >
         <ThemeProvider
           attribute="class"
@@ -55,9 +79,8 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Suspense fallback={null}>
-            <RootShell>{children}</RootShell>
-          </Suspense>
+          {/* 🧱 RootShell provides SafeViewport + scroll + toasts */}
+          <RootShell>{children}</RootShell>
         </ThemeProvider>
       </body>
     </html>

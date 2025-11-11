@@ -1,51 +1,82 @@
 # ===============================================================
-# 📁 repo-tree-clean.ps1 — Generate a clean HomeFix repo tree
+# 📁 repo-tree-clean.ps1 — Accurate HomeFix Repo Tree Generator
 # ===============================================================
-# ✅ Excludes: node_modules, .next, .vercel, .git, .turbo, dist, build
-# ✅ Includes: only actual project source (app/, components/, public/, etc.)
-# ✅ Outputs: repo-tree.txt for easy sharing
+# ✅ Shows nested structure with precise file counts
+# ✅ Excludes build/system directories
+# ✅ Outputs both console view (colored) and text log
 # ===============================================================
 
 param(
   [string]$Root = ".",
-  [int]$Depth = 5,
+  [int]$Depth = 6,
   [string]$OutFile = "repo-tree.txt"
 )
 
 Write-Host "📦 Scanning repository tree at: $Root ..." -ForegroundColor Cyan
 
-# Define excluded folder names
+# ---------------------------------------------------------------
+# 🧱 Excluded directories
+# ---------------------------------------------------------------
 $ExcludeDirs = @("node_modules", ".next", ".vercel", ".git", ".turbo", "dist", "build")
 
-function Show-Tree($Path, $Indent = "", $Level = 1, $MaxDepth = 5) {
+# ---------------------------------------------------------------
+# 🧮 Recursive tree renderer
+# ---------------------------------------------------------------
+function Show-Tree {
+  param(
+    [string]$Path,
+    [string]$Indent = "",
+    [int]$Level = 1,
+    [int]$MaxDepth = 6
+  )
+
   if ($Level -gt $MaxDepth) { return }
 
-  # Get subfolders excluding the unwanted directories
-  $folders = Get-ChildItem -Directory -LiteralPath $Path -ErrorAction SilentlyContinue |
+  # Safely list directories and files
+  $dirs = @(Get-ChildItem -Directory -LiteralPath $Path -ErrorAction SilentlyContinue |
              Where-Object { $ExcludeDirs -notcontains $_.Name } |
-             Sort-Object Name
+             Sort-Object Name)
 
-  # Get files
-  $files = Get-ChildItem -File -LiteralPath $Path -ErrorAction SilentlyContinue |
-           Sort-Object Name
+  $files = @(Get-ChildItem -File -LiteralPath $Path -ErrorAction SilentlyContinue |
+              Sort-Object Name)
 
-  foreach ($folder in $folders) {
-    $itemCount = (Get-ChildItem -LiteralPath $folder.FullName -Force -ErrorAction SilentlyContinue |
-                  Where-Object { $ExcludeDirs -notcontains $_.Name } |
-                  Measure-Object).Count
-    "$Indent📂 $($folder.Name)  ($itemCount items)" | Tee-Object -FilePath $OutFile -Append
-    Show-Tree -Path $folder.FullName -Indent ("$Indent   ") -Level ($Level + 1) -MaxDepth $MaxDepth
+  foreach ($dir in $dirs) {
+    $children = @(Get-ChildItem -LiteralPath $dir.FullName -ErrorAction SilentlyContinue |
+                   Where-Object { $ExcludeDirs -notcontains $_.Name })
+    $itemCount = $children.Count
+
+    $line = "$Indent📂 $($dir.Name)  ($itemCount items)"
+    Write-Host $line -ForegroundColor Cyan
+    $line | Out-File -FilePath $OutFile -Encoding utf8 -Append
+
+    # Recurse deeper
+    Show-Tree -Path $dir.FullName -Indent ("$Indent   ") -Level ($Level + 1) -MaxDepth $MaxDepth
   }
 
   foreach ($file in $files) {
-    "$Indent📄 $($file.Name)" | Tee-Object -FilePath $OutFile -Append
+    $line = "$Indent📄 $($file.Name)"
+    Write-Host $line -ForegroundColor Gray
+    $line | Out-File -FilePath $OutFile -Encoding utf8 -Append
   }
 }
 
-# Clear previous log
-if (Test-Path $OutFile) { Remove-Item $OutFile -Force }
+# ---------------------------------------------------------------
+# 🧹 Prepare and start scan
+# ---------------------------------------------------------------
+if (Test-Path $OutFile) {
+  Remove-Item $OutFile -Force
+}
+
+Write-Host ""
+"📍 Root Path: $(Resolve-Path $Root)" | Out-File $OutFile -Encoding utf8 -Append
+"📏 Scan Depth: $Depth" | Out-File $OutFile -Encoding utf8 -Append
+"🕶️ Excluded: $($ExcludeDirs -join ', ')" | Out-File $OutFile -Encoding utf8 -Append
+"" | Out-File $OutFile -Encoding utf8 -Append
 
 Show-Tree -Path $Root -MaxDepth $Depth
 
-Write-Host "`n✅ Clean tree written to: $OutFile" -ForegroundColor Green
-Write-Host "   You can now share the contents of $OutFile with Edith for analysis." -ForegroundColor Yellow
+# ---------------------------------------------------------------
+# ✅ Final summary
+# ---------------------------------------------------------------
+Write-Host "`n✅ Repository tree written to: $OutFile" -ForegroundColor Green
+Write-Host "   You can now open $OutFile or share it with Edith for validation." -ForegroundColor Yellow

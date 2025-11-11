@@ -1,34 +1,44 @@
 {
   "name": "HomeFix India",
   "short_name": "HomeFix",
-  "description": "Instant Home Repair & Interior Services across Chennai and Nellore",
+  "description": "Instant Home Repair & Interior Design Services by Aesthetic Homes — Chennai & Nellore.",
   "id": "/",
-  "start_url": "/?source=pwa",
+  "start_url": "/?utm_source=pwa",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#ffffff",
-  "theme_color": "#16a34a",
+
+  "background_color": "#0b0a1a",
+  "theme_color": "#5A5DF0",
+
   "lang": "en",
   "dir": "ltr",
-  "categories": ["home", "services", "interior", "repairs"],
+  "categories": ["home", "services", "interior", "repairs", "design"],
 
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-maskable.png",
       "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-mono.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "monochrome"
     }
   ],
 
@@ -37,29 +47,46 @@
       "src": "/images/screenshot-home.png",
       "sizes": "1280x720",
       "type": "image/png",
-      "form_factor": "wide"
+      "form_factor": "wide",
+      "label": "HomeFix Web Dashboard"
     },
     {
       "src": "/images/screenshot-mobile.png",
       "sizes": "720x1280",
       "type": "image/png",
-      "form_factor": "narrow"
+      "form_factor": "narrow",
+      "label": "Mobile Booking Flow"
     }
   ],
 
-  "prefer_related_applications": false,
   "shortcuts": [
     {
       "name": "Book a Service",
       "short_name": "Book",
-      "url": "/bookings",
-      "icons": [{ "src": "/icons/shortcut-book.png", "sizes": "96x96" }]
+      "url": "/my-space",
+      "description": "View or schedule your bookings",
+      "icons": [
+        {
+          "src": "/icons/shortcut-book.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "My Profile",
       "short_name": "Profile",
       "url": "/profile",
-      "icons": [{ "src": "/icons/shortcut-profile.png", "sizes": "96x96" }]
+      "description": "Access your profile & settings",
+      "icons": [
+        {
+          "src": "/icons/shortcut-profile.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
-  ]
+  ],
+
+  "prefer_related_applications": false
 }

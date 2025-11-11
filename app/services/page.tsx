@@ -2,27 +2,23 @@
 /**
  * =============================================================
  * File: /app/services/page.tsx
- * Module: HomeFix Services Explorer v3.6 — Aurora+ Edition 🌈
+ * Module: HomeFix Services Explorer v4.0 — Gemini Unified 🌗
  * -------------------------------------------------------------
- * ✅ Live categories + services from Supabase
- * ✅ Integrated ServiceCartDrawer (no redirect)
- * ✅ Mobile-first UX with animated transitions
- * ✅ Smooth loading + empty states
- * ✅ Uses Zustand cartStore + geolocation
+ * ✅ True theme sync (no hardcoded bg/text)
+ * ✅ Smooth transitions preserved
+ * ✅ Hero + Cards auto-adapt to global theme
+ * ✅ Brand gradients intact
  * =============================================================
  */
 
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
-import { ArrowUpRight } from "lucide-react";
 import InstallFAB from "@/components/InstallFAB";
-import supabase from "@/lib/supabaseClient";
 import ServiceCartDrawer from "@/components/ui/ServiceCartDrawer";
+import supabase from "@/lib/supabaseClient";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
-/* ------------------------------------------------------------
-   📦 Types
------------------------------------------------------------- */
 interface ServiceItem {
   id: number;
   title: string;
@@ -36,9 +32,6 @@ interface ServiceItem {
   type?: string;
 }
 
-/* ------------------------------------------------------------
-   🧱 Component
------------------------------------------------------------- */
 export default function ServicesPage() {
   const [categories, setCategories] = useState<ServiceItem[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
@@ -47,9 +40,7 @@ export default function ServicesPage() {
   const [activeService, setActiveService] = useState<ServiceItem | null>(null);
   const [loading, setLoading] = useState(true);
 
-  /* ------------------------------------------------------------
-     🧠 Fetch all categories + services from Supabase
-  ------------------------------------------------------------ */
+  /* ------------------------------------------------------------ */
   useEffect(() => {
     async function fetchServices() {
       try {
@@ -77,48 +68,37 @@ export default function ServicesPage() {
     fetchServices();
   }, []);
 
-  /* ------------------------------------------------------------
-     🔍 Filter active services for selected category
-  ------------------------------------------------------------ */
   const filteredServices = services.filter(
     (s) =>
-      s.category?.toLowerCase().trim() ===
-      selected?.title?.toLowerCase().trim()
+      s.category?.toLowerCase().trim() === selected?.title?.toLowerCase().trim()
   );
 
-  /* ------------------------------------------------------------
-     🧩 Drawer Controls
-  ------------------------------------------------------------ */
   const openDrawer = (service: ServiceItem) => {
     setActiveService(service);
     setDrawerOpen(true);
   };
-
   const closeDrawer = () => {
     setDrawerOpen(false);
     setTimeout(() => setActiveService(null), 250);
   };
 
-  /* ------------------------------------------------------------
-     🎨 UI Layout
-  ------------------------------------------------------------ */
+  /* ------------------------------------------------------------ */
   return (
     <main
       className="relative flex flex-col items-center justify-start min-h-[calc(100vh-72px)]
-                 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-gray-100
-                 pt-20 px-4 md:px-8 overflow-hidden"
+                 bg-[var(--surface-light)] dark:bg-[var(--surface-dark)]
+                 text-[var(--text-primary-light)] dark:text-[var(--text-primary-dark)]
+                 pt-20 px-4 md:px-8 transition-colors duration-500 overflow-hidden"
     >
-      {/* ✨ Loading state */}
+      {/* ✨ Loading State */}
       {loading && (
         <div className="flex flex-col items-center justify-center h-[50vh] text-center">
           <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#9B5CF8] border-t-transparent mb-4"></div>
-          <p className="text-sm text-slate-500">
-            Fetching HomeFix services…
-          </p>
+          <p className="text-sm opacity-70">Fetching HomeFix services…</p>
         </div>
       )}
 
-      {/* 🌈 Loaded state */}
+      {/* 🌈 Loaded State */}
       {!loading && selected && (
         <>
           {/* 🖼️ Hero Section */}
@@ -128,8 +108,8 @@ export default function ServicesPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="relative w-full max-w-6xl rounded-3xl overflow-hidden shadow-xl
-                       bg-gradient-to-br from-[#F8F7FF] via-white to-[#EAE8FF]
-                       dark:from-[#0D0B2B] dark:via-[#1B1545] dark:to-[#1B1545]/90 mb-10"
+                       bg-[var(--surface-light)] dark:bg-[var(--surface-dark)] mb-10
+                       transition-colors duration-500"
           >
             <div className="relative w-full h-[300px] md:h-[420px] overflow-hidden">
               <Image
@@ -176,7 +156,8 @@ export default function ServicesPage() {
                 whileTap={{ scale: 0.97 }}
                 onClick={() => setSelected(cat)}
                 className={`relative flex flex-col items-center justify-center p-4 rounded-2xl shadow-md
-                            bg-white dark:bg-slate-800 border transition-all duration-300
+                            bg-[var(--surface-light)] dark:bg-[var(--surface-dark)]
+                            border transition-all duration-300
                             ${
                               selected.id === cat.id
                                 ? "border-[#9B5CF8]/60 shadow-lg"
@@ -190,7 +171,7 @@ export default function ServicesPage() {
                   height={40}
                   className="mb-2"
                 />
-                <span className="font-medium text-gray-800 dark:text-gray-200 text-center text-sm">
+                <span className="font-medium text-center text-sm">
                   {cat.title}
                 </span>
               </motion.button>
@@ -213,7 +194,9 @@ export default function ServicesPage() {
                     key={srv.id}
                     whileHover={{ scale: 1.02 }}
                     transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                    className="group relative bg-white dark:bg-slate-800 rounded-2xl shadow-md overflow-hidden border border-slate-200 dark:border-slate-700"
+                    className="group relative rounded-2xl shadow-md overflow-hidden border
+                               bg-[var(--surface-light)] dark:bg-[var(--surface-dark)]
+                               border-slate-200/40 dark:border-slate-700/40 transition-all duration-300"
                   >
                     <div className="relative h-48 w-full">
                       <Image
@@ -234,7 +217,7 @@ export default function ServicesPage() {
                       </div>
                     </div>
                     <div className="p-4">
-                      <p className="text-sm text-slate-600 dark:text-slate-300 mb-2 line-clamp-2">
+                      <p className="text-sm opacity-80 mb-2 line-clamp-2">
                         {srv.description}
                       </p>
                       <button
@@ -250,7 +233,7 @@ export default function ServicesPage() {
                   </motion.div>
                 ))
               ) : (
-                <p className="col-span-full text-center text-slate-500 text-sm">
+                <p className="col-span-full text-center opacity-70 text-sm">
                   No active services found under {selected.title}.
                 </p>
               )}

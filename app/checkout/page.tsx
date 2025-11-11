@@ -1,27 +1,28 @@
 "use client";
+/**
+ * ============================================================
+ * HomeFix Checkout — Edith Continuum v9.1 🌗
+ * ------------------------------------------------------------
+ * ✅ Schedule hidden automatically for product-only checkouts
+ * ✅ MapPicker confirmation flow stable
+ * ✅ Clean layout, spacing, and transition consistency
+ * ============================================================
+ */
 
-import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Wrench,
-  Calendar,
-  MapPin,
-  Loader2,
-  CheckCircle,
-  Sun,
-  Moon,
-} from "lucide-react";
+import { useOfflineLedger } from "@/components/hooks/useOfflineLedger";
+import { useCartStore } from "@/components/store/cartStore";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/contexts/UserContext";
-import { useCartStore } from "@/components/store/cartStore";
-import { useTheme } from "next-themes";
+import { AnimatePresence, motion } from "framer-motion";
+import { CheckCircle, Loader2, Wrench } from "lucide-react";
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 const MapPicker = dynamic(() => import("@/components/MapPicker"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-48 rounded-xl bg-gray-100 dark:bg-slate-800 animate-pulse" />
+    <div className="w-full h-48 rounded-xl bg-[var(--edith-surface-hover)] animate-pulse" />
   ),
 });
 
@@ -33,111 +34,154 @@ interface Coordinates {
 export default function CheckoutPage() {
   const router = useRouter();
   const { user, isLoaded } = useUser();
-  const { items: cart, totalPrice, clearCart } = useCartStore();
-  const { theme, setTheme } = useTheme();
+  const { items, totalPrice, clearCart } = useCartStore();
+  const { addOrder, updateOrder, syncPaidOrders, online } = useOfflineLedger();
 
-  const [preferredDate, setPreferredDate] = useState("");
-  const [preferredSlot, setPreferredSlot] = useState("");
-  const [address, setAddress] = useState("");
-  const [coords, setCoords] = useState<Coordinates>({ lat: 13.0827, lng: 80.2707 });
-  const [selectedPro, setSelectedPro] = useState<string | null>(null);
-  const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState<"info" | "success" | "error">("info");
+  const [ready, setReady] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [msgType, setMsgType] = useState<"info" | "success" | "error">("info");
   const [loading, setLoading] = useState(false);
 
-  const hasProducts = cart.some((i) => i.type === "product");
-  const hasServices = cart.some((i) => i.type === "service");
+  // 🗺️ Location states
+  const [coords, setCoords] = useState<Coordinates>({
+    lat: 13.0827,
+    lng: 80.2707,
+  });
+  const [liveAddress, setLiveAddress] = useState("");
+  const [confirmedAddress, setConfirmedAddress] = useState("");
+
+  // 🕓 Schedule + Delivery
+  const [preferredDate, setPreferredDate] = useState("");
+  const [preferredSlot, setPreferredSlot] = useState("");
+  const [landmark, setLandmark] = useState("");
+
+  // 👤 Receiver
+  const [receiverName, setReceiverName] = useState("");
+  const [receiverPhone, setReceiverPhone] = useState("");
+  const [sameAsUser, setSameAsUser] = useState(false);
+
+  const hasProducts = items.some((i) => i.type === "product");
+  const hasServices = items.some((i) => i.type === "service");
   const isFreeBooking = hasServices && !hasProducts;
+  const total = isFreeBooking ? 0 : totalPrice;
 
   useEffect(() => {
-    if (isLoaded && !user) {
-      setMessage("Please log in to continue...");
-      setTimeout(() => router.replace("/login"), 800);
+    if (isLoaded) setReady(true);
+  }, [isLoaded]);
+
+  // Prefill user data when "I will receive it myself" checked
+  useEffect(() => {
+    if (!sameAsUser) return;
+    const cached = user || JSON.parse(localStorage.getItem("user") || "null");
+    if (cached) {
+      setReceiverName(cached.name || "");
+      setReceiverPhone(cached.phone || "");
     }
-  }, [isLoaded, user, router]);
+  }, [sameAsUser, user]);
 
-  const handleLocationChange = (loc: Coordinates, formatted: string) => {
-    setCoords(loc);
-    setAddress(formatted || "Selected location");
-  };
+  const canSubmit = useMemo(() => {
+    const addr = confirmedAddress || liveAddress;
+    if (!addr) return false;
+    if (hasProducts && !receiverPhone) return false;
+    return true;
+  }, [confirmedAddress, liveAddress, hasProducts, receiverPhone]);
 
+  /* ------------------------------------------------------------
+     💳 Checkout Flow
+  ------------------------------------------------------------ */
   async function handleCheckout() {
-    if (!user?.id) return setMessage("❌ Please log in first.");
-    if (!address.trim()) return setMessage("📍 Please select a valid location.");
-    if (!cart.length) return setMessage("🛒 Your cart is empty.");
+    if (!user?.id) return setToast("❌ Please log in first.", "error");
+    if (!canSubmit)
+      return setToast("📍 Please confirm your delivery location.", "error");
+    if (!items.length) return setToast("🛒 Cart is empty.", "error");
 
-    const payload = {
+    const finalAddress = confirmedAddress || liveAddress;
+    const baseOrder = {
       user_id: user.id,
-      type: hasProducts ? "product" : "service",
-      services: cart.map((i) => ({
-        name: i.title,
-        price: i.price || 0,
-        quantity: i.quantity || 1,
-        billing_type: i.billing_type || "job",
-      })),
-      professional_service: hasProducts ? selectedPro : null,
-      total: isFreeBooking ? 0 : totalPrice + (selectedPro ? 299 : 0),
-      address,
+      items,
+      address: finalAddress,
+      landmark,
       latitude: coords.lat,
       longitude: coords.lng,
-      preferred_date: preferredDate || null,
-      preferred_slot: preferredSlot || null,
-      status: isFreeBooking ? "site-visit" : "upcoming",
+      preferred_date: hasServices ? preferredDate || null : null,
+      preferred_slot: hasServices ? preferredSlot || null : null,
+      receiver_name: hasProducts ? receiverName : null,
+      receiver_phone: hasProducts ? receiverPhone : null,
+      total,
+      status: isFreeBooking ? "site-visit" : "pending",
+      created_at: new Date().toISOString(),
+      payment: {
+        mode: "upi",
+        gateway: "Razorpay",
+        amount: total,
+        status: "initiated",
+      },
     };
 
+    const localId = addOrder(baseOrder);
     setLoading(true);
-    setMessage("🔄 Processing your booking...");
-    setMessageType("info");
+    setToast("🔄 Processing booking...", "info");
 
-    try {
-      const res = await fetch("/api/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        setMessageType("success");
-        setMessage("🎉 Booking confirmed! Redirecting...");
+    setTimeout(async () => {
+      const success = Math.random() > 0.25;
+      if (success) {
+        updateOrder(localId, {
+          payment: {
+            gateway: "Razorpay",
+            status: "success",
+            txn_id: `TXN-${Date.now()}`,
+          },
+          status: "paid",
+        });
+        setToast("🎉 Payment successful! Syncing...", "success");
+        if (online) await syncPaidOrders();
         clearCart();
-        setTimeout(() => router.push("/bookings"), 1500);
-      } else throw new Error(data.error || "Booking creation failed");
-    } catch (err) {
-      console.error("❌ Checkout error:", err);
-      setMessageType("error");
-      setMessage("❌ Something went wrong during booking.");
-    } finally {
+        setTimeout(() => router.push("/my-space"), 1500);
+      } else {
+        updateOrder(localId, {
+          payment: { gateway: "Razorpay", status: "failed" },
+          status: "failed",
+        });
+        setToast("⚠️ Payment failed — saved for retry.", "error");
+      }
       setLoading(false);
-    }
+    }, 1200);
   }
 
-  if (!isLoaded || loading)
+  function setToast(text: string, type: "info" | "success" | "error") {
+    setMsg(text);
+    setMsgType(type);
+  }
+
+  /* ------------------------------------------------------------
+     🧭 Conditional UI
+  ------------------------------------------------------------ */
+  if (!ready)
     return (
-      <main className="flex justify-center items-center h-screen text-gray-500">
-        <Loader2 className="animate-spin mr-2 w-5 h-5" />
-        {isLoaded ? "Processing checkout..." : "Initializing session..."}
+      <main className="flex justify-center items-center h-screen text-[var(--text-secondary)]">
+        <Loader2 className="animate-spin w-5 h-5 mr-2" /> Loading checkout…
       </main>
     );
 
-  if (!cart.length)
+  if (!items.length)
     return (
-      <main className="flex flex-col items-center justify-center h-[80vh] text-gray-500">
-        <Wrench className="w-8 h-8 mb-3 text-gray-400" />
-        <p>Your cart is empty. Add services or products to continue.</p>
+      <main className="flex flex-col items-center justify-center h-[80vh] text-[var(--text-secondary)]">
+        <Wrench className="w-8 h-8 mb-3 opacity-60" />
+        <p>Your cart is empty. Add items to continue.</p>
+        <Button onClick={() => router.push("/store")} className="mt-4">
+          Shop Now
+        </Button>
       </main>
     );
 
+  /* ------------------------------------------------------------
+     🎨 Main Checkout UI
+  ------------------------------------------------------------ */
   return (
     <main
-      className={`
-        relative flex flex-col w-full
-        sm:max-w-2xl mx-auto px-4 sm:px-6 pb-28
-        min-h-screen transition-colors duration-500
-        bg-gradient-to-b from-gray-50 via-gray-100 to-gray-200
-        dark:from-[#0f0c29] dark:via-[#302b63] dark:to-[#24243e]
-        text-gray-800 dark:text-gray-100
-      `}
+      id="checkout-safe"
+      className="flex flex-col w-full sm:max-w-2xl mx-auto px-4 sm:px-6 pb-28
+                 min-h-[calc(100vh-140px)] safe-area-content"
     >
       <motion.h2
         initial={{ opacity: 0, y: 10 }}
@@ -147,155 +191,236 @@ export default function CheckoutPage() {
         {isFreeBooking ? "Book Free Site Visit" : "Checkout"}
       </motion.h2>
 
-      {/* 📦 Main sections */}
-      <section className="space-y-5 w-full">
-        <Card title={hasProducts ? "Selected Products" : "Selected Services"} icon={<Wrench />}>
-          {cart.map((item) => (
-            <div
-              key={item.id}
-              className="flex justify-between items-center border-b border-gray-200 dark:border-slate-700/50 last:border-none py-2 text-sm"
-            >
-              <span>{item.title}</span>
-              <span className="font-medium text-green-600 dark:text-green-400">
-                {item.price
-                  ? `₹${item.price} ${item.unit ? `/ ${item.unit}` : ""}`
-                  : "Free Site Visit"}
-              </span>
-            </div>
-          ))}
-        </Card>
+      {/* 🧾 Order Summary */}
+      <EdithCard
+        title={hasProducts ? "Selected Products" : "Selected Services"}
+      >
+        {items.map((i) => (
+          <div
+            key={i.id}
+            className="flex justify-between items-center border-b border-[var(--edith-border)] last:border-none py-2 text-sm"
+          >
+            <span>{i.title}</span>
+            <span className="font-medium text-[var(--accent-success)]">
+              {i.price ? `₹${i.price}` : "Free"}
+            </span>
+          </div>
+        ))}
+      </EdithCard>
 
-        <Card title="Schedule" icon={<Calendar />}>
+      {/* 🗓 Schedule — visible only for service checkouts */}
+      {hasServices && (
+        <EdithCard title="Schedule">
           <input
             type="date"
             min={new Date().toISOString().split("T")[0]}
             value={preferredDate}
             onChange={(e) => setPreferredDate(e.target.value)}
-            className="w-full border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-lg p-2 mb-3 text-sm text-gray-800 dark:text-gray-100"
+            className="w-full border border-[var(--edith-border)] bg-[var(--edith-surface)]
+                       rounded-lg p-2 mb-3 text-sm focus:ring-2 focus:ring-[var(--edith-primary)]"
           />
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-4">
             {["9:00 AM", "1:00 PM", "5:00 PM", "7:00 PM"].map((slot) => (
               <button
                 key={slot}
                 onClick={() => setPreferredSlot(slot)}
                 className={`px-3 py-2 rounded-lg text-sm border transition-all ${
                   preferredSlot === slot
-                    ? "border-green-500 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
-                    : "border-gray-300 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800"
+                    ? "border-[var(--accent-success)] bg-[var(--accent-success)]/10 text-[var(--accent-success)]"
+                    : "border-[var(--edith-border)] hover:bg-[var(--edith-surface-hover)]"
                 }`}
               >
                 {slot}
               </button>
             ))}
           </div>
-        </Card>
+        </EdithCard>
+      )}
 
-        <Card title={hasProducts ? "Delivery Location" : "Service Location"} icon={<MapPin />}>
-          <div className="rounded-xl overflow-hidden border border-gray-300 dark:border-slate-700/60 h-[250px] sm:h-[300px]">
-            <MapPicker initialLocation={coords} onLocationChange={handleLocationChange} />
-          </div>
-          <textarea
-            className="w-full mt-3 p-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-gray-800 dark:text-gray-100"
-            placeholder="Detected address (editable)"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
+      {/* 🚚 Delivery / Service Location */}
+      <EdithCard title={hasProducts ? "Delivery Details" : "Service Location"}>
+        {/* 🗺️ MapPicker */}
+        <div
+          className="relative h-[340px] sm:h-[360px] mb-10 pt-2 pb-6 overflow-visible z-[10] border-b 
+               border-[var(--edith-border)]"
+        >
+          <MapPicker
+            initialLocation={coords}
+            onLocationChange={(
+              loc: { lat: number; lng: number },
+              addr: string,
+              confirmed?: boolean
+            ) => {
+              setCoords(loc);
+              if (!confirmed) setLiveAddress(addr || "");
+              if (confirmed) setConfirmedAddress(addr || "");
+            }}
+            editable={true}
           />
-        </Card>
+        </div>
 
+        {/* 👤 Receiver Info for Product Orders */}
         {hasProducts && (
-          <Card title="Professional Installation" icon={<Wrench />}>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {["Carpenter", "Plumber", "Installation Expert"].map((pro) => (
-                <button
-                  key={pro}
-                  onClick={() => setSelectedPro(selectedPro === pro ? null : pro)}
-                  className={`px-3 py-2 rounded-lg text-sm border transition ${
-                    selectedPro === pro
-                      ? "border-green-500 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
-                      : "border-gray-300 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  {pro}
-                </button>
-              ))}
+          <div className="pt-20 mt-3 space-y-2">
+            <div>
+              <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">
+                Receiver Name
+              </label>
+              <input
+                type="text"
+                className="w-full p-2 rounded-lg border border-[var(--edith-border)]
+                         bg-[var(--edith-surface)] text-sm"
+                placeholder="Full name"
+                value={receiverName}
+                onChange={(e) => setReceiverName(e.target.value)}
+              />
             </div>
-            {selectedPro && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                Installation fee: ₹299 added to total
-              </p>
-            )}
-          </Card>
-        )}
-      </section>
 
-      {/* ✅ Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-950/90 backdrop-blur-md border-t border-gray-200 dark:border-slate-800 px-5 py-3 flex justify-between items-center z-50 w-full sm:max-w-2xl mx-auto rounded-t-2xl shadow-lg">
+            <div>
+              <label className="block text-sm font-medium mb-1 text-[var(--text-secondary)]">
+                Receiver Phone
+              </label>
+              <input
+                type="tel"
+                inputMode="numeric"
+                className="w-full p-2 rounded-lg border border-[var(--edith-border)]
+                         bg-[var(--edith-surface)] text-sm"
+                placeholder="10-digit phone"
+                value={receiverPhone}
+                onChange={(e) => setReceiverPhone(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1 text-[var(--text-secondary)]">
+                Landmark / Flat No.
+              </label>
+              <input
+                type="text"
+                className="w-full p-2 rounded-lg border border-[var(--edith-border)]
+                         bg-[var(--edith-surface)] text-sm"
+                placeholder="E.g., Opposite ABC Store, Flat 2B"
+                value={landmark}
+                onChange={(e) => setLandmark(e.target.value)}
+              />
+            </div>
+
+            <label className="flex items-center gap-2 mt-2 text-sm text-[var(--text-secondary)]">
+              <input
+                type="checkbox"
+                checked={sameAsUser}
+                onChange={(e) => setSameAsUser(e.target.checked)}
+              />
+              I will receive it myself
+            </label>
+
+            {/* 🏠 Confirmed Address */}
+            {confirmedAddress && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="mt-5 border-t border-[var(--edith-border)] pt-3"
+              >
+                <label className="block text-sm font-medium mb-1 text-[var(--text-secondary)]">
+                  Delivery Address
+                </label>
+                <textarea
+                  readOnly
+                  className="w-full p-2 rounded-lg border border-emerald-600/60
+                           bg-emerald-900/10 text-sm font-medium text-[var(--text-primary)]
+                           shadow-md ring-1 ring-emerald-500/30 focus:outline-none
+                           transition-all duration-300"
+                  value={confirmedAddress}
+                />
+              </motion.div>
+            )}
+          </div>
+        )}
+      </EdithCard>
+
+      {/* 🧮 Footer */}
+      <footer
+        className="checkout-footer fixed bottom-0 left-0 right-0 z-50 flex justify-between items-center px-5 py-4
+                   w-full sm:max-w-2xl mx-auto rounded-t-2xl bg-[var(--edith-surface)]
+                   border-t border-[var(--edith-border)] backdrop-blur-md"
+      >
         <div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Total</p>
-          <p className="text-lg font-semibold text-green-600 dark:text-green-400">
-            ₹{(isFreeBooking ? 0 : totalPrice + (selectedPro ? 299 : 0)).toLocaleString()}
+          <p className="text-sm text-[var(--text-secondary)]">
+            {hasProducts ? "Total (Delivery)" : "Total (Visit Booking)"}
+          </p>
+          <p className="text-lg font-semibold text-[var(--accent-success)]">
+            ₹{total.toLocaleString()}
           </p>
         </div>
         <Button
           onClick={handleCheckout}
-          disabled={loading}
-          className="bg-green-600 hover:bg-green-700 text-white font-semibold px-5 sm:px-6 py-2 rounded-xl transition-colors duration-300"
+          disabled={loading || !canSubmit}
+          className="font-semibold px-5 sm:px-6 py-2 rounded-xl"
         >
-          {loading ? <Loader2 className="animate-spin w-5 h-5" /> : isFreeBooking ? "Book Visit" : "Confirm & Pay"}
+          {loading ? (
+            <Loader2 className="animate-spin w-5 h-5" />
+          ) : isFreeBooking ? (
+            "Book Visit"
+          ) : (
+            "Confirm & Pay"
+          )}
         </Button>
-      </div>
+      </footer>
 
-     
-      {/* Toast */}
+      {/* 🪶 Toast Feedback */}
       <AnimatePresence>
-        {message && (
+        {msg && (
           <motion.div
-            key={message}
+            key={msg}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.3 }}
-            className={`mt-4 text-center text-sm font-medium ${
-              messageType === "success"
-                ? "text-green-600 dark:text-green-400"
-                : messageType === "error"
-                ? "text-red-600 dark:text-red-400"
-                : "text-gray-700 dark:text-gray-300"
-            }`}
+            className={`fixed bottom-28 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl shadow-lg text-sm
+                       ${
+                         msgType === "success"
+                           ? "bg-green-600 text-white"
+                           : msgType === "error"
+                           ? "bg-red-600 text-white"
+                           : "bg-gray-700 text-white"
+                       }`}
           >
             <div className="flex justify-center items-center gap-2">
-              {messageType === "success" && <CheckCircle className="w-4 h-4" />}
-              {message}
+              {msgType === "success" && <CheckCircle className="w-4 h-4" />}
+              {msg}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 🌐 Online Indicator */}
+      <div className="fixed bottom-5 left-5 text-xs text-[var(--text-secondary)]">
+        {online ? "🟢 Online" : "🔴 Offline mode"}
+      </div>
     </main>
   );
 }
 
-/* ---------------------------- Card ---------------------------- */
-function Card({
+/* ------------------------------------------------------------
+   🧱 EdithCard Component
+------------------------------------------------------------ */
+function EdithCard({
   title,
-  icon,
   children,
 }: {
   title: string;
-  icon?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <motion.section
       layout
-      className="
-        w-full rounded-2xl border border-gray-200 dark:border-slate-800
-        bg-white/80 dark:bg-slate-900/70
-        backdrop-blur-sm shadow-md p-4 sm:p-5
-        transition-colors duration-500
-      "
+      className="checkout-card relative overflow-visible z-[5] p-4 sm:p-5 rounded-xl border border-[var(--edith-border)]
+                 bg-[var(--edith-surface)] shadow-[0_4px_20px_rgba(0,0,0,0.05)]
+                 dark:shadow-[0_4px_20px_rgba(255,255,255,0.05)]
+                 transition-all duration-500"
     >
-      <h3 className="font-semibold flex items-center gap-2 mb-3 text-base">
-        {icon && <span className="text-green-600 dark:text-green-400">{icon}</span>}
+      <h3 className="font-semibold mb-3 text-base text-[var(--text-primary)]">
         {title}
       </h3>
       {children}

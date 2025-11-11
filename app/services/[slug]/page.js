@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { ArrowLeft, ArrowUpRight, Loader2 } from "lucide-react";
 import supabase from "@/lib/supabaseClient";
-import UniversalHeader from "@/components/ui/UniversalHeader";
+import UniversalHeader from "@/components/layout/UniversalHeader";
 import ServiceBookDrawer from "@/components/ui/ServiceBookDrawer";
 
 export default function ServiceDetailPage() {

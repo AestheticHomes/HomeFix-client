@@ -1,6 +1,10 @@
+📍 Root Path: D:\HomeFix Repo\HomeFix-Client
+📏 Scan Depth: 6
+🕶️ Excluded: node_modules, .next, .vercel, .git, .turbo, dist, build
+
 📂 .vscode  (1 items)
    📄 settings.json
-📂 app  (18 items)
+📂 app  (16 items)
    📂 animations  (8 items)
       📄 3dKitchen.json
       📄 civil.json
@@ -10,21 +14,22 @@
       📄 interior.json
       📄 map.json
       📄 paint.json
-   📂 api  (14 items)
+   📂 api  (13 items)
       📂 admin  (2 items)
          📂 bookings  (2 items)
             📂 list  (1 items)
+               📄 route.js
             📂 update  (1 items)
+               📄 route.js
          📂 reports  (1 items)
             📂 export  (1 items)
-      📂 auth  (5 items)
-         📂 otp  (1 items)
+               📄 route.js
+      📂 auth  (4 items)
+         📂 phone-otp  (1 items)
             📄 route.js
          📂 send-email-otp  (1 items)
             📄 route.js
-         📂 verify  (1 items)
-            📄 route.js
-         📂 verify-email  (1 items)
+         📂 upsert-user  (1 items)
             📄 route.js
          📂 verify-email-otp  (1 items)
             📄 route.js
@@ -42,19 +47,12 @@
          📄 route.js
       📂 edith  (1 items)
          📄 route.ts
-      📂 goods  (3 items)
-         📂 exports  (1 items)
-            📄 route.js
-         📂 import  (1 items)
-            📄 route.js
-         📄 route.js
+      📂 link-otp-user  (1 items)
+         📄 route.ts
       📂 profile  (1 items)
          📄 route.js
       📂 services  (1 items)
          📄 route.js
-      📂 test  (1 items)
-         📂 admin-create  (1 items)
-            📄 route.js
       📂 test-db  (1 items)
          📄 route.js
       📂 verify-email  (1 items)
@@ -62,22 +60,28 @@
       📄 auth.js
       📄 book.js
       📄 services.js
-   📂 bookings  (2 items)
-      📂 list  (1 items)
-         📄 route.js
-      📄 page.tsx
    📂 cart  (1 items)
-      📄 page.js
-   📂 checkout  (1 items)
       📄 page.tsx
-   📂 devtools  (1 items)
-      📄 page.js
-   📂 edith  (2 items)
-      📄 layout.tsx
+   📂 checkout  (1 items)
       📄 page.tsx
    📂 estimator  (1 items)
       📄 page.tsx
    📂 login  (1 items)
+      📄 page.tsx
+   📂 my-space  (4 items)
+      📂 bookings  (2 items)
+         📂 list  (1 items)
+            📄 route.js
+         📄 page.tsx
+      📂 components  (6 items)
+         📄 BookingCard.tsx
+         📄 BookingsView.tsx
+         📄 OrderCard.tsx
+         📄 OrdersView.tsx
+         📄 TabsBar.tsx
+         📄 ViewToggle.tsx
+      📂 orders  (1 items)
+         📄 page.tsx
       📄 page.tsx
    📂 profile  (1 items)
       📄 page.tsx
@@ -87,18 +91,18 @@
       📄 page.tsx
    📂 settings  (1 items)
       📄 page.tsx
-   📂 studio  (3 items)
-      📄 layout.tsx
-      📄 oldpage.jsx
+   📂 store  (1 items)
+      📄 page.tsx
+   📂 studio  (1 items)
       📄 page.js
    📂 unauthorized  (1 items)
       📄 page.js
-   📂 util  (1 items)
-      📄 sendEmail.js
    📄 globals.css
    📄 layout.tsx
    📄 page.tsx
-📂 components  (38 items)
+📂 components  (28 items)
+   📂 checkout  (1 items)
+      📄 OfflineLedgerDrawer.tsx
    📂 common  (2 items)
       📄 UniPreviewCanvas.jsx
       📄 useAutoFitSvg.js
@@ -127,68 +131,72 @@
       📄 WardrobeRender.jsx
       📄 WardrobeScene3D.jsx
       📄 WardrobeSvg2D.jsx
-   📂 store  (1 items)
+   📂 hooks  (1 items)
+      📄 useOfflineLedger.ts
+   📂 layout  (7 items)
+      📄 index.ts
+      📄 LayoutContent.tsx
+      📄 NavBar.tsx
+      📄 RootShell.tsx
+      📄 SafeViewport.tsx
+      📄 Sidebar.tsx
+      📄 UniversalHeader.tsx
+   📂 ledger  (3 items)
+      📄 OfflineLedger.tsx
+      📄 OfflineLedgerDock.tsx
+      📄 OfflineLedgerDrawer.tsx
+   📂 store  (4 items)
       📄 cartStore.ts
-   📂 studio  (8 items)
+      📄 CategoryRail.tsx
+      📄 ProductCard.tsx
+      📄 ProductQuickView.tsx
+   📂 studio  (6 items)
       📂 store  (1 items)
          📄 plannerStore.js
-      📄 EdithBot.tsx
       📄 PriceHUD.jsx
       📄 RoomPlanner2D_SVG.jsx
       📄 RoomPlanner3D.jsx
       📄 RoomShapeSelector.jsx
       📄 RoomSummary.jsx
-      📄 Toolbar.jsx
-   📂 ui  (18 items)
+   📂 ui  (21 items)
       📄 badge.js
+      📄 button-group-pro.tsx
+      📄 button-group.tsx
       📄 button.tsx
       📄 calendar.js
       📄 card.tsx
       📄 dialog.js
       📄 drawer.tsx
+      📄 edith-tabs.tsx
+      📄 Footer.tsx
       📄 HomeFixLogo.tsx
       📄 label.tsx
+      📄 LiveClimateBar.tsx
       📄 MiniMapPreview.tsx
       📄 progress.js
+      📄 SearchFAB.tsx
       📄 ServiceBookDrawer.tsx
       📄 ServiceCartDrawer.tsx
       📄 switch.tsx
       📄 tabs.js
-      📄 toast.jsx
-      📄 toaster.jsx
-      📄 UniversalHeader.tsx
-      📄 use-toast.js
+      📄 toaster.tsx
    📂 utils  (1 items)
       📄 cadFitView.js
    📄 AuthCenterDrawer.tsx
-   📄 BaseDrawer.tsx
-   📄 BookingDrawer.tsx
-   📄 BookingForm.js
-   📄 Button.jsx
    📄 CartContext.js
    📄 CartDrawer.tsx
-   📄 ClientLayoutWrapper.tsx
-   📄 ClientRoot.tsx
-   📄 Edith.tsx
    📄 HeroCinematicVideo.tsx
    📄 HeroFX.js
    📄 HeroParallax.tsx
    📄 InstallFAB.js
-   📄 LayoutContent.tsx
    📄 MapPicker.tsx
-   📄 ModalCenter.jsx
-   📄 Navbar.jsx
-   📄 NavBar.tsx
    📄 OTPInput.tsx
    📄 PWAInstallButton.js
-   📄 PWAPrompt.tsx
    📄 RateCard.js
-   📄 RootShell.tsx
    📄 ServiceCard.tsx
    📄 ServicesSection.jsx
    📄 SessionHydrator.tsx
    📄 SessionSync.tsx
-   📄 Sidebar.tsx
    📄 ThemeToggle.tsx
    📄 UserProvider.tsx
 📂 contexts  (3 items)
@@ -198,11 +206,12 @@
 📂 edith  (1 items)
    📂 components  (1 items)
       📄 useAssetSync.ts
-📂 hooks  (3 items)
-   📄 use-toast.js
+📂 hooks  (4 items)
+   📄 use-toast.tsx
    📄 useDrawerSafeStyle.ts
+   📄 useOtpManager.ts
    📄 useRoleGuard.js
-📂 lib  (15 items)
+📂 lib  (13 items)
    📂 assets  (1 items)
       📄 homefix-logo.ts
    📂 supabaseQueries  (3 items)
@@ -212,8 +221,6 @@
    📄 bookingUtils.js
    📄 console.ts
    📄 database.types.ts
-   📄 edithCache.ts
-   📄 edithEvents.ts
    📄 goods.js
    📄 roles.ts
    📄 supabaseClient.js
@@ -255,25 +262,28 @@
       📄 rest-version
       📄 storage-migration
       📄 storage-version
-   📂 functions  (7 items)
+   📂 functions  (8 items)
+      📂 dispatch-booking-emails  (1 items)
+         📄 index.ts
       📂 email-queue-worker  (1 items)
+         📄 index.ts
+      📂 functions  (1 items)
+         📂 v1  (0 items)
+      📂 link-otp-user  (1 items)
          📄 index.ts
       📂 notify-booking-status  (1 items)
          📄 index.ts
-      📂 notify-cms-update  (1 items)
-         📄 index.ts
       📂 send-booking-email-core  (1 items)
-         📄 index.ts
-      📂 send-email-otp  (1 items)
          📄 index.ts
       📂 verify-email-otp  (1 items)
          📄 index.ts
       📄 deno.json
-   📂 migrations  (4 items)
+   📂 migrations  (5 items)
       📄 20251013_reset_init.sql
       📄 20251014_cleanup_profiles_table.sql
       📄 20251026_fix_booking_fk_relations.sql
       📄 20251026_triggers_cms_booking_sync.sql
+      📄 20251107_smartmail_v4.sql
    📄 .gitignore
    📄 config.toml
 📂 types  (2 items)
@@ -287,7 +297,7 @@
 📄 components.json
 📄 deno.json
 📄 deno.lock
-📄 gitattributes
+📄 homefix-diff.patch
 📄 HomeFix.code-workspace
 📄 import_map.json
 📄 jsconfig.json
@@ -296,8 +306,11 @@
 📄 next.config.mjs
 📄 package-lock.json
 📄 package.json
-📄 postcss.config.js
+📄 postcss.config.cjs
 📄 repo-tree.ps1
+📄 repo-tree.txt
+📄 supabase-tests-direct.json
 📄 tailwind.config.js
+📄 test.css
 📄 tsconfig.json
 📄 tsconfig.tsbuildinfo

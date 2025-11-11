@@ -1,36 +1,28 @@
 "use client";
 /**
- * UserContext v6.0 — Quantum Session Authority ⚡
+ * ============================================================
+ * UserContext v7.0 — Edith Continuum “Persistent Authority” 🌗
  * ------------------------------------------------------------
- * ✅ Instant Supabase auth sync (via onAuthStateChange)
- * ✅ Fixes stale session hydration (Edge-safe)
- * ✅ Restores user automatically on refresh or tab reopen
- * ✅ Broadcasts `hf:session-sync` events across tabs
- * ✅ Supports both localStorage & sessionStorage (remember toggle)
- * ✅ Compatible with Supabase v2 Auth helpers
+ * ✅ No flicker, no rehydration loops
+ * ✅ True persistence (only resets on logout)
+ * ✅ Instant revalidation on login / logout
+ * ✅ Cross-tab sync via BroadcastChannel + CustomEvent
+ * ✅ Offline tolerant (uses local cache if Supabase unreachable)
+ * ============================================================
  */
 
+import { supabase } from "@/lib/supabaseClient";
 import {
   createContext,
+  ReactNode,
   useCallback,
   useContext,
   useEffect,
   useState,
-  ReactNode,
 } from "react";
-import { supabase } from "@/lib/supabaseClient";
 
 /* ------------------------------------------------------------
-   🌍 Global Window Flag (runtime sync between tabs)
------------------------------------------------------------- */
-declare global {
-  interface Window {
-    __HF_AUTH_STATE__?: "logged_in" | "logged_out";
-  }
-}
-
-/* ------------------------------------------------------------
-   🧩 Types
+   🔖 Types
 ------------------------------------------------------------ */
 export interface HomeFixUser {
   id?: string;
@@ -64,10 +56,11 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 /* ------------------------------------------------------------
    🧠 Helpers
 ------------------------------------------------------------ */
-function readStorage(): HomeFixUser | null {
+function readLocalUser(): HomeFixUser | null {
   try {
     if (localStorage.getItem(LOGOUT_MARKER)) return null;
-    const raw = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
+    const raw =
+      localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return parsed?.loggedIn ? parsed : null;
@@ -77,6 +70,12 @@ function readStorage(): HomeFixUser | null {
 }
 
 /* ------------------------------------------------------------
+   🌍 Broadcast + Event Sync
+------------------------------------------------------------ */
+const channel =
+  typeof window !== "undefined" ? new BroadcastChannel("hf_auth") : null;
+
+/* ------------------------------------------------------------
    🌿 Provider
 ------------------------------------------------------------ */
 export function UserProvider({ children }: { children: ReactNode }) {
@@ -84,143 +83,164 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   /* ------------------------------------------------------------
-     🔄 Restore user from storage or Supabase session
+     🔄 Startup Hydration (Local-first)
   ------------------------------------------------------------ */
   useEffect(() => {
     (async () => {
-      const stored = readStorage();
-      if (stored) {
-        setUser(stored);
+      const cached = readLocalUser();
+      if (cached) {
+        setUser(cached);
         setIsLoaded(true);
+        console.log("🌱 [UserContext] Restored from cache:", cached.email);
+        return;
       }
 
-      // Try Supabase session restore (Edge-safe)
-      const { data } = await supabase.auth.getSession();
-      if (data?.session?.user) {
-        const u = data.session.user;
-        const supaUser: HomeFixUser = {
-          id: u.id,
-          email: u.email,
-          phone: (u as any).phone,
-          email_verified: !!(u as any).email_confirmed_at,
-          loggedIn: true,
-        };
-        setUser((prev) => prev || supaUser);
+      // fallback to Supabase session (only if online)
+      try {
+        const { data } = await supabase.auth.getSession();
+        const u = data?.session?.user;
+        if (u) {
+          const supaUser: HomeFixUser = {
+            id: u.id,
+            email: u.email,
+            phone: (u as any).phone,
+            email_verified: !!(u as any).email_confirmed_at,
+            loggedIn: true,
+          };
+          setUser(supaUser);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(supaUser));
+          console.log("🔁 [UserContext] Restored from Supabase session");
+        }
+      } catch {
+        console.warn("⚠️ Offline mode — using cached session");
       }
 
       setIsLoaded(true);
-      console.log("🌱 [UserContext] Session hydrated.");
     })();
   }, []);
 
   /* ------------------------------------------------------------
-     🧭 Supabase auth listener (real-time sync)
+     🛰️ Supabase Realtime Listener
   ------------------------------------------------------------ */
   useEffect(() => {
-    const {
-      data: listener,
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_OUT") {
-        await handleLogout();
+    const { data: sub } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === "SIGNED_OUT") {
+          await handleLogout();
+        }
+        if (event === "SIGNED_IN" && session?.user) {
+          const u = session.user;
+          const supaUser: HomeFixUser = {
+            id: u.id,
+            email: u.email,
+            phone: (u as any).phone,
+            email_verified: !!(u as any).email_confirmed_at,
+            loggedIn: true,
+          };
+          handleLogin(supaUser);
+        }
       }
-      if (event === "SIGNED_IN" && session?.user) {
-        const u = session.user;
-        const supaUser: HomeFixUser = {
+    );
+    return () => sub?.subscription.unsubscribe();
+  }, []);
+
+  /* ------------------------------------------------------------
+     🔄 Cross-tab sync via BroadcastChannel + Event
+  ------------------------------------------------------------ */
+  useEffect(() => {
+    if (!channel) return;
+    channel.onmessage = (ev) => {
+      if (ev.data === "logout") handleLogout();
+      if (ev.data.type === "login") handleLogin(ev.data.user);
+    };
+    window.addEventListener("hf:session-sync", (e: any) => {
+      if (e.detail === "logged_out") handleLogout();
+      if (e.detail === "logged_in") {
+        const cached = readLocalUser();
+        if (cached) setUser(cached);
+      }
+    });
+    return () => {
+      window.removeEventListener("hf:session-sync", () => {});
+      channel.close();
+    };
+  }, []);
+
+  /* ------------------------------------------------------------
+     🔐 Login — Edith Secure Mode
+  ------------------------------------------------------------ */
+  const handleLogin = useCallback((u: HomeFixUser, remember = true) => {
+    try {
+      localStorage.removeItem(LOGOUT_MARKER);
+      const payload = { ...u, loggedIn: true };
+      (remember ? localStorage : sessionStorage).setItem(
+        STORAGE_KEY,
+        JSON.stringify(payload)
+      );
+      setUser(payload);
+
+      channel?.postMessage({ type: "login", user: payload });
+      window.dispatchEvent(
+        new CustomEvent("hf:session-sync", { detail: "logged_in" })
+      );
+
+      console.log("✅ [UserContext] Login persisted:", payload.email);
+    } catch (err) {
+      console.error("🔥 [UserContext] Login failed:", err);
+    }
+  }, []);
+
+  /* ------------------------------------------------------------
+     🚪 Logout — Edith Secure v4.0
+  ------------------------------------------------------------ */
+  const handleLogout = useCallback(async () => {
+    console.log("🚪 [UserContext] Logging out...");
+    try {
+      const lastPhone =
+        user?.phone ||
+        JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}")?.phone ||
+        "";
+
+      await supabase.auth.signOut().catch(() => {});
+
+      localStorage.setItem(LOGOUT_MARKER, "1");
+      localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(STORAGE_KEY);
+      if (lastPhone) localStorage.setItem("hf_last_phone", lastPhone);
+
+      setUser(null);
+      channel?.postMessage("logout");
+      window.dispatchEvent(
+        new CustomEvent("hf:session-sync", { detail: "logged_out" })
+      );
+
+      console.log("✅ [UserContext] Fully logged out.");
+    } catch (err) {
+      console.error("🔥 [UserContext] Logout failed:", err);
+    }
+  }, [user]);
+
+  /* ------------------------------------------------------------
+     🔁 Manual refresh (on-demand)
+  ------------------------------------------------------------ */
+  const refreshUser = useCallback(async () => {
+    try {
+      const { data } = await supabase.auth.getUser();
+      const u = data?.user;
+      if (u) {
+        const refreshed: HomeFixUser = {
           id: u.id,
           email: u.email,
           phone: (u as any).phone,
           email_verified: !!(u as any).email_confirmed_at,
           loggedIn: true,
         };
-        handleLogin(supaUser);
+        setUser(refreshed);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(refreshed));
+        console.log("🔄 [UserContext] User refreshed.");
       }
-    });
-    return () => listener?.subscription.unsubscribe();
-  }, []);
-
-  /* ------------------------------------------------------------
-     🔐 Login
-  ------------------------------------------------------------ */
-  const handleLogin = useCallback((u: HomeFixUser, remember = true) => {
-    localStorage.removeItem(LOGOUT_MARKER);
-    const payload = { ...u, loggedIn: true };
-
-    try {
-      (remember ? localStorage : sessionStorage).setItem(STORAGE_KEY, JSON.stringify(payload));
-      setUser(payload);
-
-      window.__HF_AUTH_STATE__ = "logged_in";
-      window.dispatchEvent(new CustomEvent("hf:session-sync", { detail: "logged_in" }));
-      console.log("✅ [UserContext] Logged in:", payload);
-    } catch (err) {
-      console.error("[UserContext] login failed:", err);
-    }
-  }, []);
-
-/* ------------------------------------------------------------
-   🚪 Logout — Edith Secure v3.8
-   ------------------------------------------------------------
-   ✅ Signs out from Supabase
-   ✅ Clears localStorage / sessionStorage safely
-   ✅ Retains last phone for re-login autofill
-   ✅ Broadcasts logout across tabs
-   ✅ Logs events for debugging
------------------------------------------------------------- */
-const handleLogout = useCallback(async () => {
-  console.log("🚪 [UserContext] Logout initiated...");
-
-  try {
-    // 🔐 Step 1 — Supabase session sign-out
-    const { error } = await supabase.auth.signOut();
-    if (error) console.warn("⚠️ Supabase signOut error:", error);
-
-    // 🧹 Step 2 — Preserve optional data (e.g., phone)
-    const lastPhone =
-      user?.phone ||
-      JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}")?.phone ||
-      "";
-
-    // 🧼 Step 3 — Clear all storage
-    localStorage.setItem(LOGOUT_MARKER, "1");
-    localStorage.removeItem(STORAGE_KEY);
-    sessionStorage.removeItem(STORAGE_KEY);
-
-    // Optional: keep last used phone for login autofill
-    if (lastPhone) {
-      localStorage.setItem("hf_last_phone", lastPhone);
-      console.log("📱 [UserContext] Cached last phone:", lastPhone);
-    }
-
-    // 🚨 Step 4 — Reset runtime state
-    setUser(null);
-    window.__HF_AUTH_STATE__ = "logged_out";
-
-    // 🛰️ Step 5 — Notify all tabs
-    window.dispatchEvent(
-      new CustomEvent("hf:session-sync", { detail: "logged_out" })
-    );
-
-    console.log("✅ [UserContext] Fully logged out.");
-  } catch (err) {
-    console.error("🔥 [UserContext] Logout failed:", err);
-  }
-}, [user]);
-
-  /* ------------------------------------------------------------
-     🔁 Manual Refresh
-  ------------------------------------------------------------ */
-  const refreshUser = useCallback(async () => {
-    const { data } = await supabase.auth.getUser().catch(() => ({ data: undefined }));
-    if (data?.user) {
-      const u: HomeFixUser = {
-        id: data.user.id,
-        email: data.user.email,
-        phone: (data.user as any).phone,
-        email_verified: !!(data.user as any).email_confirmed_at,
-        loggedIn: true,
-      };
-      setUser(u);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+    } catch {
+      console.warn("⚠️ Could not refresh user (offline?)");
     }
   }, []);
 
@@ -248,8 +268,7 @@ const handleLogout = useCallback(async () => {
 ------------------------------------------------------------ */
 export function useUser(): UserContextType {
   const ctx = useContext(UserContext);
-  if (!ctx) {
-    // Safe fallback for SSR or outside Provider
+  if (!ctx)
     return {
       user: null,
       setUser: () => {},
@@ -259,7 +278,5 @@ export function useUser(): UserContextType {
       isLoaded: false,
       isLoggedIn: false,
     };
-  }
   return ctx;
 }
-

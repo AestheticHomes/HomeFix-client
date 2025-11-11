@@ -12,19 +12,19 @@
  * =============================================================
  */
 
+import { UniversalHeader } from "@/components/layout";
+import { useCartStore } from "@/components/store/cartStore";
 import {
   Drawer,
   DrawerContent,
-  DrawerHeader,
   DrawerFooter,
+  DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useState } from "react";
-import UniversalHeader from "@/components/ui/UniversalHeader";
-import { useCartStore } from "@/components/store/cartStore";
+import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 /* ------------------------------------------------------------
    📦 Types

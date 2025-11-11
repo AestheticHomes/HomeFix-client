@@ -1,19 +1,7 @@
 "use client";
-/**
- * File: MapPicker.tsx
- * Version: v4.0 — Aurora+ Pro Edition 🌍
- * Author: Edith 🪶 for Jagadish
- *
- * 🪶 Enhancements:
- * ✅ Smooth live GPS tracking (follow mode)
- * ✅ Adaptive zoom + dynamic camera gravity
- * ✅ Smart 2-line address viewer
- * ✅ Compass radar + offline fallback
- * ✅ Full TypeScript strict-safety
- */
-
+import { motion } from "framer-motion";
+import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 
 declare global {
   interface Window {
@@ -21,59 +9,74 @@ declare global {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* 📦 Types                                                                   */
-/* -------------------------------------------------------------------------- */
 export interface Coordinates {
   lat: number;
   lng: number;
 }
 
-interface MapPickerProps {
+export interface MapPickerProps {
   initialLocation?: Coordinates;
-  onLocationChange?: (loc: Coordinates, addr: string) => void;
-  onError?: (err: string) => void;
+  onLocationChange?: (
+    loc: Coordinates,
+    addr: string,
+    confirmed?: boolean
+  ) => void;
   editable?: boolean;
+  confirmedAddress?: string;
 }
 
-/* -------------------------------------------------------------------------- */
-/* 🗺️ Component                                                               */
-/* -------------------------------------------------------------------------- */
 export default function MapPicker({
   initialLocation = { lat: 13.0827, lng: 80.2707 },
   onLocationChange,
-  onError,
   editable = true,
 }: MapPickerProps) {
+  const { theme } = useTheme(); // ✅ Correct placement — inside component
   const mapRef = useRef<HTMLDivElement | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
-  const geocoderRef = useRef<google.maps.Geocoder | null>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  const watchId = useRef<number | null>(null);
-
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [center, setCenter] = useState<Coordinates>(initialLocation);
-  const [address, setAddress] = useState("Fetching address…");
-  const [locating, setLocating] = useState(false);
+  const [center, setCenter] = useState(initialLocation);
   const [isReady, setReady] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [liveAddress, setLiveAddress] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
 
-  /* -------------------------------------------------------------------------- */
-  /* 🌐 Load Google Maps API                                                    */
-  /* -------------------------------------------------------------------------- */
+  /* ------------------------------------------------------------
+     🎨 React to Theme Change (Dynamic Re-Styling)
+  ------------------------------------------------------------ */
   useEffect(() => {
-    if (window.google && window.google.maps) {
+    if (!map || !window.google?.maps) return;
+
+    const darkStyles: google.maps.MapTypeStyle[] = [
+      { elementType: "geometry", stylers: [{ color: "#0b0a1a" }] },
+      { featureType: "poi", stylers: [{ visibility: "off" }] },
+      { featureType: "road", stylers: [{ color: "#202124" }] },
+    ];
+
+    const lightStyles: google.maps.MapTypeStyle[] = [
+      { featureType: "poi", stylers: [{ visibility: "off" }] },
+      { featureType: "transit", stylers: [{ visibility: "off" }] },
+    ];
+
+    map.setOptions({
+      styles: theme === "dark" ? darkStyles : lightStyles,
+      backgroundColor:
+        theme === "dark"
+          ? "#0b0a1a"
+          : getComputedStyle(document.documentElement).getPropertyValue(
+              "--edith-surface"
+            ) || "#ffffff",
+    });
+  }, [theme, map]);
+
+  /* ------------------------------------------------------------
+     🌐 Load Google Maps
+  ------------------------------------------------------------ */
+  useEffect(() => {
+    if (window.google?.maps) {
       setReady(true);
       return;
     }
-
-    const existing = document.getElementById("gmap-script");
-    if (existing) {
-      existing.addEventListener("load", () => setReady(true));
-      return;
-    }
-
     const script = document.createElement("script");
-    script.id = "gmap-script";
     script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
     script.async = true;
     script.defer = true;
@@ -81,191 +84,213 @@ export default function MapPicker({
     document.head.appendChild(script);
   }, []);
 
-  /* -------------------------------------------------------------------------- */
-  /* 🗺️ Initialize Map + Events                                                */
-  /* -------------------------------------------------------------------------- */
+  /* ------------------------------------------------------------
+     🗺️ Initialize Map
+  ------------------------------------------------------------ */
   useEffect(() => {
     if (!isReady || !mapRef.current) return;
     const g = window.google;
     if (!g?.maps) return;
 
-    const darkMode = document.documentElement.classList.contains("dark");
-    const style: google.maps.MapTypeStyle[] = darkMode
+    const dark = document.documentElement.classList.contains("dark");
+    const mapStyle: google.maps.MapTypeStyle[] = dark
       ? [
-          { elementType: "geometry", stylers: [{ color: "#1d2c4d" }] },
-          { featureType: "water", elementType: "geometry", stylers: [{ color: "#0e1626" }] },
+          { elementType: "geometry", stylers: [{ color: "#0b0a1a" }] },
+          { featureType: "poi", stylers: [{ visibility: "off" }] },
+          { featureType: "road", stylers: [{ color: "#202124" }] },
         ]
-      : [];
+      : [
+          { featureType: "poi", stylers: [{ visibility: "off" }] },
+          { featureType: "transit", stylers: [{ visibility: "off" }] },
+        ];
 
     const gmap = new g.maps.Map(mapRef.current, {
-      center: center,
-      zoom: window.innerWidth < 768 ? 15 : 16,
+      center,
+      zoom: 16,
       disableDefaultUI: true,
       gestureHandling: editable ? "greedy" : "none",
-      draggable: editable,
-      zoomControl: editable,
-      styles: style,
+      styles: mapStyle,
     });
+    setMap(gmap);
 
     const geocoder = new g.maps.Geocoder();
-    geocoderRef.current = geocoder;
 
-    // 🧭 Idle listener → update coordinates + address
-    gmap.addListener("idle", () => {
+    const updateAddress = () => {
       const c = gmap.getCenter();
       if (!c) return;
-
       const loc = { lat: c.lat(), lng: c.lng() };
-      setCenter(loc);
-
       geocoder.geocode({ location: loc }, (results, status) => {
-        if (status === "OK" && results?.length) {
-          const addr = results[0].formatted_address || "Unnamed location";
-          setAddress(addr);
-          onLocationChange?.(loc, addr);
-          localStorage.setItem("lastLocation", JSON.stringify({ coords: loc, address: addr }));
+        if (status === "OK" && results?.[0]) {
+          const formatted = results[0].formatted_address;
+          setLiveAddress(formatted);
+          setCenter(loc);
+
+          // 🟣 Dynamic update (not confirmed)
+          onLocationChange?.(loc, formatted, false);
+          setConfirmed(false);
         }
       });
-    });
+    };
 
-    // 🔍 Autocomplete (Search bar)
-    if (searchRef.current) {
-      autocompleteRef.current = new g.maps.places.Autocomplete(searchRef.current, {
+    gmap.addListener("idle", updateAddress);
+
+    if (editable && searchRef.current) {
+      const auto = new g.maps.places.Autocomplete(searchRef.current, {
         fields: ["geometry", "formatted_address"],
         componentRestrictions: { country: "in" },
       });
-
-      autocompleteRef.current.addListener("place_changed", () => {
-        const place = autocompleteRef.current?.getPlace();
+      auto.addListener("place_changed", () => {
+        const place = auto.getPlace();
         if (!place?.geometry?.location) return;
-
         const loc = {
           lat: place.geometry.location.lat(),
           lng: place.geometry.location.lng(),
         };
         gmap.panTo(loc);
-        gmap.setZoom(17);
         setCenter(loc);
-        setAddress(place.formatted_address || "Unnamed location");
-        onLocationChange?.(loc, place.formatted_address || "");
+        setLiveAddress(place.formatted_address || "");
+        setConfirmed(false);
       });
     }
-
-    setMap(gmap);
-    return () => g.maps.event.clearInstanceListeners(gmap);
   }, [isReady, editable]);
 
-  /* -------------------------------------------------------------------------- */
-  /* 📡 Locate Me (Follow Mode)                                                */
-  /* -------------------------------------------------------------------------- */
-  const locateMe = () => {
-    if (!navigator.geolocation) {
-      onError?.("Geolocation not supported by this device");
-      return;
-    }
-
+  /* ------------------------------------------------------------
+     📡 Locate Me → resets confirmation
+  ------------------------------------------------------------ */
+  const handleLocateMe = () => {
+    if (!navigator.geolocation || !editable) return;
     setLocating(true);
-    watchId.current = navigator.geolocation.watchPosition(
+    setConfirmed(false);
+    navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setCenter(coords);
-        map?.panTo(coords);
-        map?.setZoom(17);
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        map?.panTo(loc);
+        setCenter(loc);
         setLocating(false);
       },
-      (err) => {
-        onError?.(`GPS Error: ${err.message}`);
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 },
+      () => setLocating(false),
+      { enableHighAccuracy: true, timeout: 8000 }
     );
   };
 
-  // 🧹 Stop watching when unmounted
-  useEffect(() => {
-    return () => {
-      if (watchId.current) navigator.geolocation.clearWatch(watchId.current);
-    };
-  }, []);
+  /* ------------------------------------------------------------
+     💾 Confirm Address — freezes static value
+  ------------------------------------------------------------ */
+  const handleConfirm = () => {
+    if (!liveAddress) return;
+    setConfirmed(true);
+    onLocationChange?.(center, liveAddress, true);
+  };
 
-  /* -------------------------------------------------------------------------- */
-  /* 🎨 Render                                                                 */
-  /* -------------------------------------------------------------------------- */
+  /* ------------------------------------------------------------
+     🖼️ Render
+  ------------------------------------------------------------ */
   return (
-    <div className="relative w-full h-[440px] rounded-2xl overflow-hidden border border-gray-200 dark:border-neutral-700 shadow-lg">
-      {!isReady ? (
-        <div className="flex items-center justify-center w-full h-full text-gray-500 text-sm">
-          🗺️ Initializing map…
-        </div>
-      ) : (
-        <>
-          <div ref={mapRef} className="absolute inset-0" />
-
-          {/* 🔍 Search bar */}
-          {editable && (
-            <motion.input
-              ref={searchRef}
-              placeholder="Search area or city..."
-              className="absolute top-3 left-1/2 -translate-x-1/2 w-[90%] md:w-[65%]
-                         bg-white/90 dark:bg-neutral-800/90 backdrop-blur-md
-                         border border-gray-300 dark:border-neutral-700 rounded-full px-4 py-2 text-sm
-                         shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-            />
-          )}
-
-          {/* 📍 Floating Marker */}
-          <motion.div
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[70%] pointer-events-none"
-            animate={{ y: [0, -4, 0] }}
-            transition={{ repeat: Infinity, duration: 1.6 }}
-          >
-            <div className="relative">
-              <div className="w-4 h-4 bg-emerald-600 rounded-full ring-4 ring-emerald-400/40" />
-              <motion.div
-                className="absolute left-1/2 top-1/2 w-8 h-8 -translate-x-1/2 -translate-y-1/2 bg-emerald-400/25 rounded-full blur-md"
-                animate={{ scale: [1, 1.3, 1], opacity: [0.6, 0.3, 0.6] }}
-                transition={{ repeat: Infinity, duration: 1.8 }}
-              />
-            </div>
-          </motion.div>
-
-          {/* 🧭 Locate Me Button */}
-          {editable && (
-            <motion.button
-              onClick={locateMe}
-              whileTap={{ scale: 0.9 }}
-              className={`absolute bottom-24 right-4 w-12 h-12 flex items-center justify-center rounded-full
-                          bg-white/85 dark:bg-neutral-800/80 border border-gray-300 dark:border-neutral-700
-                          hover:bg-emerald-600 hover:text-white transition-all shadow-lg ${
-                            locating ? "animate-pulse bg-emerald-600 text-white" : ""
-                          }`}
-            >
-              {locating ? "🧭" : "📍"}
-            </motion.button>
-          )}
-
-          {/* 🪟 Address Display */}
-          <AnimatePresence>
-            {address && (
-              <motion.div
-                key={address}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ duration: 0.3 }}
-                className="absolute bottom-2 left-2 right-2 bg-white/90 dark:bg-neutral-900/85 backdrop-blur-md
-                           rounded-xl px-3 py-2 text-xs text-gray-700 dark:text-gray-300 shadow-sm leading-snug"
-              >
-                <p className="line-clamp-2">
-                  <strong>📍 {address}</strong>
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </>
+    <div className="flex flex-col gap-4 w-full relative">
+      {/* 🔍 Search Field */}
+      {editable && (
+        <input
+          ref={searchRef}
+          placeholder="Search location or area..."
+          className="w-full bg-[var(--surface-card)] text-[var(--text-primary)]
+                     border border-[var(--edith-border)] rounded-xl px-4 py-2 text-sm
+                     shadow-sm focus:ring-2 focus:ring-[var(--accent-primary)]
+                     focus:border-transparent outline-none transition-all duration-300"
+        />
       )}
+
+      {/* 🗺️ Map */}
+      <div className="relative w-full h-[340px] rounded-2xl overflow-hidden border border-[var(--edith-border)] shadow-md">
+        {!isReady ? (
+          <div className="flex items-center justify-center w-full h-full text-[var(--text-secondary)] text-sm">
+            🗺️ Loading map…
+          </div>
+        ) : (
+          <>
+            <div ref={mapRef} className="absolute inset-0" />
+
+            {/* 🎯 Center Pin */}
+            <motion.div
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-[70%] pointer-events-none"
+              animate={{ y: [0, -3, 0] }}
+              transition={{ repeat: Infinity, duration: 1.6 }}
+            >
+              <div className="w-3.5 h-3.5 rounded-full bg-[var(--accent-primary)]" />
+            </motion.div>
+
+            {/* 📡 Locate Me */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleLocateMe}
+              className={`absolute bottom-5 right-5 w-10 h-10 flex items-center justify-center
+                          rounded-full border border-[var(--edith-border)]
+                          bg-[var(--surface-card)] hover:bg-[var(--accent-primary)]
+                          hover:text-white transition-all duration-300 shadow-md backdrop-blur-sm
+                          ${
+                            locating
+                              ? "animate-pulse text-[var(--accent-primary)]"
+                              : ""
+                          }`}
+              title="Locate Me"
+            >
+              📡
+            </motion.button>
+
+            {/* Hide Google Branding */}
+            <style jsx global>{`
+              .gm-style-cc,
+              .gmnoprint,
+              .gm-style a[href^="https://maps.google.com/maps"]
+              {
+                display: none !important;
+              }
+            `}</style>
+          </>
+        )}
+      </div>
+
+      {/* 🧭 Confirm Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-1">
+        {/* Address Display */}
+        <input
+          type="text"
+          readOnly
+          value={
+            liveAddress || "Move the map or search to select your location…"
+          }
+          className="flex-1 bg-[var(--edith-surface)] text-sm px-3 py-2 rounded-xl
+               border border-[var(--edith-border)] focus:outline-none
+               placeholder:text-[var(--text-secondary)] truncate min-h-[44px]"
+        />
+
+        {/* Confirm Button */}
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={handleConfirm}
+          disabled={!liveAddress}
+          className={`relative sm:w-auto w-full min-h-[44px] px-6 py-2.5 rounded-xl text-sm font-semibold
+                text-white shadow-lg transition-all duration-300 whitespace-nowrap
+                bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)]
+                hover:opacity-95 active:scale-[0.98]
+                disabled:opacity-50 disabled:cursor-not-allowed`}
+        >
+          <motion.div
+            initial={{ opacity: 0.2 }}
+            animate={{ opacity: [0.3, 0.8, 0.3] }}
+            transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+            className="absolute inset-0 rounded-xl border border-[var(--accent-secondary)]/50 pointer-events-none"
+          />
+          <span className="relative z-10 flex items-center justify-center gap-2">
+            {confirmed ? (
+              <>
+                <span className="text-lg leading-none">✓</span> Confirmed
+              </>
+            ) : (
+              "Confirm Location"
+            )}
+          </span>
+        </motion.button>
+      </div>
     </div>
   );
 }
