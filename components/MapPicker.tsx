@@ -47,15 +47,16 @@ export default function MapPicker({
     autocompleteElRef,
   });
 
-  const mapRootRef = hookResult.mapRootRef;
-  const mapRef = hookResult.mapRef;
-  const searchHostRef = hookResult.searchHostRef;
-  const address = hookResult.address;
-  const locating = hookResult.locating;
-  const usingWebComponent = hookResult.usingWebComponent;
-  const mapsLoaded = hookResult.mapsLoaded;
-  const locateMe = hookResult.locateMe;
-  const confirmLocation = hookResult.confirmLocation;
+  const {
+    mapRootRef,
+    mapRef,
+    address,
+    locating,
+    autocompleteReady,
+    mapsLoaded,
+    locateMe,
+    confirmLocation,
+  } = hookResult;
 
   useEffect(() => {
     if (!mapRef.current || !window.google?.maps) return;
@@ -101,22 +102,21 @@ export default function MapPicker({
 
   return (
     <div className="flex flex-col gap-4 w-full relative">
-      {editable && (
+{editable && (
         <div className="space-y-2">
           <gmpx-place-autocomplete
             ref={autocompleteElRef}
             placeholder="Search location or area…"
-            className={`${
-              usingWebComponent ? "block" : "hidden"
-            } w-full bg-[var(--surface-card)] text-[var(--text-primary)]
+            className={`w-full bg-[var(--surface-card)] text-[var(--text-primary)]
               border border-[var(--edith-border)] rounded-xl px-4 py-2 text-sm
               shadow-sm focus-within:ring-2 focus-within:ring-[var(--accent-primary)]
               outline-none transition-all`}
           />
-          <div
-            ref={searchHostRef}
-            className={`w-full ${usingWebComponent ? "hidden" : "block"}`}
-          />
+          {!autocompleteReady && (
+            <p className="text-xs text-[var(--text-muted)]">
+              Loading Google Place Autocomplete…
+            </p>
+          )}
         </div>
       )}
 

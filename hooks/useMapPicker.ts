@@ -37,13 +37,12 @@ export function useMapPicker({
 }: UseMapPickerOptions) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const mapRootRef = useRef<HTMLDivElement | null>(null);
-  const searchHostRef = useRef<HTMLDivElement | null>(null); // Host for Autocomplete fallback
 
   const mapRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
 
   const [mapsLoaded, setMapsLoaded] = useState(false);
-  const [usingWebComponent, setUsingWebComponent] = useState(false);
+  const [autocompleteReady, setAutocompleteReady] = useState(false);
   const [address, setAddress] = useState("");
   const [satellite, setSatellite] = useState(false);
   const [locating, setLocating] = useState(false);
@@ -247,88 +246,23 @@ export function useMapPicker({
 
   const attachAutocomplete = useCallback(async () => {
     if (!mapsLoaded) return;
-    let removeListener: (() => void) | null = null; // Clear previous content in the fallback container
-
-    if (searchHostRef.current) searchHostRef.current.innerHTML = "";
+    if (!autocompleteElRef?.current) return;
 
     const webcompLoaded = await loadWebComponent();
+    if (!webcompLoaded) {
+      setAutocompleteReady(false);
+      console.warn("PlaceAutocompleteElement could not be loaded.");
+      return;
+    }
 
-    if (webcompLoaded && autocompleteElRef?.current) {
-      // ⭐️ PATH 1: Declarative Web Component (from MapPicker.tsx ref)
-      setUsingWebComponent(true);
-      const el = autocompleteElRef.current as GmpxPlaceAutocompleteElement;
+    const el = autocompleteElRef.current as GmpxPlaceAutocompleteElement;
+    setAutocompleteReady(true);
 
-      try {
-        const handler = async (ev: any) => {
-          const wc = el as GmpxPlaceAutocompleteElement;
-          const place = ev?.detail?.place ?? wc.getPlace?.() ?? null;
-          if (!place) return;
+    const handler = async (ev: any) => {
+      const wc = el as GmpxPlaceAutocompleteElement;
+      const place = ev?.detail?.place ?? wc.getPlace?.() ?? null;
+      if (!place) return;
 
-          const loc =
-            place?.geometry?.location != null
-              ? {
-                  lat: place.geometry.location.lat(),
-                  lng: place.geometry.location.lng(),
-                }
-              : null;
-
-          const addr = place?.formatted_address ?? place?.name ?? "";
-
-          if (loc && mapRef.current) {
-            const g = (window as any).google;
-            const ll = new g.maps.LatLng(loc.lat, loc.lng);
-            mapRef.current.panTo(ll);
-            markerRef.current?.setPosition(ll);
-          }
-
-          setAddress(addr);
-          onLocationChange?.(loc, addr, false);
-        };
-
-        el.addEventListener("place_changed", handler);
-        el.addEventListener("gmpx-place-selected", handler);
-        el.addEventListener("change", handler);
-
-        removeListener = () => {
-          el.removeEventListener("place_changed", handler);
-          el.removeEventListener("gmpx-place-selected", handler);
-          el.removeEventListener("change", handler);
-        };
-
-        return removeListener;
-      } catch (e) {
-        console.error(
-          "Declarative Web Component listener attachment failed, falling back.",
-          e
-        );
-        setUsingWebComponent(false); // Fall through to legacy
-      }
-    } // ⭐️ PATH 2: Fallback to Classic <input> (Imperative DOM injection)
-
-    if (!searchHostRef.current) return; // Must have the host div for injection
-    setUsingWebComponent(false);
-
-    const INPUT_ID = "legacy-autocomplete";
-    searchHostRef.current.innerHTML = `
-        <input 
-            id="${INPUT_ID}" 
-            placeholder="Search for address or area..." 
-            style="width:100%;height:44px;padding:8px 12px;border-radius:12px;border:1px solid rgba(0,0,0,0.1);" 
-        />
-    `;
-
-    const inputEl = document.getElementById(INPUT_ID) as HTMLInputElement;
-
-    const g = (window as any).google;
-    if (!g?.maps?.places || !inputEl) return;
-
-    const ac = new g.maps.places.Autocomplete(inputEl, {
-      fields: ["geometry", "formatted_address", "name"],
-      componentRestrictions: { country: "in" },
-    });
-
-    const listener = ac.addListener("place_changed", () => {
-      const place = ac.getPlace();
       const loc =
         place?.geometry?.location != null
           ? {
@@ -338,26 +272,27 @@ export function useMapPicker({
           : null;
 
       const addr = place?.formatted_address ?? place?.name ?? "";
+
       if (loc && mapRef.current) {
-        const g2 = (window as any).google;
-        const ll = new g2.maps.LatLng(loc.lat, loc.lng);
+        const g = (window as any).google;
+        const ll = new g.maps.LatLng(loc.lat, loc.lng);
         mapRef.current.panTo(ll);
         markerRef.current?.setPosition(ll);
       }
+
       setAddress(addr);
       onLocationChange?.(loc, addr, false);
-    });
-
-    removeListener = () => {
-      try {
-        listener?.remove?.();
-      } catch {}
-      try {
-        searchHostRef.current?.removeChild(inputEl);
-      } catch {}
     };
 
-    return removeListener;
+    el.addEventListener("place_changed", handler);
+    el.addEventListener("gmpx-place-selected", handler);
+    el.addEventListener("change", handler);
+
+    return () => {
+      el.removeEventListener("place_changed", handler);
+      el.removeEventListener("gmpx-place-selected", handler);
+      el.removeEventListener("change", handler);
+    };
   }, [mapsLoaded, autocompleteElRef, loadWebComponent, onLocationChange]);
   /* ------------------------------------------------------------------
    * AUTOCOMPLETE EFFECT
@@ -377,12 +312,11 @@ export function useMapPicker({
 
   return {
     mapRootRef,
-    searchHostRef,
     mapRef,
     address,
     satellite,
     locating,
-    usingWebComponent,
+    autocompleteReady,
     mapsLoaded,
 
     locateMe,
