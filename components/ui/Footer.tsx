@@ -24,14 +24,14 @@ export default function Footer() {
     >
       <div className="relative z-10 px-4">
         © {new Date().getFullYear()}{" "}
-        <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#5A5DF0] to-[#EC6ECF]">
+        <span className="font-semibold text-transparent bg-clip-text edith-logo-gradient">
           HomeFix India
         </span>{" "}
         · Built with ❤️ in Chennai
       </div>
 
       {/* 🌈 Subtle Glow Bar (bottom aura) */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-[2px] rounded-full bg-gradient-to-r from-[#5A5DF0]/40 via-[#EC6ECF]/40 to-[#5A5DF0]/40 blur-[2px] opacity-80" />
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-[2px] rounded-full bg-gradient-to-r from-[var(--accent-primary)]/40 via-[var(--accent-secondary)]/40 to-[var(--accent-primary)]/40 blur-[2px] opacity-80" />
     </footer>
   );
 }

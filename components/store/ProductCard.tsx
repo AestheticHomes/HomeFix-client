@@ -11,7 +11,8 @@
  * ============================================================
  */
 
-import { useCartStore } from "@/components/store/cartStore";
+import { useProductCartStore } from "@/components/store/cartStore";
+import { resolveCartConflict } from "@/components/store/cartGuards";
 import { motion } from "framer-motion";
 import { Minus, Plus } from "lucide-react";
 import Image from "next/image";
@@ -31,7 +32,7 @@ export interface Product {
 }
 
 export default function ProductCard({ product }: { product: Product }) {
-  const { items, addItem, removeItem } = useCartStore();
+  const { items, addItem, removeItem } = useProductCartStore();
   const [adding, setAdding] = useState(false);
 
   const productId = Number(product.id);
@@ -43,6 +44,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const handleAdd = () => {
     if (adding || isOutOfStock) return;
+    if (!resolveCartConflict("product")) return;
     setAdding(true);
     addItem({
       id: productId,
@@ -79,7 +81,7 @@ export default function ProductCard({ product }: { product: Product }) {
       {/* 🖼️ Image */}
       <div
         className="relative w-full aspect-square overflow-hidden
-                   bg-gray-100 dark:bg-slate-800"
+                   bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)]"
         onClick={handleAdd}
         role="button"
         aria-label={`Add ${product.title}`}
@@ -108,15 +110,17 @@ export default function ProductCard({ product }: { product: Product }) {
         </p>
 
         <div className="flex items-center justify-between mt-1">
-          <span className="font-semibold text-emerald-500 text-[11px]">
+          <span className="font-semibold text-[var(--accent-success)] text-[11px]">
             ₹{Number(product.price).toLocaleString()}
           </span>
 
           {quantity > 0 ? (
-            <div className="flex items-center rounded-full border border-emerald-500 overflow-hidden">
+            <div className="flex items-center rounded-full border overflow-hidden"
+                 style={{ borderColor: "var(--accent-success)" }}>
               <button
                 onClick={handleRemove}
-                className="px-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
+                className="px-1 hover:bg-[color-mix(in_srgb,var(--accent-success)10%,transparent)] dark:hover:bg-[color-mix(in_srgb,var(--accent-success)18%,transparent)]"
+                style={{ color: "var(--accent-success)" }}
               >
                 <Minus size={12} />
               </button>
@@ -124,7 +128,8 @@ export default function ProductCard({ product }: { product: Product }) {
               <button
                 onClick={handleAdd}
                 disabled={isOutOfStock}
-                className="px-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 disabled:opacity-50"
+                className="px-1 hover:bg-[color-mix(in_srgb,var(--accent-success)10%,transparent)] dark:hover:bg-[color-mix(in_srgb,var(--accent-success)18%,transparent)] disabled:opacity-50"
+                style={{ color: "var(--accent-success)" }}
               >
                 <Plus size={12} />
               </button>
@@ -134,9 +139,11 @@ export default function ProductCard({ product }: { product: Product }) {
               disabled={isOutOfStock}
               onClick={handleAdd}
               whileTap={{ scale: 0.93 }}
-              className="px-2 py-[2px] rounded-full text-[10px] font-semibold
-                         bg-gradient-to-r from-emerald-600 to-lime-500 text-white
-                         hover:from-emerald-700 hover:to-lime-600 shadow-sm"
+              className="px-2 py-[2px] rounded-full text-[10px] font-semibold text-white shadow-sm"
+              style={{
+                background:
+                  "linear-gradient(90deg,var(--accent-success),var(--accent-success-hover))",
+              }}
             >
               Add
             </motion.button>

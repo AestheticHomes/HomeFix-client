@@ -11,8 +11,10 @@
  * ============================================================
  */
 
-import useEstimator from "@/components/estimator/store/estimatorStore";
-import { useCartStore } from "@/components/store/cartStore";
+import useEstimator, {
+  type EstimatorStep,
+} from "@/components/estimator/store/estimatorStore";
+import { useProductCartStore } from "@/components/store/cartStore";
 import HomeFixLogo from "@/components/ui/HomeFixLogo";
 import clsx from "clsx";
 import { motion } from "framer-motion";
@@ -37,10 +39,12 @@ export default function UniversalHeader(): React.ReactElement {
   const [mounted, setMounted] = useState(false);
   const [isSyncing, setSyncing] = useState(false);
 
-  const totalItems = useCartStore((s) => s.totalItems);
+  const totalItems = useProductCartStore((s) => s.totalItems);
   const estimatorState = useEstimator.getState?.() || {};
-  const step = estimatorState.step || "";
-  const setStep = estimatorState.setStep || (() => {});
+  const step = (estimatorState.step || "kitchen") as EstimatorStep;
+  const fallbackSetStep: (s: EstimatorStep) => void = () => {};
+  const setStep: (s: EstimatorStep) => void =
+    estimatorState.setStep ?? fallbackSetStep;
 
   const isEstimator = pathname?.startsWith("/estimator");
   const isViewer = pathname?.startsWith("/edith");
@@ -104,18 +108,18 @@ export default function UniversalHeader(): React.ReactElement {
       ref={headerRef}
       className="fixed top-0 left-0 right-0 z-[70] flex flex-col select-none
                  border-b border-[var(--border-soft)] backdrop-blur-xl
-                 bg-[var(--surface-header)]/80 transition-all duration-500"
+                 bg-[var(--surface-header)]/95 transition-all duration-500"
       initial={{ opacity: 0, y: -15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
     >
       {/* 🌈 Primary Header Bar */}
-      <div className="flex flex-wrap items-center justify-between px-4 sm:px-6 py-3 gap-3">
-        <div className="flex items-center gap-3">
-          <HomeFixLogo size="sm" />
+      <div className="flex flex-wrap items-center justify-between px-4 sm:px-6 py-3.5 gap-3">
+        <div className="flex items-center gap-3.5">
+          <HomeFixLogo size="md" />
           {mounted && (
             <motion.span
-              className="hidden sm:inline text-xs text-[var(--text-muted)] italic"
+              className="hidden sm:inline text-sm text-[var(--text-secondary)] italic"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
@@ -148,7 +152,7 @@ export default function UniversalHeader(): React.ReactElement {
         {/* 🧭 Page Title */}
         <motion.h1
           key={pathname}
-          className="text-sm sm:text-base font-semibold text-[var(--accent-primary)]
+          className="text-base sm:text-lg font-semibold text-[var(--accent-primary)]
                      dark:text-[var(--accent-secondary)] flex-1 text-center sm:text-left truncate"
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -200,7 +204,9 @@ export default function UniversalHeader(): React.ReactElement {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          {["kitchen", "wardrobe", "summary"].map((key, i) => {
+          {(
+            ["kitchen", "wardrobe", "summary"] as ReadonlyArray<EstimatorStep>
+          ).map((key, i) => {
             const label = `${i + 1}. ${
               key.charAt(0).toUpperCase() + key.slice(1)
             }`;
@@ -245,7 +251,7 @@ export default function UniversalHeader(): React.ReactElement {
               { id: "bookings", label: "Bookings", icon: CalendarDays },
               { id: "orders", label: "Orders", icon: Package },
             ].map((item) => {
-              const active = pathname.includes(item.id);
+              const active = pathname?.includes(item.id) ?? false;
               const Icon = item.icon;
               return (
                 <motion.button

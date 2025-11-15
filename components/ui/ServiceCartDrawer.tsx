@@ -13,7 +13,8 @@
  */
 
 import { UniversalHeader } from "@/components/layout";
-import { useCartStore } from "@/components/store/cartStore";
+import { useServiceCartStore } from "@/components/store/cartStore";
+import { resolveCartConflict } from "@/components/store/cartGuards";
 import {
   Drawer,
   DrawerContent,
@@ -57,7 +58,7 @@ export default function ServiceCartDrawer({
   onAdd,
 }: ServiceCartDrawerProps) {
   const router = useRouter();
-  const { addItem } = useCartStore();
+  const { addItem } = useServiceCartStore();
   const [location, setLocation] = useState<string>("Fetching location…");
   const [added, setAdded] = useState(false);
 
@@ -90,6 +91,7 @@ export default function ServiceCartDrawer({
      🛒 Add item handler
   ------------------------------------------------------------ */
   const handleAddToCart = () => {
+    if (!resolveCartConflict("service")) return;
     addItem({
       id: service.id,
       title: service.title,
@@ -172,7 +174,7 @@ export default function ServiceCartDrawer({
                     <CheckCircle2 className="w-5 h-5" /> Added to Cart
                   </div>
                   <button
-                    onClick={() => router.push("/checkout")}
+                    onClick={() => router.push("/checkout?type=service")}
                     className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition"
                   >
                     Proceed to Checkout

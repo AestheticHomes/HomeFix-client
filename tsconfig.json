@@ -1,8 +1,5 @@
 {
   "compilerOptions": {
-    /* ------------------------------------------------------------------
-     * 🌿 Modern TypeScript + Next.js setup
-     * ------------------------------------------------------------------ */
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
@@ -10,86 +7,56 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "incremental": true,
-    /* ------------------------------------------------------------------
-     * 🧠 Type System
-     * ------------------------------------------------------------------ */
-    "lib": [
-      "DOM",
-      "DOM.Iterable",
-      "ESNext"
-    ],
+
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+
     "types": [
       "react",
       "react-dom",
       "node",
-      "google.maps",
-      "@react-three/fiber"
+      "@react-three/fiber",
+      "google.maps"
     ],
+
     "jsx": "preserve",
     "isolatedModules": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    /* ------------------------------------------------------------------
-     * 📁 Path Aliases (sync with next.config.mjs)
-     * ------------------------------------------------------------------ */
+
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ],
-      "@/types/*": [
-        "types/*"
-      ],
-      "@/components/*": [
-        "components/*"
-      ],
-      "@/lib/*": [
-        "lib/*"
-      ],
-      "@/hooks/*": [
-        "hooks/*"
-      ],
-      "@/contexts/*": [
-        "contexts/*"
-      ]
+      "@/*": ["./*"],
+      "@/types/*": ["types/*"],
+      "@/components/*": ["components/*"],
+      "@/lib/*": ["lib/*"],
+      "@/hooks/*": ["hooks/*"],
+      "@/contexts/*": ["contexts/*"]
     },
-    /* ------------------------------------------------------------------
-     * 🔌 Next.js + Type Roots
-     * ------------------------------------------------------------------ */
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "typeRoots": [
-      "./types",
-      "./node_modules/@types"
-    ]
+
+    "plugins": [{ "name": "next" }],
+
+    "typeRoots": ["./types", "./node_modules/@types"]
   },
-  /* --------------------------------------------------------------------
-   * 🔍 Include everything needed for the build
-   * -------------------------------------------------------------------- */
-  "typeRoots": [
-    "./types",
-    "./node_modules/@types"
-  ],
+
+  "typeRoots": ["./node_modules/@types"],
+
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
     "types",
     "types/**/*.d.ts",
-    ".next/types/**/*.ts"
-, "components/studio/RoomPlanner2DOLDS.jsx", "components/studio/RoomCanvas3d.jsx", "components/studio/EdithBot.tsx", "app/studio/oldpage.jsx", "app/studio/page.js", "hooks/use-toast.tsx"  ],
-  /* --------------------------------------------------------------------
-   * 🚫 Exclude build caches & heavy directories
-   * -------------------------------------------------------------------- */
-  "exclude": [
-    "node_modules",
-    "supabase",
-    "dist",
-    ".next"
-  ]
+    ".next/types/**/*.ts",
+    "components/studio/RoomPlanner2DOLDS.jsx",
+    "components/studio/RoomCanvas3d.jsx",
+    "components/studio/EdithBot.tsx",
+    "app/studio/oldpage.jsx",
+    "app/studio/page.js",
+    "hooks/use-toast.tsx",
+    "app/api/ledger/sync/route.ts"
+  ],
+
+  "exclude": ["node_modules", "supabase", "dist", ".next"]
 }

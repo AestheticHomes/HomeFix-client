@@ -19,7 +19,7 @@ import OrdersView from "./components/OrdersView";
 
 export default function MySpacePage() {
   const params = useSearchParams();
-  const view = (params.get("view") as "bookings" | "orders") || "bookings";
+  const view = (params?.get("view") as "bookings" | "orders") ?? "bookings";
 
   return (
     <SafeViewport>

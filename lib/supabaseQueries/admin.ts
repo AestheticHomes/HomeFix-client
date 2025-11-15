@@ -12,8 +12,6 @@
  */
 
 "use client";
-
-import { useToast } from "@/hooks/use-toast";
 import { error, info, log, warn } from "@/lib/console";
 import { supabase } from "@/lib/supabaseClient";
 import type {
@@ -25,12 +23,21 @@ import type {
 /* ============================================================
    🧩 Core: Fetch Admin Dashboard Data
 ============================================================ */
-export async function fetchAdminDashboardData(): Promise<{
+type ToastAdapter = {
+  success?: (message: string) => void;
+  error?: (message: string) => void;
+  info?: (message: string) => void;
+};
+
+export async function fetchAdminDashboardData(
+  toast?: ToastAdapter
+): Promise<{
   stats: AdminStats;
   bookings: AdminBooking[];
   chartData: AdminChartPoint[];
 }> {
-  const { success, error: toastError } = useToast();
+  const toastSuccess = toast?.success;
+  const toastError = toast?.error;
 
   try {
     // 1️⃣ Aggregate Counts
@@ -123,9 +130,7 @@ export async function fetchAdminDashboardData(): Promise<{
     return { stats, bookings, chartData };
   } catch (err: any) {
     error("AdminDashboard", "❌ Fetch failed:", err);
-    toastError(
-      `Error loading admin data: ${err.message || "Unexpected error"}`
-    );
+    toastError?.(`Error loading admin data: ${err.message || "Unexpected error"}`);
     throw err;
   }
 }
@@ -135,9 +140,12 @@ export async function fetchAdminDashboardData(): Promise<{
 ============================================================ */
 export async function updateBookingStatus(
   id: number,
-  newStatus: string
+  newStatus: string,
+  toast?: ToastAdapter
 ): Promise<boolean> {
-  const { success, error: toastError, info: toastInfo } = useToast();
+  const toastSuccess = toast?.success;
+  const toastError = toast?.error;
+  const toastInfo = toast?.info;
 
   log("Bookings", `Attempting status update → ${id} → ${newStatus}`);
 
@@ -151,18 +159,18 @@ export async function updateBookingStatus(
 
     if (dbError) {
       error("Bookings", "Supabase update error:", dbError.message);
-      toastError(`Update failed: ${dbError.message}`);
+      toastError?.(`Update failed: ${dbError.message}`);
       return false;
     }
 
     if (!data) {
       warn("Bookings", "No rows updated for booking:", id);
-      toastInfo(`Booking not found for ID #${id}`);
+      toastInfo?.(`Booking not found for ID #${id}`);
       return false;
     }
 
     info("Bookings", `✅ Booking #${id} updated → ${newStatus}`);
-    success(`Booking #${id} updated — status: ${newStatus}`);
+    toastSuccess?.(`Booking #${id} updated — status: ${newStatus}`);
 
     // 🪶 Dispatch a global Edith event
     try {
@@ -178,9 +186,7 @@ export async function updateBookingStatus(
     return true;
   } catch (err: any) {
     error("Bookings", "Unexpected exception:", err);
-    toastError(
-      `Unexpected error: ${err.message || "Could not update booking"}`
-    );
+    toastError?.(`Unexpected error: ${err.message || "Could not update booking"}`);
     return false;
   }
 }

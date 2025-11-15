@@ -1,0 +1,11 @@
+
+{
+  "name": "eslint-plugin-edith",
+  "version": "0.1.0",
+  "description": "Edith-specific ESLint rules for theme-safe UI and design tokens.",
+  "main": "index.js",
+  "peerDependencies": {
+    "eslint": ">=8"
+  },
+  "license": "MIT"
+}

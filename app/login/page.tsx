@@ -3,13 +3,11 @@
 /**
  * ============================================================
  * 🪪 FILE: /app/login/page.tsx
- * VERSION: v14.9 — HomeFix OTP Login (Toast-Safe & Theme-Sync)
+ * FIXED VERSION v15.0 — Supabase-session-safe login
  * ------------------------------------------------------------
- * ✅ Uses unified useToast() (no duplicate Sonner calls)
- * ✅ Smart lock to prevent double-press on buttons or Enter
- * ✅ Auto-focus + haptic feedback for OTP entry
- * ✅ Theme-safe colors for both light & dark modes
- * ✅ Verified z-index overlay for toasts
+ * ✅ Creates REAL Supabase session after OTP verify
+ * ✅ Removes duplicate localStorage user writes
+ * ✅ Prevents UID=undefined issue (LedgerX + My Orders fix)
  * ============================================================
  */
 
@@ -21,7 +19,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Phone } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface HomeFixUser {
   id?: string;
@@ -56,6 +54,7 @@ export default function LoginPage() {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
   const otpRefs = useRef<HTMLInputElement[]>([]);
   const phoneDigits = phone.replace(/\D/g, "");
 
@@ -75,9 +74,9 @@ export default function LoginPage() {
   }, [router]);
 
   /* ------------------------------------------------------------
-     📩 Send OTP (Single Toast Safe)
+     📩 Send OTP
   ------------------------------------------------------------ */
-  async function handleSendOtp() {
+  const handleSendOtp = useCallback(async () => {
     if (isProcessing || otpLoading || loading) return;
 
     if (phoneDigits.length !== 10) {
@@ -91,7 +90,7 @@ export default function LoginPage() {
     try {
       const sent = await sendOtp(phoneDigits, "phone");
       if (sent) {
-        success(`OTP sent successfully to +91 ${phoneDigits}`);
+        success(`OTP sent to +91 ${phoneDigits}`);
         navigator.vibrate?.(30);
         setPanel("otp");
         setTimeout(() => otpRefs.current[0]?.focus(), 300);
@@ -99,18 +98,26 @@ export default function LoginPage() {
         error("Failed to send OTP. Please try again.");
       }
     } catch (err) {
-      console.error("💥 [OTP Send]", err);
+      console.error("[OTP Send]", err);
       error("Server error while sending OTP.");
     } finally {
       setLoading(false);
       setTimeout(() => setIsProcessing(false), 300);
     }
-  }
+  }, [
+    error,
+    isProcessing,
+    loading,
+    otpLoading,
+    phoneDigits,
+    sendOtp,
+    success,
+  ]);
 
   /* ------------------------------------------------------------
-     🔐 Verify OTP + Upsert Profile (Single Toast Safe)
+     🔐 Verify OTP + Create Supabase session
   ------------------------------------------------------------ */
-  async function handleVerifyOtp() {
+  const handleVerifyOtp = useCallback(async () => {
     if (isProcessing || otpVerifying) return;
     if (otp.length !== 6) {
       error("Please enter the 6-digit OTP.");
@@ -122,12 +129,14 @@ export default function LoginPage() {
     try {
       const verified = await verifyOtp(otp, phoneDigits, "phone");
       if (!verified) {
-        error("Invalid OTP. Please try again.");
+        error("Invalid OTP.");
         navigator.vibrate?.([120]);
         return;
       }
 
       const phoneFull = `+91${phoneDigits}`;
+
+      // 🔥 Your backend must return tokens
       const res = await fetch("/api/auth/upsert-user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -137,36 +146,68 @@ export default function LoginPage() {
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
 
-      const userId: string = data.id;
+      // ----------------------------------------------------------
+      // 🔥 1. Set REAL Supabase session (Fixes UID + LedgerX)
+      // ----------------------------------------------------------
+      if (data.access_token && data.refresh_token) {
+        await supabase.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+        });
+      }
 
+      // ----------------------------------------------------------
+      // 🔥 2. Build user object
+      // ----------------------------------------------------------
       const userData: HomeFixUser = {
-        id: userId,
+        id: data.id,
         phone: phoneFull,
         phone_verified: true,
         role: "client",
         loggedIn: true,
+        name: data.profile?.name ?? null,
+        email: data.profile?.email ?? null,
+        address: data.profile?.address ?? null,
       };
 
+      // ----------------------------------------------------------
+      // 🔥 3. Login through UserContext
+      //    (DO NOT write to localStorage manually)
+      // ----------------------------------------------------------
       login(userData, true);
-      localStorage.setItem("user", JSON.stringify(userData));
-      document.cookie = `hf_user_phone=${userData.phone}; Path=/; Max-Age=604800`;
-      document.cookie = `hf_user_id=${userId}; Path=/; Max-Age=604800`;
+
+      // ----------------------------------------------------------
+      // 🔥 4. Set cookies
+      // ----------------------------------------------------------
+      document.cookie = `hf_user_phone=${phoneFull}; Path=/; Max-Age=604800`;
+      document.cookie = `hf_user_id=${data.id}; Path=/; Max-Age=604800`;
 
       success("Welcome to HomeFix — Login successful!");
       navigator.vibrate?.([60, 40, 120]);
       setPanel("success");
+
       setTimeout(() => router.replace("/profile"), 1600);
     } catch (err) {
-      console.error("💥 [Verify OTP]", err);
+      console.error("[Verify OTP]", err);
       error("Verification failed. Please try again.");
       navigator.vibrate?.([120]);
     } finally {
       setTimeout(() => setIsProcessing(false), 400);
     }
-  }
+  }, [
+    error,
+    isProcessing,
+    login,
+    otp,
+    otpVerifying,
+    phoneDigits,
+    router,
+    success,
+    verifyOtp,
+  ]);
 
   /* ------------------------------------------------------------
-     ⌨️ Handle Enter key globally
+     ⌨️ Enter Key Handler
   ------------------------------------------------------------ */
   useEffect(() => {
     function handleKeyPress(e: KeyboardEvent) {
@@ -178,11 +219,11 @@ export default function LoginPage() {
     }
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [panel, phone, otp]);
+  }, [panel, phone, otp, handleSendOtp, handleVerifyOtp]);
 
-  /* ------------------------------------------------------------
-     🎨 Panels
+  /* Panels… (unchanged UI code below)
   ------------------------------------------------------------ */
+
   const FormPanel = (
     <div className="p-6 sm:p-8 relative">
       <motion.div
@@ -265,11 +306,8 @@ export default function LoginPage() {
     </div>
   );
 
-  /* ------------------------------------------------------------
-     🧱 Layout
-  ------------------------------------------------------------ */
   return (
-    <main className="min-h-screen flex items-end sm:items-center justify-center bg-gray-50 dark:bg-slate-900 relative">
+    <main className="min-h-screen flex items-end sm:items-center justify-center bg-[var(--surface-base)] relative">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}

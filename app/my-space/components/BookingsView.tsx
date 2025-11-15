@@ -151,12 +151,34 @@ function BookingCard({ booking }: any) {
   const services = Array.isArray(booking.services)
     ? booking.services
     : [booking.services];
-  const statusColor =
-    booking.status === "completed"
-      ? "emerald"
-      : booking.status === "cancelled"
-      ? "rose"
-      : "blue";
+  const normalizedStatus = (booking.status || "").toLowerCase();
+  const palette =
+    normalizedStatus === "completed"
+      ? {
+          bar: "var(--accent-success)",
+          text: "var(--accent-success)",
+          chipBg:
+            "color-mix(in srgb, var(--accent-success) 12%, transparent 88%)",
+          chipBorder:
+            "color-mix(in srgb, var(--accent-success) 40%, transparent 60%)",
+        }
+      : normalizedStatus === "cancelled"
+      ? {
+          bar: "var(--accent-danger)",
+          text: "var(--accent-danger)",
+          chipBg:
+            "color-mix(in srgb, var(--accent-danger) 10%, transparent 90%)",
+          chipBorder:
+            "color-mix(in srgb, var(--accent-danger) 40%, transparent 60%)",
+        }
+      : {
+          bar: "var(--accent-info)",
+          text: "var(--accent-info)",
+          chipBg:
+            "color-mix(in srgb, var(--accent-info) 10%, transparent 90%)",
+          chipBorder:
+            "color-mix(in srgb, var(--accent-info) 40%, transparent 60%)",
+        };
 
   return (
     <motion.div
@@ -169,20 +191,20 @@ function BookingCard({ booking }: any) {
       )}
     >
       <span
-        className={clsx(
-          "absolute left-0 top-0 h-full w-[4px] rounded-l-2xl",
-          `bg-${statusColor}-500`
-        )}
+        className="absolute left-0 top-0 h-full w-[4px] rounded-l-2xl"
+        style={{ background: palette.bar }}
       />
       <div className="flex justify-between items-center mb-2 flex-wrap">
         <h2 className="font-semibold text-base truncate pr-3">
           {services[0]?.name || "Service Booking"}
         </h2>
         <span
-          className={clsx(
-            "text-xs px-2 py-0.5 rounded-full border capitalize",
-            `text-${statusColor}-400 border-${statusColor}-400/40 bg-${statusColor}-500/10`
-          )}
+          className="text-xs px-2 py-0.5 rounded-full border capitalize"
+          style={{
+            color: palette.text,
+            borderColor: palette.chipBorder,
+            background: palette.chipBg,
+          }}
         >
           {booking.status}
         </span>
@@ -219,7 +241,8 @@ function BookingCard({ booking }: any) {
             Reschedule
           </button>
           <button
-            className="flex-1 py-1.5 text-xs rounded-lg bg-red-500/80 hover:bg-red-600 text-white transition"
+            className="flex-1 py-1.5 text-xs rounded-lg text-white transition hover:brightness-110"
+            style={{ background: "var(--accent-danger)" }}
             onClick={() => console.log("❌ Cancel", booking.id)}
           >
             Cancel
@@ -228,7 +251,7 @@ function BookingCard({ booking }: any) {
       )}
 
       <div className="flex justify-between items-end mt-3">
-        <p className="font-semibold text-green-700 dark:text-green-400">
+        <p className="font-semibold text-[var(--accent-success)]">
           ₹{Number(booking.total_price).toLocaleString()}
         </p>
       </div>

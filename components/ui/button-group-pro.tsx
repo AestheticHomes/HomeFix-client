@@ -65,7 +65,7 @@ export function ButtonGroupPro({
   ------------------------------------------------------------ */
   useEffect(() => {
     const stored = localStorage.getItem(`edith-group-${groupKey}`);
-    const urlValue = syncURL ? params.get(groupKey) : null;
+    const urlValue = syncURL ? params?.get(groupKey) ?? null : null;
     setActiveId(urlValue || stored || defaultId);
   }, [groupKey, defaultId, params, syncURL]);
 
@@ -77,10 +77,13 @@ export function ButtonGroupPro({
       setActiveId(id);
       localStorage.setItem(`edith-group-${groupKey}`, id);
       if (syncURL) {
-        const search = new URLSearchParams(Array.from(params.entries()));
+        const search = new URLSearchParams(
+          params ? Array.from(params.entries()) : []
+        );
         search.set(groupKey, id);
         router.replace(`?${search.toString()}`);
       }
+
       onChange?.(id);
     },
     [groupKey, syncURL, params, router, onChange]

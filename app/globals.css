@@ -64,20 +64,39 @@
 ------------------------------------------------------------ */
 @layer base {
   :root {
-    /* SURFACES */
-    --surface-base: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
-    --surface-card: linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%);
-    --surface-overlay: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+    /* SURFACES — Light (clean white orbit) */
+    --surface-base: #ffffff;
+    --surface-card: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+    --surface-overlay: linear-gradient(180deg, #f9fafb 0%, #edf2f7 100%);
+    --surface-light: #ffffff;
+    --surface-dark: #0f172a;
+    --surface-hover: rgba(90, 93, 240, 0.06);
+    --surface-card-dark: linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%);
+    --surface-elevated: rgba(255, 255, 255, 0.96);
+    --surface-elevated-dark: rgba(148, 163, 184, 0.18);
+    --surface-header: rgba(248, 250, 252, 0.96);
+    --surface-panel: rgba(255, 255, 255, 0.95);
+    --surface-panel-dark: rgba(14, 14, 36, 0.9);
+    --surface-input: rgba(247, 248, 255, 0.92);
+    --surface-input-dark: rgba(23, 23, 46, 0.92);
+    --surface-chip: rgba(90, 93, 240, 0.08);
+    --surface-chip-dark: rgba(236, 110, 207, 0.14);
 
     /* TEXT */
     --text-primary: #0f172a;
     --text-secondary: #334155;
+    --text-primary-light: #0f172a;
+    --text-primary-dark: #0f172a;
+    --text-muted: #94a3b8;
+    --text-hero: #ffffff;
+    --text-subtle: color-mix(in srgb, var(--text-secondary) 88%, #ffffff 12%);
 
     /* ACCENTS */
     --accent-primary: #5a5df0;
     --accent-secondary: #ec6ecf;
     --accent-tertiary: #9b5cf8;
     --accent-success: #22c55e;
+    --accent-success-hover: #16a34a;
     --accent-danger: #ef4444;
     --accent-warning: #f59e0b;
     --accent-info: #3b82f6;
@@ -86,10 +105,23 @@
     --shadow-elevation: 0 4px 12px rgba(0, 0, 0, 0.08);
     --selection-bg: rgba(91, 115, 255, 0.25);
     --selection-text: #111827;
+    --aura-light: rgba(90, 93, 240, 0.12);
+    --aura-dark: rgba(34, 197, 94, 0.18);
+    --border-soft: rgba(15, 23, 42, 0.08);
+    --border-muted: rgba(148, 163, 184, 0.35);
+    --border-subtle: rgba(148, 163, 184, 0.25);
 
     /* Layout constants */
     --header-h: 72px;
     --mbnav-h: 72px;
+    --mbnav-h-safe: calc(var(--mbnav-h) + env(safe-area-inset-bottom, 0px));
+    --safe-max-width: 1280px;
+    --toast-safe-top: calc(var(--header-h) + 12px);
+    --nav-surface: rgba(255, 255, 255, 0.9);
+    --nav-text: var(--text-primary);
+    --nav-label-color: #475569;
+    --sidebar-surface: rgba(255, 255, 255, 0.92);
+    --sidebar-text: var(--text-primary);
 
     /* Edith UI tokens */
     --edith-primary: var(--accent-primary);
@@ -99,20 +131,72 @@
     --edith-surface-hover: #f4f5ff;
     --edith-border: #e3e4ea;
     --edith-text: #1c1c1e;
+
+    /* Badges — Mother Nature palette (light) */
+    --badge-live-bg: rgba(134, 239, 172, 0.35); /* soft leaf */
+    --badge-live-text: #166534; /* deep forest */
+    --badge-soon-bg: rgba(253, 230, 138, 0.7); /* warm sunlight */
+    --badge-soon-text: #92400e; /* rich earth */
+
+    /* CTA overlays */
+    --overlay-cta: rgba(15, 23, 42, 0.6);
+    --hero-overlay-top: rgba(255, 255, 255, 0.92);
+    --hero-overlay-mid: rgba(247, 248, 255, 0.65);
+    --section-sheen: rgba(90, 93, 240, 0.08);
+    --section-veil: rgba(148, 163, 184, 0.12);
+
+    /* Cosmos canvases */
+    --cosmos-space-light: #f7f9ff;
+    --cosmos-fog-light: #e2e8f0;
   }
 
   html.dark {
-    --surface-base: linear-gradient(180deg, #0b0a1a 0%, #17152f 100%);
-    --surface-card: linear-gradient(180deg, #181828 0%, #1f2035 100%);
-    --surface-overlay: linear-gradient(180deg, #1b1d32 0%, #2a2d4f 100%);
+    /* SURFACES — Deep Space */
+    --surface-base: radial-gradient(
+        circle at 0% -20%,
+        rgba(27, 25, 72, 0.9) 0%,
+        rgba(2, 6, 23, 1) 42%,
+        rgba(1, 4, 18, 1) 100%
+      );
+    --surface-card: radial-gradient(
+        circle at 10% 0%,
+        rgba(24, 22, 60, 0.98) 0%,
+        rgba(15, 23, 42, 0.98) 40%,
+        rgba(15, 23, 42, 0.98) 100%
+      );
+    --surface-overlay: radial-gradient(
+        circle at 90% 0%,
+        rgba(39, 34, 90, 0.96) 0%,
+        rgba(15, 23, 42, 0.98) 55%,
+        rgba(3, 7, 18, 1) 100%
+      );
+    --surface-light: rgba(26, 24, 53, 0.9);
+    --surface-dark: #080715;
+    --surface-hover: rgba(236, 110, 207, 0.12);
+    --surface-card-dark: linear-gradient(180deg, #181828 0%, #1f2035 100%);
+    --surface-elevated: rgba(24, 22, 45, 0.9);
+    --surface-elevated-dark: rgba(12, 12, 30, 0.95);
+    --surface-header: rgba(9, 9, 25, 0.85);
+    --surface-panel: rgba(12, 12, 30, 0.92);
+    --surface-panel-dark: rgba(8, 7, 21, 0.92);
+    --surface-input: rgba(18, 18, 38, 0.92);
+    --surface-input-dark: rgba(12, 12, 28, 0.92);
+    --surface-chip: rgba(236, 110, 207, 0.18);
+    --surface-chip-dark: rgba(90, 93, 240, 0.25);
 
     --text-primary: #f8fafc;
     --text-secondary: #cbd5e1;
+    --text-primary-light: #f8fafc;
+    --text-primary-dark: #f8fafc;
+    --text-muted: #94a3b8;
+    --text-hero: #f9fafb;
+    --text-subtle: color-mix(in srgb, var(--text-secondary) 92%, #020617 8%);
 
     --accent-primary: #ec6ecf;
     --accent-secondary: #5a5df0;
     --accent-tertiary: #9b5cf8;
     --accent-success: #4ade80;
+    --accent-success-hover: #22c55e;
     --accent-danger: #f87171;
     --accent-warning: #fbbf24;
     --accent-info: #60a5fa;
@@ -120,6 +204,11 @@
     --shadow-elevation: 0 4px 16px rgba(0, 0, 0, 0.6);
     --selection-bg: rgba(236, 110, 207, 0.3);
     --selection-text: #f8fafc;
+    --aura-light: rgba(90, 93, 240, 0.1);
+    --aura-dark: rgba(34, 197, 94, 0.2);
+    --border-soft: rgba(255, 255, 255, 0.12);
+    --border-muted: rgba(255, 255, 255, 0.18);
+    --border-subtle: rgba(255, 255, 255, 0.14);
 
     /* Edith dark */
     --edith-primary: var(--accent-primary);
@@ -129,6 +218,28 @@
     --edith-surface-hover: #2a2a2d;
     --edith-border: #2f2f33;
     --edith-text: #e8e8ee;
+    --nav-surface: rgba(12, 12, 30, 0.9);
+    --nav-text: var(--text-primary);
+    --nav-label-color: rgba(226, 232, 240, 0.8);
+    --sidebar-surface: rgba(13, 13, 28, 0.88);
+    --sidebar-text: var(--text-primary);
+
+    /* Badges — Mother Nature palette (dark) */
+    --badge-live-bg: rgba(22, 163, 74, 0.35); /* brighter leaf */
+    --badge-live-text: #bbf7d0; /* mint highlight */
+    --badge-soon-bg: rgba(252, 211, 77, 0.35); /* warm ember */
+    --badge-soon-text: #fef3c7; /* soft light */
+
+    /* CTA overlays */
+    --overlay-cta: rgba(15, 23, 42, 0.8);
+    --hero-overlay-top: rgba(4, 7, 23, 0.92);
+    --hero-overlay-mid: rgba(8, 7, 21, 0.75);
+    --section-sheen: rgba(236, 110, 207, 0.12);
+    --section-veil: rgba(8, 7, 21, 0.85);
+
+    /* Cosmos canvases */
+    --cosmos-space-dark: #0e0b2c;
+    --cosmos-fog-dark: #0a0f26;
   }
 }
 
@@ -165,6 +276,42 @@
   background-size: 100% 200%;
 }
 
+@keyframes edith-logo-aurora {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.edith-logo-gradient {
+  background-image: linear-gradient(
+    90deg,
+    var(--accent-primary),
+    var(--accent-tertiary),
+    var(--accent-secondary),
+    var(--accent-primary)
+  );
+  background-size: 220% 220%;
+  animation: edith-logo-aurora 9s ease-in-out infinite;
+}
+
+@keyframes cosmos-drift {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(-10px, -6px, 0);
+  }
+  100% {
+    transform: translate3d(12px, 4px, 0);
+  }
+}
+
 /* ------------------------------------------------------------
    🌫️ DEPTH, GLOW & BACKGROUND ATMOSPHERE
 ------------------------------------------------------------ */
@@ -172,21 +319,30 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: radial-gradient(
-    circle at 50% 20%,
-    rgba(255, 255, 255, 0.2),
-    rgba(0, 0, 0, 0.05)
-  );
-  opacity: 0.4;
+  background: transparent;
+  opacity: 0;
   pointer-events: none;
+  will-change: transform;
+  animation: cosmos-drift 48s ease-in-out infinite alternate;
 }
 html.dark body::before {
-  background: radial-gradient(
-    circle at 50% 30%,
-    rgba(255, 255, 255, 0.05),
-    rgba(0, 0, 0, 0.7)
-  );
-  opacity: 0.25;
+  background:
+    radial-gradient(
+      circle at 0% -10%,
+      rgba(236, 110, 207, 0.28),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 90% 120%,
+      rgba(56, 189, 248, 0.24),
+      transparent 65%
+    ),
+    radial-gradient(
+      circle at 50% 10%,
+      rgba(148, 163, 255, 0.18),
+      transparent 60%
+    );
+  opacity: 0.55;
 }
 
 /* ------------------------------------------------------------
@@ -272,6 +428,14 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(155, 92, 248, 0.7);
 }
 
+/* Hide scrollbars for universal sidebar while preserving scroll */
+#universal-sidebar {
+  scrollbar-width: none;
+}
+#universal-sidebar::-webkit-scrollbar {
+  display: none;
+}
+
 /* ------------------------------------------------------------
    ✨ SELECTION & AUTO CONTRAST
 ------------------------------------------------------------ */
@@ -304,4 +468,33 @@ aside,
 main,
 [data-theme-transition] {
   transition: background 0.4s ease, color 0.4s ease;
+}
+/* --- Fix invisible overlay blocking footer --- */
+#checkout-safe .relative.h-\[340px\],
+#checkout-safe .relative.h-\[340px\] * {
+  pointer-events: none !important;
+}
+
+.checkout-footer {
+  pointer-events: auto !important;
+  z-index: 100 !important;
+}
+/* 🧠 Edith Safe Interaction Layer */
+.checkout-footer {
+  z-index: 200 !important;
+  pointer-events: auto !important;
+}
+
+#checkout-safe > *:not(.checkout-footer) {
+  pointer-events: auto;
+}
+
+#checkout-safe .fixed,
+#checkout-safe .relative {
+  pointer-events: none !important;
+}
+
+#checkout-log,
+#checkout-log * {
+  pointer-events: none !important;
 }

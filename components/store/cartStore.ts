@@ -1,22 +1,20 @@
 "use client";
 /**
  * ============================================================
- * 🛒 HomeFix Edith Cart Core v7.3 — TypeSafe Persistent Build
+ * Dual Cart Stores - Store vs Service (Zustand + persist)
  * ------------------------------------------------------------
- * ✅ Zustand + persist (typed storage)
- * ✅ Hydration-safe (Next.js 14)
- * ✅ Cross-tab sync
- * ✅ LocalStorage persistence until checkout success
- * ✅ TypeScript clean — zero errors
+ * ? useProductCartStore  -> materials / goods checkout
+ * ? useServiceCartStore  -> service bookings (visit-fee model)
+ * ? Identical APIs: addItem / increment / decrement / totals
+ * ? Independent persistence + cross-tab sync
  * ============================================================
  */
 
 import { create } from "zustand";
 import { createJSONStorage, persist, StateStorage } from "zustand/middleware";
 
-/* ------------------------------------------------------------
-   🧱 Types
------------------------------------------------------------- */
+export type CartItemType = "product" | "service";
+
 export interface CartItem {
   id: number;
   title: string;
@@ -27,12 +25,15 @@ export interface CartItem {
   slug?: string;
   category?: string;
   billing_type?: "sqft" | "job" | "unit";
-  type?: "product" | "service";
+  type?: CartItemType;
 }
 
 interface CartState {
   items: CartItem[];
-  addItem: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
+  addItem: (item: Omit<CartItem, "type" | "quantity"> & {
+    quantity?: number;
+    type?: CartItemType;
+  }) => void;
   increment: (id: number) => void;
   decrement: (id: number) => void;
   removeItem: (id: number) => void;
@@ -45,9 +46,6 @@ interface CartState {
   getTotalPrice: () => number;
 }
 
-/* ------------------------------------------------------------
-   🧩 Browser Storage Adapter (TS Safe)
------------------------------------------------------------- */
 const safeStorage: StateStorage = {
   getItem: (name: string): string | null => {
     if (typeof window === "undefined") return null;
@@ -63,137 +61,143 @@ const safeStorage: StateStorage = {
   },
 };
 
-/* ------------------------------------------------------------
-   ⚙️ Zustand Store Implementation
------------------------------------------------------------- */
-export const useCartStore = create<CartState>()(
-  persist(
-    (set, get) => ({
-      items: [],
-      totalItems: 0,
-      totalPrice: 0,
+function createCartStore(storageKey: string, defaultType: CartItemType) {
+  return create<CartState>()(
+    persist(
+      (set, get) => ({
+        items: [],
+        totalItems: 0,
+        totalPrice: 0,
 
-      /* ➕ Add or merge item */
-      addItem: (item) => {
-        const id = Number(item.id);
-        const existing = get().items.find((i) => i.id === id);
-        const quantityToAdd = Math.max(item.quantity ?? 1, 1);
+        addItem: (item) => {
+          const id = Number(item.id);
+          const existing = get().items.find((i) => i.id === id);
+          const quantityToAdd = Math.max(item.quantity ?? 1, 1);
+          const normalizedType = item.type || defaultType;
 
-        const updated = existing
-          ? get().items.map((i) =>
-              i.id === id ? { ...i, quantity: i.quantity + quantityToAdd } : i
-            )
-          : [
-              ...get().items,
-              {
-                ...item,
-                id,
-                quantity: quantityToAdd,
-                type: item.type || "product",
-              },
-            ];
+          const updated = existing
+            ? get().items.map((i) =>
+                i.id === id
+                  ? { ...i, quantity: i.quantity + quantityToAdd }
+                  : i
+              )
+            : [
+                ...get().items,
+                {
+                  ...item,
+                  id,
+                  quantity: quantityToAdd,
+                  type: normalizedType,
+                },
+              ];
 
-        set({ items: updated });
-        get().recalcTotals();
-        navigator.vibrate?.(20);
-      },
+          set({ items: updated });
+          get().recalcTotals();
+          navigator.vibrate?.(20);
+        },
 
-      /* 🔼 Increment */
-      increment: (id) => {
-        const updated = get().items.map((i) =>
-          i.id === id ? { ...i, quantity: i.quantity + 1 } : i
-        );
-        set({ items: updated });
-        get().recalcTotals();
-      },
+        increment: (id) => {
+          const updated = get().items.map((i) =>
+            i.id === id ? { ...i, quantity: i.quantity + 1 } : i
+          );
+          set({ items: updated });
+          get().recalcTotals();
+        },
 
-      /* 🔽 Decrement */
-      decrement: (id) => {
-        const current = get().items.find((i) => i.id === id);
-        if (!current) return;
-        if (current.quantity <= 1) return get().removeItem(id);
+        decrement: (id) => {
+          const current = get().items.find((i) => i.id === id);
+          if (!current) return;
+          if (current.quantity <= 1) return get().removeItem(id);
 
-        const updated = get().items.map((i) =>
-          i.id === id ? { ...i, quantity: i.quantity - 1 } : i
-        );
-        set({ items: updated });
-        get().recalcTotals();
-      },
+          const updated = get().items.map((i) =>
+            i.id === id ? { ...i, quantity: i.quantity - 1 } : i
+          );
+          set({ items: updated });
+          get().recalcTotals();
+        },
 
-      /* ❌ Remove item */
-      removeItem: (id) => {
-        const updated = get().items.filter((i) => i.id !== id);
-        set({ items: updated });
-        get().recalcTotals();
-        navigator.vibrate?.(10);
-      },
+        removeItem: (id) => {
+          const updated = get().items.filter((i) => i.id !== id);
+          set({ items: updated });
+          get().recalcTotals();
+          navigator.vibrate?.(10);
+        },
 
-      /* 🧹 Clear cart (after successful checkout) */
-      clearCart: () => {
-        set({ items: [], totalItems: 0, totalPrice: 0 });
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("homefix-cart");
-        }
-      },
+        clearCart: () => {
+          set({ items: [], totalItems: 0, totalPrice: 0 });
+          if (typeof window !== "undefined") {
+            localStorage.removeItem(storageKey);
+          }
+        },
 
-      /* 🧼 Reset (on logout or failure) */
-      reset: () => {
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("homefix-cart");
-        }
-        set({ items: [], totalItems: 0, totalPrice: 0 });
-      },
+        reset: () => {
+          if (typeof window !== "undefined") {
+            localStorage.removeItem(storageKey);
+          }
+          set({ items: [], totalItems: 0, totalPrice: 0 });
+        },
 
-      /* 💰 Totals */
-      recalcTotals: () => {
-        const valid = get().items.filter((i) => i.quantity > 0);
-        const totalItems = valid.reduce((sum, i) => sum + i.quantity, 0);
-        const totalPrice = valid.reduce(
-          (sum, i) => sum + i.price * i.quantity,
-          0
-        );
-        set({ items: valid, totalItems, totalPrice });
-      },
+        recalcTotals: () => {
+          const valid = get().items.filter((i) => i.quantity > 0);
+          const totalItems = valid.reduce((sum, i) => sum + i.quantity, 0);
+          const totalPrice = valid.reduce(
+            (sum, i) => sum + i.price * i.quantity,
+            0
+          );
+          set({ items: valid, totalItems, totalPrice });
+        },
 
-      getTotalItems: () => get().totalItems,
-      getTotalPrice: () => get().totalPrice,
-    }),
+        getTotalItems: () => get().totalItems,
+        getTotalPrice: () => get().totalPrice,
+      }),
+      {
+        name: storageKey,
+        version: 1,
+        storage: createJSONStorage(() => safeStorage),
+        skipHydration: false,
+        onRehydrateStorage: () => (state) => {
+          if (state) {
+            requestAnimationFrame(() => {
+              state.recalcTotals?.();
+              console.log(
+                `🛒 [CartStore:${storageKey}] Rehydrated from storage`
+              );
+            });
+          }
+        },
+      }
+    )
+  );
+}
 
-    /* ------------------------------------------------------------
-       💾 Persist Options (Safe)
-    ------------------------------------------------------------ */
-    {
-      name: "homefix-cart",
-      version: 7,
-      storage: createJSONStorage(() => safeStorage),
-      skipHydration: false,
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          requestAnimationFrame(() => {
-            state.recalcTotals?.();
-            console.log("🛒 [CartStore] Rehydrated from storage (Edith v7.3)");
-          });
-        }
-      },
-    }
-  )
+export const useProductCartStore = createCartStore(
+  "homefix-store-cart",
+  "product"
+);
+export const useServiceCartStore = createCartStore(
+  "homefix-service-cart",
+  "service"
 );
 
-/* ------------------------------------------------------------
-   🔁 Multi-Tab Sync
------------------------------------------------------------- */
-if (typeof window !== "undefined") {
-  window.addEventListener("storage", (e) => {
-    if (e.key === "homefix-cart" && e.newValue) {
-      try {
-        const parsed = JSON.parse(e.newValue);
-        if (parsed?.state) {
-          useCartStore.setState(parsed.state);
-          console.log("🔄 [CartStore] Synced across tabs");
-        }
-      } catch (err) {
-        console.warn("⚠️ [CartStore] Cross-tab sync failed:", err);
-      }
+function syncFromStorage(event: StorageEvent, storeKey: string) {
+  if (event.key !== storeKey || !event.newValue) return;
+  try {
+    const payload = JSON.parse(event.newValue);
+    if (!payload?.state) return;
+    if (storeKey === "homefix-store-cart") {
+      useProductCartStore.setState(payload.state);
+    } else if (storeKey === "homefix-service-cart") {
+      useServiceCartStore.setState(payload.state);
     }
-  });
+  } catch (err) {
+    console.warn("🛒 [CartStore] Cross-tab sync failed:", err);
+  }
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) =>
+    ["homefix-store-cart", "homefix-service-cart"].forEach((key) =>
+      syncFromStorage(e, key)
+    )
+  );
 }

@@ -41,13 +41,14 @@ export default function LayoutContent({
   return (
     <div
       className="relative flex flex-col min-h-full overflow-hidden
-                 bg-[var(--surface-light)] dark:bg-[var(--surface-dark)]
+                 bg-[var(--surface-base)]
                  text-[var(--sidebar-text)] transition-colors duration-500"
     >
       {/* 🧭 Sidebar + Main Section */}
       <div className="flex flex-row w-full min-h-full overflow-hidden">
         {/* 🧩 Sidebar (desktop only) */}
         <motion.aside
+          id="universal-sidebar"
           animate={{ width: collapsed ? 80 : 256 }}
           transition={{ type: "spring", stiffness: 180, damping: 22 }}
           className="hidden md:flex flex-shrink-0 fixed left-0 z-[60]
@@ -66,15 +67,16 @@ export default function LayoutContent({
         <main
           id="safe-main-content"
           className="flex-1 transition-all duration-700 ease-in-out
-                     text-[var(--sidebar-text)]
-                     bg-[var(--surface-light)] dark:bg-[var(--surface-dark)]"
+                     text-[var(--sidebar-text)]"
           style={{
             marginLeft: isMobile ? "0px" : collapsed ? "80px" : "256px",
             transition: "margin-left 0.4s ease",
           }}
         >
           <div
-            className="mx-auto w-full max-w-5xl px-4 sm:px-6 md:px-8
+            className="w-full ml-0 mr-0
+                       pl-4 sm:pl-6 md:pl-8
+                       pr-2 sm:pr-3 md:pr-4
                        pt-4 md:pt-6 pb-8"
           >
             {children}

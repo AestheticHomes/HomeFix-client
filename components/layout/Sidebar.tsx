@@ -11,6 +11,7 @@
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/lib/supabaseClient";
+import { HomeFixUser } from "@/types/HomeFixUser";
 import { motion } from "framer-motion";
 import {
   Box,
@@ -53,21 +54,28 @@ const NAV = [
 export default function Sidebar() {
   const { collapsed, setCollapsed } = useSidebar();
   const { user: contextUser } = useUser();
-  const [user, setUser] = useState<{ name?: string; phone?: string } | null>(
-    null
-  );
+
+  const [user, setUser] = useState<HomeFixUser | null>(null);
+  const [pinned, setPinned] = useState<boolean>(false);
+
   const widthPx = collapsed ? 80 : 256;
 
   /* 🧠 Hydrate user */
   useEffect(() => {
+    if (contextUser && contextUser.loggedIn) {
+      setUser(contextUser);
+      return;
+    }
+
+    // fallback only if no real context user
     const cached = localStorage.getItem("user");
-    if (contextUser) setUser(contextUser);
-    else if (cached)
+    if (cached) {
       try {
         setUser(JSON.parse(cached));
       } catch {
         localStorage.removeItem("user");
       }
+    }
   }, [contextUser]);
 
   /* 🚪 Logout */
@@ -90,7 +98,6 @@ export default function Sidebar() {
     <motion.aside
       data-theme-transition
       role="complementary"
-      aria-expanded={!collapsed}
       layout
       animate={{ width: widthPx }}
       transition={{
@@ -99,65 +106,75 @@ export default function Sidebar() {
         damping: 22,
         mass: 0.8,
       }}
-      onMouseEnter={() => collapsed && setCollapsed(false)}
-      onMouseLeave={() => setCollapsed(true)}
+      onMouseEnter={() => {
+        if (!pinned) setCollapsed(false);
+      }}
+      onMouseLeave={() => {
+        if (!pinned) setCollapsed(true);
+      }}
       style={{
         background: "var(--sidebar-surface)",
         color: "var(--sidebar-text)",
         transition: "background 0.4s ease, color 0.4s ease",
+        borderRight: "1px solid var(--border-soft)",
       }}
       className={`
     relative flex flex-col h-[calc(100vh-64px)]
-    overflow-y-auto overflow-x-hidden
-    border-r border-[#9B5CF8]/25
-    shadow-[inset_0_0_20px_rgba(155,92,248,0.08)]
+    overflow-y-hidden overflow-x-hidden
     backdrop-blur-xl transition-all duration-500
   `}
     >
-      {/* 🌈 Energy Glow Band */}
+      {/* 🌈 Edith Aura Band */}
       <motion.div
         className="absolute inset-y-0 left-0 w-[4px] rounded-r-full pointer-events-none"
         animate={{
           background: [
-            "linear-gradient(to bottom, #9B5CF8, #5A5DF0, #EC6ECF)",
-            "linear-gradient(to bottom, #EC6ECF, #5A5DF0, #9B5CF8)",
+            "linear-gradient(to bottom, var(--accent-tertiary), var(--accent-primary), var(--accent-secondary))",
+            "linear-gradient(to bottom, var(--accent-secondary), var(--accent-primary), var(--accent-tertiary))",
           ],
           boxShadow: [
-            "0 0 10px rgba(155,92,248,0.4)",
-            "0 0 20px rgba(236,110,207,0.4)",
+            "0 0 16px rgba(155,92,248,0.55)",
+            "0 0 26px rgba(236,110,207,0.6)",
           ],
+          scaleY: [1, 1.04, 1],
         }}
-        transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+        transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
       />
 
       {/* ✨ Header */}
       <div
-        className="relative flex items-center justify-center px-4 py-4 border-b border-[#9B5CF8]/20 
-                   bg-surface-light/80 dark:bg-surface-dark/70 backdrop-blur-xl"
+        className="relative flex items-center justify-center px-4 py-4 border-b border-[var(--border-soft)]
+                   bg-[var(--sidebar-surface)] backdrop-blur-xl"
       >
         <motion.button
           aria-label="Toggle sidebar"
-          aria-pressed={!collapsed}
-          onClick={() => setCollapsed((prev) => !prev)}
+          aria-pressed={pinned}
+          onClick={() =>
+            setPinned((prev) => {
+              const next = !prev;
+              setCollapsed(!next);
+              return next;
+            })
+          }
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           transition={{ type: "spring", stiffness: 240, damping: 18 }}
           className="absolute -right-3 top-5 z-50 rounded-full 
-                     bg-surface-light dark:bg-surface-dark 
-                     border border-slate-200 dark:border-slate-700 
-                     shadow-md p-1 hover:border-[#9B5CF8]/40
-                     hover:bg-[#F4F2FF]/80 dark:hover:bg-[#1A143A]/60
+                     bg-[var(--sidebar-surface)]
+                     border border-[var(--border-soft)]
+                     shadow-md p-1 hover:border-[var(--accent-tertiary)]/40
+                     hover:bg-[var(--edith-surface-hover)]/90 dark:hover:bg-[var(--surface-hover)]
                      transition-all duration-300"
         >
           {collapsed ? (
             <ChevronRight
               size={18}
-              className="text-gray-600 dark:text-gray-300"
+              className="text-[var(--sidebar-text)]/70"
             />
           ) : (
             <ChevronLeft
               size={18}
-              className="text-gray-600 dark:text-gray-300"
+              className="text-[var(--sidebar-text)]/70"
             />
           )}
         </motion.button>
@@ -174,8 +191,8 @@ export default function Sidebar() {
             <Link
               href={href}
               className="group flex items-center gap-3 px-3 py-2 rounded-xl
-                         text-primary-light dark:text-primary-dark
-                         hover:bg-gradient-to-r hover:from-[#5A5DF0]/10 hover:to-[#EC6ECF]/10
+                         text-[var(--sidebar-text)]
+                         hover:bg-gradient-to-r hover:from-[var(--accent-primary)]/10 hover:to-[var(--accent-secondary)]/10
                          hover:shadow-[0_0_10px_rgba(155,92,248,0.25)]
                          transition-all duration-300 ease-out"
             >
@@ -184,20 +201,20 @@ export default function Sidebar() {
                 className="relative flex items-center"
               >
                 <Icon size={18} />
-                <span className="absolute inset-0 rounded-full bg-gradient-to-r from-[#5A5DF0]/20 to-[#EC6ECF]/20 blur-md opacity-0 group-hover:opacity-60 transition-opacity" />
+                <span className="absolute inset-0 rounded-full bg-gradient-to-r from-[var(--accent-primary)]/20 to-[var(--accent-secondary)]/20 blur-md opacity-0 group-hover:opacity-60 transition-opacity" />
               </motion.div>
 
               {!collapsed && (
                 <div className="flex items-center justify-between w-full">
-                  <span className="text-sm font-medium tracking-wide">
+                  <span className="text-[15px] font-medium tracking-wide">
                     {label}
                   </span>
                   {badge && (
                     <span
                       className={`text-[10px] px-1.5 py-0.5 rounded-md ml-2 ${
                         badge === "Live"
-                          ? "bg-green-500/20 text-green-700 dark:text-green-300"
-                          : "bg-amber-500/20 text-amber-700 dark:text-amber-300"
+                          ? "bg-[var(--badge-live-bg)] text-[var(--badge-live-text)]"
+                          : "bg-[var(--badge-soon-bg)] text-[var(--badge-soon-text)]"
                       }`}
                     >
                       {badge}
@@ -211,7 +228,7 @@ export default function Sidebar() {
       </div>
 
       {/* 👤 Footer */}
-      <div className="border-t border-[#9B5CF8]/20 bg-surface-light/80 dark:bg-surface-dark/70 backdrop-blur-lg p-4">
+      <div className="border-t border-[var(--border-soft)] bg-[var(--sidebar-surface)] backdrop-blur-lg p-4">
         <div className="flex items-center justify-between mb-2">
           <motion.div
             whileHover={{ scale: 1.08 }}
@@ -223,10 +240,10 @@ export default function Sidebar() {
               initial={{ opacity: 0.5 }}
               animate={{ opacity: [0.4, 0.1, 0.4], scale: [1, 1.15, 1] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute inset-0 rounded-full bg-gradient-to-r from-[#5A5DF0]/40 to-[#EC6ECF]/40 blur-lg"
+              className="absolute inset-0 rounded-full bg-gradient-to-r from-[var(--accent-primary)]/40 to-[var(--accent-secondary)]/40 blur-lg"
             />
             <div
-              className="relative w-9 h-9 rounded-full bg-gradient-to-r from-[#5A5DF0] to-[#EC6ECF]
+              className="relative w-9 h-9 rounded-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)]
                          flex items-center justify-center text-sm font-bold text-white
                          shadow-[0_0_10px_rgba(155,92,248,0.5)] ring-1 ring-white/10"
             >
@@ -237,10 +254,10 @@ export default function Sidebar() {
           {!collapsed && (
             <div className="flex items-center justify-between flex-1 ml-3">
               <div className="flex flex-col leading-tight">
-                <span className="text-sm font-medium">
+                <span className="text-[15px] font-medium">
                   {user?.name || "Guest"}
                 </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-[var(--text-muted)]">
                   Member
                 </span>
               </div>
@@ -254,7 +271,7 @@ export default function Sidebar() {
             whileTap={{ scale: 0.96 }}
             onClick={handleLogout}
             className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-lg 
-                       text-[#EC6ECF] hover:bg-[#EC6ECF]/10 transition-all"
+                       text-[var(--accent-secondary)] hover:bg-[var(--accent-secondary)]/10 transition-all"
           >
             <LogOut size={16} />
             {!collapsed && <span className="text-sm">Logout</span>}
@@ -263,7 +280,7 @@ export default function Sidebar() {
           <Link
             href="/login"
             className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-lg
-                       text-[#5A5DF0] hover:bg-[#9B5CF8]/10 transition-all"
+                       text-[var(--accent-primary)] hover:bg-[var(--accent-tertiary)]/10 transition-all"
           >
             <LogIn size={16} />
             {!collapsed && <span className="text-sm">Login</span>}

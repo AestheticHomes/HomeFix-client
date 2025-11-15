@@ -75,4 +75,6 @@ export const forceLog = (tag?: string, ...args: any[]) => {
   console.log("⚡", ...format(tag, args));
 };
 
-export default { log, info, warn, error, forceLog, edithLog };
+const consoleBridge = { log, info, warn, error, forceLog, edithLog };
+
+export default consoleBridge;

@@ -16,12 +16,12 @@ const COUNTER_D = 600;
 const APPLIANCE_MARGIN = 60;
 
 const COLORS = {
-  counter: "#DDD8FF",
-  counterStroke: "#5A57F0",
-  sink: "#C4E6FF",
-  hob: "#F7C3C3",
-  dim: "#9AA9FF",
-  text: "#A0A8FF",
+  counter: "color-mix(in srgb, var(--accent-primary) 10%, var(--edith-on-primary) 90%)",
+  counterStroke: "var(--accent-primary)",
+  sink: "color-mix(in srgb, var(--accent-info) 25%, var(--edith-on-primary) 75%)",
+  hob: "color-mix(in srgb, var(--accent-danger) 22%, var(--edith-on-primary) 78%)",
+  dim: "var(--text-muted)",
+  text: "var(--text-muted)",
 };
 
 /* ---------- CAD primitives ---------- */

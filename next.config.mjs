@@ -1,12 +1,10 @@
 /**
  * ============================================================
- * 🏗️ HomeFix India Client — Edith Technologies v3.4
+ * 🏗️ HomeFix India — Edith Technologies v3.4 (ESM Safe)
  * ------------------------------------------------------------
- * ✅ App Router + PWA (Next 14 stable)
- * ✅ Strict + SafeViewport Ready (for 100dvh layouts)
- * ✅ Smart source-map & console control
- * ✅ Path aliases for Edith ecosystem
- * ✅ Hardened image domains (Cloudinary, Supabase, Unsplash)
+ * ✅ Ensures /api routes execute properly (standalone)
+ * ✅ PWA + Supabase Edge + LedgerX compatible
+ * ✅ TypedRoute ready for App Router
  * ============================================================
  */
 
@@ -17,25 +15,21 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/* ------------------------------------------------------------
-   🔹 Progressive Web App Configuration
------------------------------------------------------------- */
 const withPWA = nextPWA({
   dest: "public",
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
-  buildExcludes: [/middleware-manifest\.json$/],
   cacheStartUrl: true,
   sw: "sw.js",
   scope: "/",
+  buildExcludes: [/middleware-manifest\.json$/],
 });
 
-/* ------------------------------------------------------------
-   🔹 Core Next.js Configuration
------------------------------------------------------------- */
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: process.env.NODE_ENV !== "production",
+  output: "standalone", // ✅ this enables API routes!
   productionBrowserSourceMaps: false,
 
   images: {
@@ -58,12 +52,11 @@ const nextConfig = {
   typescript: { ignoreBuildErrors: false },
 
   experimental: {
+    serverActions: { bodySizeLimit: "2mb" },
     scrollRestoration: true,
+    viewTransition: true,
     typedRoutes: true,
     webVitalsAttribution: ["CLS", "LCP", "FID"],
-    serverActions: { bodySizeLimit: "2mb" },
-    // 🪶 Enables new 100dvh viewport units for Edith SafeViewport
-    viewTransition: true,
   },
 
   compiler: {
@@ -76,9 +69,6 @@ const nextConfig = {
   optimizeFonts: true,
   optimizeCss: true,
 
-  /* ------------------------------------------------------------
-     🔹 Webpack Enhancements
-  ------------------------------------------------------------ */
   webpack: (config) => {
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
@@ -90,18 +80,16 @@ const nextConfig = {
       "@/edith": path.resolve(__dirname, "edith"),
     };
 
-    // Disable source maps in production
     if (process.env.NODE_ENV === "production") {
       config.devtool = false;
     }
 
-    // Edith Build Banner 🩵
     config.plugins.push({
       apply: (compiler) => {
         compiler.hooks.done.tap("HomeFixBuildBanner", () => {
           console.log(
-            "\x1b[35m%s\x1b[0m",
-            "\n✨ HomeFix India v3.4 — Edith SafeViewport Build Complete 🌿\n"
+            "\x1b[36m%s\x1b[0m",
+            "\n🌿 HomeFix India v3.4 — Edith Continuum Server Ready ⚡\n"
           );
         });
       },

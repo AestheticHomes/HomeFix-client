@@ -119,11 +119,12 @@ export default function InstallFAB() {
         transition={{ duration: 0.4, ease: "easeOut" }}
 whileHover={{ scale: 1.1, boxShadow: "0 0 20px rgba(155,92,248,0.6)" }}
         whileTap={{ scale: 0.95 }}
-        className="fixed right-6 z-fab bg-gradient-to-br from-green-500 to-emerald-700
+        className="fixed right-6 z-fab bg-gradient-to-br from-[var(--accent-success)] to-[var(--accent-success-hover)]
                    text-white p-4 rounded-full shadow-lg cursor-pointer
                    flex items-center justify-center"
         style={{
-          bottom: "calc(var(--mbnav-h-safe) + 1rem)", // ✅ sits above NavBar safely
+          // ✅ floats clearly above footer / browser chrome
+          bottom: "7rem",
         }}
         title="Install HomeFix App"
       >

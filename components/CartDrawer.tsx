@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ShoppingCart, X } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useCart } from "@/components/CartContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -117,9 +118,11 @@ export default function CartDrawer() {
                     {/* Thumbnail */}
                     <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0">
                       {item.image_url ? (
-                        <img
+                        <Image
                           src={item.image_url}
                           alt={item.title}
+                          width={64}
+                          height={64}
                           className="object-cover w-full h-full"
                         />
                       ) : (

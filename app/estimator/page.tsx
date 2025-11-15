@@ -1,4 +1,4 @@
-import EstimatorShell from "@/components/estimator/EstimatorShell";
+import EstimatorPageClient from "@/components/estimator/EstimatorPageClient";
 
 export const metadata = {
   title: "HomeFix Interior Estimator",
@@ -6,7 +6,6 @@ export const metadata = {
     "Kitchen & Wardrobe Estimator — HomeFix India · Edith Technologies",
 };
 
-// ✅ Server component wrapper
 export default function EstimatorPage() {
-  return <EstimatorShell />;
+  return <EstimatorPageClient />;
 }

@@ -11,7 +11,7 @@
  * ============================================================
  */
 
-import { useCartStore } from "@/components/store/cartStore";
+import { useProductCartStore } from "@/components/store/cartStore";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   CalendarDays,
@@ -34,7 +34,7 @@ export default function NavBar() {
   const pathname = usePathname();
   const prefersReducedMotion = useReducedMotion();
   const vibrate = () => globalThis.navigator?.vibrate?.(20);
-  const { totalItems } = useCartStore();
+  const { totalItems } = useProductCartStore();
   const navRef = useRef<HTMLDivElement>(null);
 
   const tabs = [

@@ -46,21 +46,21 @@ export default function WardrobeSvg2D() {
       height="100%"
       viewBox={`0 0 ${vbW} ${vbH}`}
       preserveAspectRatio="xMidYMid meet"
-      className="w-full h-full rounded-xl bg-[#f8f7ff] dark:bg-[#0d0b2b]"
+      className="w-full h-full rounded-xl bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)]"
     >
       {/* defs */}
       <defs>
         <linearGradient id="wallGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#cfd0ff" stopOpacity="0.25" />
-          <stop offset="100%" stopColor="#ffffff" stopOpacity="0.25" />
+          <stop offset="0%" stopColor="var(--accent-primary)" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="var(--edith-on-primary)" stopOpacity="0.22" />
         </linearGradient>
         <linearGradient id="floorShadow" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#6C6AA8" stopOpacity="0" />
-          <stop offset="50%" stopColor="#6C6AA8" stopOpacity="1" />
-          <stop offset="100%" stopColor="#6C6AA8" stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--accent-tertiary)" stopOpacity="0" />
+          <stop offset="50%" stopColor="var(--accent-tertiary)" stopOpacity="1" />
+          <stop offset="100%" stopColor="var(--accent-tertiary)" stopOpacity="0" />
         </linearGradient>
         <marker id="arrow" markerWidth="12" markerHeight="8" refX="6" refY="4" orient="auto">
-          <path d="M0,0 L12,4 L0,8 Z" fill="#6C6AA8" />
+          <path d="M0,0 L12,4 L0,8 Z" fill="var(--accent-tertiary)" />
         </marker>
       </defs>
 
@@ -82,8 +82,9 @@ export default function WardrobeSvg2D() {
           y={floorY - baseH - loftH - gapTopBetween}
           width={totalW}
           height={loftH}
-          fill="#D8CFF9"
-          stroke="#8B5CF6"
+          fill="var(--accent-tertiary)"
+          fillOpacity={0.14}
+          stroke="var(--accent-tertiary)"
           strokeWidth={1.4}
           vectorEffect="non-scaling-stroke"
         />
@@ -94,8 +95,9 @@ export default function WardrobeSvg2D() {
           y={floorY - baseH}
           width={totalW}
           height={baseH}
-          fill="#EDE9FE"
-          stroke="#8B5CF6"
+          fill="var(--accent-tertiary)"
+          fillOpacity={0.1}
+          stroke="var(--accent-tertiary)"
           strokeWidth={1.4}
           vectorEffect="non-scaling-stroke"
           animate={{ opacity: [0.9, 1, 0.9] }}
@@ -109,7 +111,8 @@ export default function WardrobeSvg2D() {
           const rightHinge = i % 2 === 0;
           const handleX = rightHinge ? x + w - 14 : x + 14;
           const hingeX = rightHinge ? x + w - 4 : x + 4;
-          const doorFill = i % 2 === 0 ? "#F3EEFF" : "#F8F5FF";
+          const doorFill =
+            i % 2 === 0 ? "var(--edith-surface)" : "var(--surface-card)";
 
           return (
             <g key={i}>
@@ -120,7 +123,7 @@ export default function WardrobeSvg2D() {
                 width={w}
                 height={baseH}
                 fill={doorFill}
-                stroke="#9B5CF8"
+                stroke="var(--accent-tertiary)"
                 strokeWidth={1.2}
                 vectorEffect="non-scaling-stroke"
               />
@@ -129,7 +132,7 @@ export default function WardrobeSvg2D() {
                 cx={hingeX}
                 cy={floorY - baseH / 2}
                 r={2.4}
-                fill="#9B5CF8"
+                fill="var(--accent-tertiary)"
                 vectorEffect="non-scaling-stroke"
               />
               <line
@@ -137,7 +140,7 @@ export default function WardrobeSvg2D() {
                 y1={floorY - baseH / 2}
                 x2={handleX + 5}
                 y2={floorY - baseH / 2}
-                stroke="#9B5CF8"
+                stroke="var(--accent-tertiary)"
                 strokeWidth={2}
                 strokeLinecap="round"
                 vectorEffect="non-scaling-stroke"
@@ -150,7 +153,7 @@ export default function WardrobeSvg2D() {
                 width={w}
                 height={loftH}
                 fill={doorFill}
-                stroke="#9B5CF8"
+                stroke="var(--accent-tertiary)"
                 strokeWidth={1.2}
                 vectorEffect="non-scaling-stroke"
               />
@@ -159,7 +162,7 @@ export default function WardrobeSvg2D() {
                 y1={floorY - baseH - loftH / 2 - gapTopBetween}
                 x2={handleX + 4}
                 y2={floorY - baseH - loftH / 2 - gapTopBetween}
-                stroke="#9B5CF8"
+                stroke="var(--accent-tertiary)"
                 strokeWidth={2}
                 strokeLinecap="round"
                 vectorEffect="non-scaling-stroke"
@@ -171,7 +174,7 @@ export default function WardrobeSvg2D() {
                 y={floorY - baseH - loftH - gapTopBetween - 16}
                 textAnchor="middle"
                 fontSize="12"
-                fill="#6C6AA8"
+                fill="var(--text-muted)"
                 vectorEffect="non-scaling-stroke"
               >
                 {Math.round(w)} mm
@@ -199,7 +202,7 @@ export default function WardrobeSvg2D() {
             x2={marginX + totalW}
             y1={floorY + 70}
             y2={floorY + 70}
-            stroke="#6C6AA8"
+            stroke="var(--accent-tertiary)"
             strokeWidth={1}
             markerStart="url(#arrow)"
             markerEnd="url(#arrow)"
@@ -210,7 +213,7 @@ export default function WardrobeSvg2D() {
             y={floorY + 95}
             textAnchor="middle"
             fontSize="13"
-            fill="#6C6AA8"
+            fill="var(--text-muted)"
             vectorEffect="non-scaling-stroke"
           >
             {Math.round(totalW)} mm
@@ -224,7 +227,7 @@ export default function WardrobeSvg2D() {
             x2={marginX - 70}
             y1={floorY}
             y2={floorY - totalH}
-            stroke="#6C6AA8"
+            stroke="var(--accent-tertiary)"
             strokeWidth={1}
             markerStart="url(#arrow)"
             markerEnd="url(#arrow)"
@@ -235,7 +238,7 @@ export default function WardrobeSvg2D() {
             y={floorY - totalH / 2}
             textAnchor="end"
             fontSize="13"
-            fill="#6C6AA8"
+            fill="var(--text-muted)"
             vectorEffect="non-scaling-stroke"
           >
             {Math.round(totalH)} mm

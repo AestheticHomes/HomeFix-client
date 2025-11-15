@@ -2,25 +2,23 @@
 
 /**
  * ============================================================
- * 🧩 FILE: /app/profile/page.tsx
- * VERSION: v4.1 — Edith Toast-Safe + VerifiedSync Build 🌿
+ * 🧩 FILE: /app/profile/page.tsx (FIXED v5.0)
  * ------------------------------------------------------------
- * ✅ Uses Edith unified toast system (no duplicates)
- * ✅ Fetches live data from /api/profile?phone=...
- * ✅ Syncs instantly after AuthCenterDrawer edits
- * ✅ Offline fallback retained
- * ✅ Logout + location save cleaned
+ * ⭐ NO MORE direct localStorage writes
+ * ⭐ Uses UserContext.setUser() instead
+ * ⭐ Does NOT overwrite Supabase/Session user object
+ * ⭐ My Orders + LedgerX finally get correct UID
  * ============================================================
  */
 
 import AuthCenterDrawer from "@/components/AuthCenterDrawer";
 import MapPicker from "@/components/MapPicker";
+import SafeViewport from "@/components/layout/SafeViewport";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
-import { error as logError } from "@/lib/console";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface ProfileData {
   id?: string;
@@ -38,7 +36,7 @@ interface ProfileData {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { logout } = useUser();
+  const { user, setUser, logout, isLoaded } = useUser();
   const { success, error, info } = useToast();
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -52,288 +50,261 @@ export default function ProfilePage() {
   const [editingAddress, setEditingAddress] = useState(false);
 
   /* ------------------------------------------------------------
-     🧠 Shared: Hydrate data into state + cache
+     🧠 Safely hydrate WITHOUT overwriting auth/session state
   ------------------------------------------------------------ */
-  function hydrate(data: any) {
-    const merged = {
-      ...data,
-      name: data.name || data.full_name,
-      email_verified: !!data.email_verified,
-      phone_verified: !!data.phone_verified,
+  const hydrate = useCallback(
+    (fresh: any, base: any = user) => {
+      const merged = {
+        ...(base || {}),
+        ...(fresh || {}),
+      name: fresh?.name || fresh?.full_name || base?.name,
+      email_verified: fresh?.email_verified ?? base?.email_verified ?? false,
+      phone_verified: fresh?.phone_verified ?? base?.phone_verified ?? false,
     };
+
     setProfile(merged);
-    setAddress(merged.address || "");
-    if (merged.latitude && merged.longitude)
-      setCoords({ lat: merged.latitude, lng: merged.longitude });
-    localStorage.setItem("user", JSON.stringify(merged));
-  }
+    setUser(merged); // <--- SAFE. Updates React + UserContext + storage.
+
+      if (merged.address) setAddress(merged.address);
+
+      if (merged.latitude && merged.longitude)
+        setCoords({ lat: merged.latitude, lng: merged.longitude });
+    },
+    [setUser, user]
+  );
 
   /* ------------------------------------------------------------
-     🔁 Fetch Latest Profile (live from API)
+     🔁 Fetch profile from backend
   ------------------------------------------------------------ */
-  async function prefetchProfile() {
-    console.log("♻️ [Profile] Prefetch initiated...");
-
+  const prefetchProfile = useCallback(async () => {
     try {
-      const cookies = Object.fromEntries(
-        (document.cookie || "")
-          .split("; ")
-          .filter(Boolean)
-          .map((c) => {
-            const i = c.indexOf("=");
-            return [c.substring(0, i), decodeURIComponent(c.substring(i + 1))];
-          })
-      );
-
-      const cookiePhone = cookies["hf_user_phone"];
-      if (!cookiePhone) {
-        console.warn("⚠️ [Profile] No cookie phone — using cache fallback");
-        const cached = JSON.parse(localStorage.getItem("user") || "null");
-        if (cached) {
-          hydrate(cached);
-          info("📴 Offline Mode: Loaded cached profile.");
-        }
+      const phone = user?.phone;
+      if (!phone) {
+        if (user) hydrate(user, user);
+        setLoading(false);
         return;
       }
 
-      const resp = await fetch(`/api/profile?phone=${cookiePhone}`, {
+      const resp = await fetch(`/api/profile?phone=${phone}`, {
         cache: "no-store",
       });
-      const json = await resp.json();
 
-      if (json?.user) {
-        const fresh = {
-          ...json.user,
-          email_verified: !!json.user.email_verified,
-          phone_verified: !!json.user.phone_verified,
-        };
-        hydrate(fresh);
-        console.log(
-          `✅ [Profile] Hydrated from API — Verified: ${
-            fresh.email_verified ? "✅" : "❌"
-          }`
-        );
-      } else {
-        console.warn("⚠️ [Profile] No user found, fallback to cache");
-        const cached = JSON.parse(localStorage.getItem("user") || "null");
-        if (cached) hydrate(cached);
-      }
+      const json = await resp.json();
+      if (json?.user) hydrate(json.user, user);
+      else hydrate(user, user);
     } catch (err) {
-      console.error("💥 [Profile] Prefetch failed:", err);
-      const cached = JSON.parse(localStorage.getItem("user") || "null");
-      if (cached) {
-        hydrate(cached);
-        info("📴 Offline Mode: Loaded cached profile.");
-      }
+      console.error("Profile fetch failed:", err);
+      hydrate(user, user);
     } finally {
       setLoading(false);
     }
-  }
+  }, [hydrate, user]);
 
-  /* ------------------------------------------------------------
-     🚀 Initial Mount + LiveSync Listener
-  ------------------------------------------------------------ */
+  const lastFetchedId = useRef<string | null>(null);
+
   useEffect(() => {
-    prefetchProfile();
-
-    function handleProfileUpdated() {
-      console.log("🔁 [Profile] Received profile-updated event");
-      prefetchProfile();
+    if (!user) {
+      if (!isLoaded) return;
+      try {
+        const cached = JSON.parse(localStorage.getItem("user") || "null");
+        if (cached) {
+          hydrate(cached, cached);
+          lastFetchedId.current = cached.id ?? null;
+        }
+      } catch {
+        // ignore parse errors
+      } finally {
+        setLoading(false);
+      }
+      return;
     }
 
-    window.addEventListener("profile-updated", handleProfileUpdated);
-    return () =>
-      window.removeEventListener("profile-updated", handleProfileUpdated);
-  }, []);
+    if (lastFetchedId.current === user.id) return;
+    lastFetchedId.current = user.id ?? null;
+
+    hydrate(user, user);
+    prefetchProfile();
+  }, [user, isLoaded, hydrate, prefetchProfile]);
 
   /* ------------------------------------------------------------
-     📍 Save Location (and trigger refresh)
+     📍 Save Location
   ------------------------------------------------------------ */
   async function saveLocation() {
-    if (!profile) return;
+    if (!profile?.phone) return;
 
     try {
-      const updates = { address, latitude: coords.lat, longitude: coords.lng };
+      const updates = {
+        phone: profile.phone,
+        address,
+        latitude: coords.lat,
+        longitude: coords.lng,
+      };
+
       const res = await fetch("/api/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: profile.phone, ...updates }),
+        body: JSON.stringify(updates),
       });
 
       const data = await res.json();
       if (!data.success) throw new Error(data.message);
 
       hydrate(data.user);
-      success("📍 Location saved successfully.");
+
+      success("📍 Location saved.");
       navigator.vibrate?.(20);
+
       setEditingAddress(false);
       window.dispatchEvent(new Event("profile-updated"));
     } catch (e: any) {
-      logError("[PROFILE] Save failed", e);
-      error("Failed to save location. Try again.");
+      error("Failed to save location.");
+      console.error(e);
       navigator.vibrate?.([120]);
     }
   }
 
   /* ------------------------------------------------------------
-     🚪 Logout handler
+     🚪 Logout
   ------------------------------------------------------------ */
   async function handleLogout() {
-    console.log("🚪 [Profile] logout initiated...");
-
-    try {
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Supabase signOut timeout")), 2000)
-      );
-
-      await Promise.race([logout(), timeout])
-        .then(() => console.log("✅ [Profile] logout() resolved"))
-        .catch((e) => console.warn("⚠️ [Profile] logout fallback:", e.message));
-
-      // 🧹 Clear local cache + cookies
-      localStorage.removeItem("user");
-      sessionStorage.removeItem("user");
-      document.cookie = "hf_user_phone=; Path=/; Max-Age=0";
-      document.cookie = "hf_user_id=; Path=/; Max-Age=0";
-
-      success("You’ve been logged out.");
-      navigator.vibrate?.([60, 40, 120]);
-
-      console.log("✅ [Profile] Redirecting → /login");
-      router.replace("/login");
-    } catch (err) {
-      console.error("💥 [Profile] Logout failed:", err);
-      error("Logout failed — please retry.");
-    }
+    await logout().catch(() => {});
+    success("Logged out.");
+    navigator.vibrate?.([60, 40, 120]);
+    router.replace("/login");
   }
 
   /* ------------------------------------------------------------
-     🧱 Render
+     🧱 UI
   ------------------------------------------------------------ */
   if (loading) {
     return (
-      <main className="max-w-5xl mx-auto p-6 text-center">
-        <p className="text-gray-500 animate-pulse">Loading your profile…</p>
-      </main>
+      <SafeViewport>
+        <div className="max-w-5xl mx-auto p-6 text-center text-[var(--text-secondary)]">
+          <p className="animate-pulse">Loading your profile...</p>
+        </div>
+      </SafeViewport>
     );
   }
-
   const fullyVerified = !!(profile?.email_verified && profile?.phone_verified);
 
   return (
-    <main className="max-w-5xl mx-auto p-6 space-y-6 pb-[var(--mbnav-h-safe)]">
-      {/* 🪪 Verification Banner */}
-      <div
-        onClick={() => {
-          if (!fullyVerified) {
-            setDrawerMode("form");
-            setDrawerOpen(true);
-          }
-        }}
-        className={`cursor-pointer rounded-xl px-4 py-3 shadow-sm border ${
-          fullyVerified
-            ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-            : "bg-red-50 border-red-200 text-red-700"
-        } flex items-center justify-between`}
-      >
-        <span className="font-medium">
-          {fullyVerified
-            ? "Verified Profile ✓"
-            : "Unverified Profile — Verify Now"}
-        </span>
-        {!fullyVerified && <span className="text-sm underline">Open</span>}
-      </div>
-
-      <h1 className="text-2xl font-bold">My Profile</h1>
-
-      {/* 💳 Profile Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="border p-5 rounded-2xl shadow-sm bg-white dark:bg-zinc-900"
-      >
-        <div className="grid gap-3">
-          <Field label="Name" value={profile?.name || "—"} />
-          <Field label="Phone" value={profile?.phone || "—"} />
-          <Field label="Email" value={profile?.email || "—"} />
-          <Field label="Address" value={address || "—"} />
-        </div>
-
-        <div className="flex flex-wrap gap-3 mt-5">
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium"
-          >
-            Edit / Verify Account
-          </button>
-
-          <button
-            onClick={() => setEditingAddress(true)}
-            className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-medium"
-          >
-            Edit Address
-          </button>
-
-          {editingAddress && (
-            <button
-              onClick={saveLocation}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium"
-            >
-              Save Location
-            </button>
-          )}
-
-          <button
-            onClick={handleLogout}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium ml-auto"
-          >
-            Logout
-          </button>
-        </div>
-      </motion.div>
-
-      {/* 📍 Address Editor */}
-      {editingAddress && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35 }}
-          className="border p-5 rounded-2xl shadow-sm bg-white dark:bg-zinc-900"
+    <SafeViewport>
+      <div className="max-w-5xl mx-auto p-6 space-y-6 pb-[var(--mbnav-h-safe)]">
+        {/* Banner */}
+        <div
+          onClick={() => {
+            if (!fullyVerified) {
+              setDrawerMode("form");
+              setDrawerOpen(true);
+            }
+          }}
+          className={`cursor-pointer rounded-xl px-4 py-3 shadow-sm border flex items-center justify-between ${
+            fullyVerified
+              ? "bg-[color-mix(in_srgb,var(--accent-success)10%,transparent)] border-[color-mix(in_srgb,var(--accent-success)35%,transparent)] text-[var(--accent-success)]"
+              : "bg-[color-mix(in_srgb,var(--accent-danger)10%,transparent)] border-[color-mix(in_srgb,var(--accent-danger)35%,transparent)] text-[var(--accent-danger)]"
+          }`}
         >
-          <h2 className="font-semibold text-lg mb-2">📍 Update Address</h2>
-          <MapPicker
-            initialLocation={coords}
-            editable
-            onLocationChange={(loc, addr) => {
-              setCoords(loc);
-              setAddress(addr);
-            }}
-          />
-          <p className="text-sm mt-2">
-            <strong>Detected Address:</strong>{" "}
-            {address || "Move the pin to detect address"}
-          </p>
-        </motion.div>
-      )}
+          <span className="font-medium">
+            {fullyVerified ? "Verified Profile ✓" : "Unverified — Verify Now"}
+          </span>
+          {!fullyVerified && <span className="text-sm underline">Open</span>}
+        </div>
 
-      {/* 🧩 Auth Center Drawer */}
-      <AuthCenterDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        initialMode={drawerMode}
-      />
-    </main>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)] dark:text-[var(--text-primary-dark)]">
+          My Profile
+        </h1>
+
+        {/* Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="border border-[var(--border-soft)] p-5 rounded-2xl shadow-sm bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)]"
+        >
+          <div className="grid gap-3">
+            <Field label="Name" value={profile?.name} />
+            <Field label="Phone" value={profile?.phone} />
+            <Field label="Email" value={profile?.email} />
+            <Field label="Address" value={address} />
+          </div>
+
+          <div className="flex flex-wrap gap-3 mt-5">
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="text-white px-4 py-2 rounded-lg font-medium"
+              style={{ background: "var(--accent-primary)" }}
+            >
+              Edit / Verify Account
+            </button>
+
+            <button
+              onClick={() => setEditingAddress(true)}
+              className="text-white px-4 py-2 rounded-lg font-medium"
+              style={{ background: "var(--accent-warning)" }}
+            >
+              Edit Address
+            </button>
+
+            {editingAddress && (
+              <button
+                onClick={saveLocation}
+                className="text-white px-4 py-2 rounded-lg font-medium"
+                style={{ background: "var(--accent-success)" }}
+              >
+                Save Location
+              </button>
+            )}
+
+            <button
+              onClick={handleLogout}
+              className="text-white px-4 py-2 rounded-lg font-medium ml-auto"
+              style={{ background: "var(--accent-danger)" }}
+            >
+              Logout
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Address Editor */}
+        {editingAddress && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="border border-[var(--border-soft)] p-5 rounded-2xl shadow-sm bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)]"
+          >
+            <h2 className="font-semibold text-lg mb-2">📍 Update Address</h2>
+            <MapPicker
+              initialLocation={coords}
+              editable
+              onLocationChange={(loc, addr) => {
+                if (loc) setCoords(loc);
+                setAddress(addr ?? "");
+              }}
+            />
+
+            <p className="text-sm mt-2">
+              <strong>Detected Address:</strong>{" "}
+              {address || "Move the pin to detect address"}
+            </p>
+          </motion.div>
+        )}
+
+        <AuthCenterDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          initialMode={drawerMode}
+        />
+      </div>
+    </SafeViewport>
   );
 }
 
-/* ------------------------------------------------------------
-   🧩 Reusable Field
------------------------------------------------------------- */
 function Field({ label, value }: { label: string; value?: string }) {
   return (
     <div>
-      <label className="text-sm text-gray-500">{label}</label>
-      <div className="font-medium">{value || "—"}</div>
+      <label className="text-sm text-[var(--text-muted)]">{label}</label>
+      <div className="font-medium text-[var(--text-primary)] dark:text-[var(--text-primary-dark)]">
+        {value || "—"}
+      </div>
     </div>
   );
 }

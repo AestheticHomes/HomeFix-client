@@ -12,7 +12,8 @@
  * ============================================================
  */
 
-import { useCartStore } from "@/components/store/cartStore";
+import { useProductCartStore } from "@/components/store/cartStore";
+import { resolveCartConflict } from "@/components/store/cartGuards";
 import { AnimatePresence, motion } from "framer-motion";
 import { Minus, Plus, ShoppingBag, X } from "lucide-react";
 import Image from "next/image";
@@ -38,7 +39,7 @@ export default function ProductQuickView({
   isOpen,
   onClose,
 }: ProductQuickViewProps) {
-  const { items, addItem } = useCartStore();
+  const { items, addItem } = useProductCartStore();
   const [localQty, setLocalQty] = useState(1);
   const inCart = product ? items.find((i) => i.id === product.id) : null;
 
@@ -96,7 +97,7 @@ export default function ProductQuickView({
             </button>
 
             {/* 🖼️ Image */}
-            <div className="relative w-full h-56 bg-gray-50 dark:bg-[#1b1836] overflow-hidden">
+            <div className="relative w-full h-56 bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)] overflow-hidden">
               {product.image_url ? (
                 <Image
                   src={product.image_url}
@@ -161,6 +162,7 @@ export default function ProductQuickView({
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => {
+                    if (!resolveCartConflict("product")) return;
                     addItem({
                       id: product.id,
                       title: product.title,

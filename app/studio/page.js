@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useRef, useMemo } from "react";
+import React, { useRef, useMemo, useEffect, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Environment, Text, Grid, Float, Stars } from "@react-three/drei";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 
 /* ===========================
    3D PRIMITIVES (no GLBs needed)
@@ -203,16 +204,50 @@ function SiteScene() {
    =========================== */
 
 export default function StudioPage() {
+  const { resolvedTheme } = useTheme();
+  const [cosmos, setCosmos] = useState({
+    space: "#f7f9ff",
+    fog: "#e2e8f0",
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const root = getComputedStyle(document.documentElement);
+    const spaceToken =
+      root
+        .getPropertyValue(
+          resolvedTheme === "dark"
+            ? "--cosmos-space-dark"
+            : "--cosmos-space-light"
+        )
+        ?.trim() || (resolvedTheme === "dark" ? "#0e0b2c" : "#f7f9ff");
+    const fogToken =
+      root
+        .getPropertyValue(
+          resolvedTheme === "dark"
+            ? "--cosmos-fog-dark"
+            : "--cosmos-fog-light"
+        )
+        ?.trim() || (resolvedTheme === "dark" ? "#0c0f2c" : "#e2e8f0");
+    setCosmos({ space: spaceToken, fog: fogToken });
+  }, [resolvedTheme]);
+
   return (
-    <div className="relative w-full h-[calc(100vh-64px)]">
+    <div
+      className="relative w-full h-[calc(100vh-64px)] overflow-hidden"
+      style={{
+        background:
+          "radial-gradient(circle at 15% 15%, color-mix(in srgb, var(--aura-light) 65%, transparent), transparent 55%), radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--aura-dark) 45%, transparent), transparent 70%), var(--surface-base)",
+      }}
+    >
       {/* Canvas */}
       <Canvas
         camera={{ position: [0, 3.2, 6.5], fov: 45 }}
         gl={{ antialias: true }}
         dpr={[1, 2]}
       >
-        <color attach="background" args={["#0e0b2c"]} />
-        <fog attach="fog" args={["#0e0b2c", 12, 26]} />
+        <color attach="background" args={[cosmos.space]} />
+        <fog attach="fog" args={[cosmos.fog, 12, 26]} />
         <SiteScene />
         <OrbitControls
           enablePan
@@ -233,14 +268,15 @@ export default function StudioPage() {
           transition={{ duration: 0.6 }}
           className="pointer-events-auto w-full max-w-xl"
         >
-          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between rounded-2xl border border-white/15 bg-white/8 dark:bg-white/10 backdrop-blur-md px-4 py-3">
-            <p className="text-center sm:text-left text-sm text-white/80">
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-panel)] dark:bg-[var(--surface-panel-dark)] backdrop-blur-md px-4 py-3 shadow-[0_20px_40px_rgba(0,0,0,0.15)]">
+            <p className="text-center sm:text-left text-sm text-[var(--text-primary)]">
               🛠️ <span className="font-semibold">HomeFix Studio</span> is under construction — crane & dozers at work.
             </p>
             <Link
               href="/estimator"
-              className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium
-                         bg-[#5A5DF0] hover:bg-[#4c4fe1] text-white shadow-md transition"
+              className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold
+                         text-white shadow-md transition
+                         bg-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/90"
             >
               Try Online Estimator →
             </Link>

@@ -7,15 +7,12 @@ import * as THREE from "three";
 // ✅ Extend JSX namespace to allow <mesh>, <light>, etc.
 declare global {
   namespace JSX {
-    interface IntrinsicElements extends ThreeElements {
-      primitive?: any;
-      color?: any;
-      ambientLight?: any;
-      directionalLight?: any;
-      orthographicCamera?: any;
-      mesh?: any;
-      planeGeometry?: any;
-      meshStandardMaterial?: any;
+    interface IntrinsicElements extends ThreeElements {}
+  }
+
+  namespace React {
+    namespace JSX {
+      interface IntrinsicElements extends ThreeElements {}
     }
   }
 }

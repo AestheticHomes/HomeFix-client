@@ -12,15 +12,27 @@ import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { ArrowUpRight, Calendar, FileText } from "lucide-react";
 
-export default function OrderCard({ order }: { order: any }) {
+export interface Invoice {
+  id: string;
+  invoice_url?: string;
+  total?: number;
+  created_at?: string;
+  [key: string]: unknown;
+}
+
+interface OrderCardProps {
+  order: Invoice;
+}
+
+export default function OrderCard({ order }: OrderCardProps) {
   return (
     <motion.div
       layout
       whileHover={{ scale: 1.01 }}
       transition={{ type: "spring", stiffness: 180, damping: 20 }}
-      className="p-4 rounded-2xl border border-black/10 dark:border-white/10
+      className="p-4 rounded-2xl border border-[var(--border-soft)]
                  bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)]
-                 shadow-[0_2px_10px_rgba(0,0,0,0.05)] hover:shadow-[0_3px_14px_rgba(0,0,0,0.08)]
+                 shadow-[var(--shadow-elevation)] hover:shadow-[0_8px_24px_rgba(15,23,42,0.12)]
                  transition-all duration-400 flex flex-col justify-between"
     >
       <div className="flex justify-between items-start mb-2">
@@ -32,7 +44,7 @@ export default function OrderCard({ order }: { order: any }) {
           href={order.invoice_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-emerald-600 dark:text-lime-400 hover:underline flex items-center gap-1"
+          className="text-xs text-[var(--accent-success)] hover:underline flex items-center gap-1"
         >
           View <ArrowUpRight className="w-3 h-3" />
         </a>

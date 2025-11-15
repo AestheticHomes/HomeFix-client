@@ -19,6 +19,15 @@ import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
+const FALLBACK_ICON_DATA =
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    `<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="48" height="48" rx="14" fill="rgba(155,92,248,0.18)"/>
+      <path d="M16 26l6-7 4 4 4-4 6 8" stroke="%239B5CF8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`
+  );
+
 interface ServiceItem {
   id: number;
   title: string;
@@ -86,14 +95,14 @@ export default function ServicesPage() {
   return (
     <main
       className="relative flex flex-col items-center justify-start min-h-[calc(100vh-72px)]
-                 bg-[var(--surface-light)] dark:bg-[var(--surface-dark)]
+                 bg-[var(--surface-base)]
                  text-[var(--text-primary-light)] dark:text-[var(--text-primary-dark)]
                  pt-20 px-4 md:px-8 transition-colors duration-500 overflow-hidden"
     >
       {/* ✨ Loading State */}
       {loading && (
         <div className="flex flex-col items-center justify-center h-[50vh] text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#9B5CF8] border-t-transparent mb-4"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-[var(--accent-tertiary)] border-t-transparent mb-4"></div>
           <p className="text-sm opacity-70">Fetching HomeFix services…</p>
         </div>
       )}
@@ -120,7 +129,13 @@ export default function ServicesPage() {
                 sizes="(max-width: 768px) 100vw, 1200px"
                 className="object-cover transition-transform duration-700 hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(to top, color-mix(in srgb, var(--surface-dark) 92%, transparent 8%), color-mix(in srgb, var(--surface-dark) 55%, transparent 45%), transparent)",
+                }}
+              />
               <div className="absolute bottom-6 left-6 text-white z-10">
                 <motion.h1
                   className="text-3xl md:text-5xl font-bold mb-2"
@@ -156,21 +171,15 @@ export default function ServicesPage() {
                 whileTap={{ scale: 0.97 }}
                 onClick={() => setSelected(cat)}
                 className={`relative flex flex-col items-center justify-center p-4 rounded-2xl shadow-md
-                            bg-[var(--surface-light)] dark:bg-[var(--surface-dark)]
+                            bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)]
                             border transition-all duration-300
                             ${
                               selected.id === cat.id
-                                ? "border-[#9B5CF8]/60 shadow-lg"
-                                : "border-transparent"
+                                ? "border-[var(--accent-tertiary)]/60 shadow-lg"
+                                : "border-[var(--border-soft)]/40"
                             }`}
               >
-                <Image
-                  src={cat.icon || "/icons/default.png"}
-                  alt={cat.title || "Category"}
-                  width={40}
-                  height={40}
-                  className="mb-2"
-                />
+                <CategoryIcon src={cat.icon} alt={cat.title} />
                 <span className="font-medium text-center text-sm">
                   {cat.title}
                 </span>
@@ -195,8 +204,8 @@ export default function ServicesPage() {
                     whileHover={{ scale: 1.02 }}
                     transition={{ type: "spring", stiffness: 200, damping: 20 }}
                     className="group relative rounded-2xl shadow-md overflow-hidden border
-                               bg-[var(--surface-light)] dark:bg-[var(--surface-dark)]
-                               border-slate-200/40 dark:border-slate-700/40 transition-all duration-300"
+                               bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)]
+                               border-[var(--border-soft)]/60 transition-all duration-300"
                   >
                     <div className="relative h-48 w-full">
                       <Image
@@ -206,7 +215,13 @@ export default function ServicesPage() {
                         sizes="(max-width: 768px) 100vw, 1200px"
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      <div
+                        className="absolute inset-0"
+                        style={{
+                          background:
+                            "linear-gradient(to top, color-mix(in srgb, var(--surface-dark) 86%, transparent 14%), transparent)",
+                        }}
+                      />
                       <div className="absolute bottom-3 left-4 text-white">
                         <h3 className="font-semibold text-lg">{srv.title}</h3>
                         {srv.price && (
@@ -223,7 +238,7 @@ export default function ServicesPage() {
                       <button
                         onClick={() => openDrawer(srv)}
                         className="mt-2 inline-flex items-center justify-center w-full py-2 rounded-lg
-                                   bg-gradient-to-r from-[#5A5DF0] to-[#EC6ECF]
+                                   bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)]
                                    text-white text-sm font-medium hover:opacity-90 transition"
                       >
                         Book Now
@@ -251,5 +266,27 @@ export default function ServicesPage() {
       />
       <InstallFAB />
     </main>
+  );
+}
+
+function CategoryIcon({
+  src,
+  alt,
+}: {
+  src?: string | null;
+  alt?: string | null;
+}) {
+  const [errored, setErrored] = useState(false);
+  const resolvedSrc = !errored && src ? src : FALLBACK_ICON_DATA;
+  return (
+    <Image
+      src={resolvedSrc}
+      alt={alt || "Service category"}
+      width={40}
+      height={40}
+      className="mb-2"
+      unoptimized
+      onError={() => setErrored(true)}
+    />
   );
 }

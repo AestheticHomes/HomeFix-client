@@ -9,7 +9,7 @@
  * ✅ PWA-friendly and animated
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MapPin, Thermometer, CloudSun, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -25,7 +25,7 @@ export default function LiveClimateBar() {
   const [error, setError] = useState<string | null>(null);
 
   /* 🌍 Fetch Weather + Location */
-  async function fetchWeather(lat: number, lon: number) {
+  const fetchWeather = useCallback(async (lat: number, lon: number) => {
     try {
       // Get weather from Open-Meteo
       const weatherRes = await fetch(
@@ -51,7 +51,7 @@ export default function LiveClimateBar() {
       setError("Weather unavailable");
       setLoading(false);
     }
-  }
+  }, []);
 
   /* ☁️ Decode Open-Meteo codes */
   function decodeWeather(code: number): string {
@@ -91,7 +91,7 @@ export default function LiveClimateBar() {
     fetchLocation();
     const interval = setInterval(fetchLocation, 15 * 60 * 1000); // refresh every 15 min
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchWeather]);
 
   /* 🌈 Render */
   return (

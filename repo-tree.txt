@@ -4,7 +4,7 @@
 
 📂 .vscode  (1 items)
    📄 settings.json
-📂 app  (16 items)
+📂 app  (18 items)
    📂 animations  (8 items)
       📄 3dKitchen.json
       📄 civil.json
@@ -14,7 +14,7 @@
       📄 interior.json
       📄 map.json
       📄 paint.json
-   📂 api  (13 items)
+   📂 api  (14 items)
       📂 admin  (2 items)
          📂 bookings  (2 items)
             📂 list  (1 items)
@@ -47,6 +47,9 @@
          📄 route.js
       📂 edith  (1 items)
          📄 route.ts
+      📂 ledger  (1 items)
+         📂 sync  (1 items)
+            📄 route.ts
       📂 link-otp-user  (1 items)
          📄 route.ts
       📂 profile  (1 items)
@@ -62,17 +65,19 @@
       📄 services.js
    📂 cart  (1 items)
       📄 page.tsx
-   📂 checkout  (1 items)
+   📂 checkout  (2 items)
+      📂 success  (1 items)
+         📄 page.tsx
       📄 page.tsx
    📂 estimator  (1 items)
       📄 page.tsx
    📂 login  (1 items)
       📄 page.tsx
-   📂 my-space  (4 items)
-      📂 bookings  (2 items)
-         📂 list  (1 items)
-            📄 route.js
-         📄 page.tsx
+   📂 mockrazorpay  (1 items)
+      📄 page.tsx
+   📂 my-orders  (1 items)
+      📄 page.tsx
+   📂 my-space  (3 items)
       📂 components  (6 items)
          📄 BookingCard.tsx
          📄 BookingsView.tsx
@@ -101,8 +106,13 @@
    📄 layout.tsx
    📄 page.tsx
 📂 components  (28 items)
-   📂 checkout  (1 items)
-      📄 OfflineLedgerDrawer.tsx
+   📂 checkout  (6 items)
+      📄 CheckoutContainer.tsx
+      📄 CheckoutFooter.tsx
+      📄 CheckoutForm.tsx
+      📄 CheckoutOnlineStatus.tsx
+      📄 CheckoutToast.tsx
+      📄 EdithCard.tsx
    📂 common  (2 items)
       📄 UniPreviewCanvas.jsx
       📄 useAutoFitSvg.js
@@ -131,8 +141,7 @@
       📄 WardrobeRender.jsx
       📄 WardrobeScene3D.jsx
       📄 WardrobeSvg2D.jsx
-   📂 hooks  (1 items)
-      📄 useOfflineLedger.ts
+   📂 hooks  (0 items)
    📂 layout  (7 items)
       📄 index.ts
       📄 LayoutContent.tsx
@@ -141,10 +150,14 @@
       📄 SafeViewport.tsx
       📄 Sidebar.tsx
       📄 UniversalHeader.tsx
-   📂 ledger  (3 items)
-      📄 OfflineLedger.tsx
-      📄 OfflineLedgerDock.tsx
-      📄 OfflineLedgerDrawer.tsx
+   📂 ledgerx  (7 items)
+      📄 db.ts
+      📄 forceReset.ts
+      📄 LedgerXDock.tsx
+      📄 LedgerXDrawer.tsx
+      📄 LedgerXItemCard.tsx
+      📄 LedgerXProvider.tsx
+      📄 useLedgerX.ts
    📂 store  (4 items)
       📄 cartStore.ts
       📄 CategoryRail.tsx
@@ -158,7 +171,7 @@
       📄 RoomPlanner3D.jsx
       📄 RoomShapeSelector.jsx
       📄 RoomSummary.jsx
-   📂 ui  (21 items)
+   📂 ui  (20 items)
       📄 badge.js
       📄 button-group-pro.tsx
       📄 button-group.tsx
@@ -172,7 +185,6 @@
       📄 HomeFixLogo.tsx
       📄 label.tsx
       📄 LiveClimateBar.tsx
-      📄 MiniMapPreview.tsx
       📄 progress.js
       📄 SearchFAB.tsx
       📄 ServiceBookDrawer.tsx
@@ -185,6 +197,7 @@
    📄 AuthCenterDrawer.tsx
    📄 CartContext.js
    📄 CartDrawer.tsx
+   📄 ClientDock.tsx
    📄 HeroCinematicVideo.tsx
    📄 HeroFX.js
    📄 HeroParallax.tsx
@@ -198,7 +211,6 @@
    📄 SessionHydrator.tsx
    📄 SessionSync.tsx
    📄 ThemeToggle.tsx
-   📄 UserProvider.tsx
 📂 contexts  (3 items)
    📄 SidebarContext.tsx
    📄 StudioContext.tsx
@@ -206,12 +218,16 @@
 📂 edith  (1 items)
    📂 components  (1 items)
       📄 useAssetSync.ts
-📂 hooks  (4 items)
+📂 hooks  (8 items)
    📄 use-toast.tsx
+   📄 useCheckoutFlow.ts
    📄 useDrawerSafeStyle.ts
+   📄 useGoogleMapsLoader.ts
+   📄 useMapPicker.ts
    📄 useOtpManager.ts
    📄 useRoleGuard.js
-📂 lib  (13 items)
+   📄 useSupabaseUserSafe.ts
+📂 lib  (15 items)
    📂 assets  (1 items)
       📄 homefix-logo.ts
    📂 supabaseQueries  (3 items)
@@ -222,6 +238,8 @@
    📄 console.ts
    📄 database.types.ts
    📄 goods.js
+   📄 loadGoogleMaps.ts
+   📄 mockRazorpay.ts
    📄 roles.ts
    📄 supabaseClient.js
    📄 supabaseServerClient.ts
@@ -286,8 +304,10 @@
       📄 20251107_smartmail_v4.sql
    📄 .gitignore
    📄 config.toml
-📂 types  (2 items)
+📂 types  (4 items)
+   📄 canvas-confetti.d.ts
    📄 index.d.ts
+   📄 jsx.d.ts
    📄 react-three.d.ts
 📄 .env.local
 📄 .gitattributes
@@ -297,11 +317,11 @@
 📄 components.json
 📄 deno.json
 📄 deno.lock
-📄 homefix-diff.patch
 📄 HomeFix.code-workspace
 📄 import_map.json
 📄 jsconfig.json
 📄 middleware.ts
+📄 nem
 📄 next-env.d.ts
 📄 next.config.mjs
 📄 package-lock.json
@@ -313,4 +333,3 @@
 📄 tailwind.config.js
 📄 test.css
 📄 tsconfig.json
-📄 tsconfig.tsbuildinfo

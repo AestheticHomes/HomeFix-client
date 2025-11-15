@@ -30,7 +30,7 @@ export default function SessionHydrator() {
     keepCookiesAlive();
     const interval = setInterval(keepCookiesAlive, 24 * 60 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [isLoaded, user?.loggedIn]);
+  }, [isLoaded, user?.loggedIn, user]);
 
   return null;
 }

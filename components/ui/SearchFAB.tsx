@@ -1,7 +1,7 @@
 "use client";
-import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 export default function SearchFAB() {
@@ -29,7 +29,9 @@ export default function SearchFAB() {
           onClick={() => setOpen(false)}
         >
           <motion.div
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e: React.MouseEvent<HTMLDivElement>) =>
+              e.stopPropagation()
+            }
             className="w-11/12 sm:w-[420px] bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-4"
           >
             <input

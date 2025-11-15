@@ -18,11 +18,13 @@ export default function SafeViewport({
   headerId = "universal-header",
   navbarId = "hf-mobile-navbar",
   sidebarId = "universal-sidebar",
+  align = "center",
 }: {
   children: React.ReactNode;
   headerId?: string;
   navbarId?: string;
   sidebarId?: string;
+  align?: "center" | "left";
 }) {
   const [offsets, setOffsets] = useState({
     top: 72,
@@ -60,14 +62,14 @@ export default function SafeViewport({
     <main
       id="dynamic-safe-viewport"
       className="relative flex flex-col flex-1 overflow-x-hidden overflow-y-auto
-                 transition-colors duration-500 ease-out
-                 bg-[var(--surface-light)] dark:bg-[var(--surface-dark)]
-                 text-[var(--text-primary-light)] dark:text-[var(--text-primary-dark)]"
+                 transition-colors duration-500 ease-out"
       style={{
         paddingTop: offsets.top,
         paddingBottom: offsets.bottom,
         paddingLeft: offsets.left,
         minHeight: "100vh",
+        background: "var(--surface-base)",
+        color: "var(--text-primary)",
       }}
     >
       {/* 🧭 Centered Content Wrapper */}
@@ -75,9 +77,11 @@ export default function SafeViewport({
         className="relative w-full flex flex-col items-center justify-start
                    px-4 sm:px-6 md:px-8"
         style={{
-          width: "clamp(340px, 95vw, 1280px)",
-          marginInline: "auto",
-          maxWidth: "var(--safe-max-width, 1280px)",
+          width: align === "left" ? "100%" : "clamp(340px, 95vw, 1280px)",
+          marginInline: align === "left" ? "0" : "auto",
+          maxWidth: align === "left"
+            ? "none"
+            : "var(--safe-max-width, 1280px)",
         }}
       >
         {children}
