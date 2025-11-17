@@ -4,17 +4,13 @@
  * Version: v4.0 — Edith Stable Build 🌗
  */
 
-import React from "react";
+import React, { useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import useEstimator, {
   type EstimatorStep,
 } from "@/components/estimator/store/estimatorStore";
 import KitchenRender from "@/components/estimator/KitchenRender";
 import WardrobeRender from "@/components/estimator/WardrobeRender";
-import {
-  KitchenForm,
-  WardrobeForm,
-} from "@/components/estimator/EstimatorForm";
 
 const SummaryPanel = dynamic(
   () => import("@/components/estimator/SummaryPanel"),
@@ -56,14 +52,13 @@ const STAGE_DESCRIPTION: Record<EstimatorStep, string> = {
 export default function EstimatorShell(): React.ReactElement {
   const {
     step,
-    kitchen,
-    wardrobe,
+    includeKitchen,
+    includeWardrobe,
+    hasKitchen,
+    hasWardrobe,
     setStep,
-    setKitchenShape,
-    setKitchenFinish,
-    setKitchenLength,
-    setWardrobeWidth,
-    setWardrobeFinish,
+    setIncludeKitchen,
+    setIncludeWardrobe,
   } = useEstimator();
 
   const stageBadge =
@@ -73,13 +68,18 @@ export default function EstimatorShell(): React.ReactElement {
       ? "STEP 2 · WARDROBE"
       : "STEP 3 · SUMMARY";
 
+  const heroTitle =
+    step === "summary" ? "Interior Budget Summary" : "Interior Budget Estimator";
+
+  const noneSelected = !hasKitchen && !hasWardrobe;
+
   const hero = (
     <header className="max-w-4xl mx-auto text-center space-y-3">
       <p className="text-xs uppercase tracking-[0.3em] text-[var(--text-muted)]">
         {stageBadge}
       </p>
       <h1 className="text-3xl font-semibold text-[var(--text-primary-light)] dark:text-[var(--text-primary-dark)]">
-        Interior Budget Estimator
+        {heroTitle}
       </h1>
       <p className="text-sm text-[var(--text-secondary)]">
         {STAGE_DESCRIPTION[step]}
@@ -87,20 +87,100 @@ export default function EstimatorShell(): React.ReactElement {
     </header>
   );
 
+  const toggleRow = (
+    <div className="w-full max-w-5xl mx-auto flex flex-wrap items-center gap-3 justify-center">
+      {(["kitchen", "wardrobe", "summary"] as EstimatorStep[]).map((s) => {
+        const disabled =
+          (s === "kitchen" && !includeKitchen) ||
+          (s === "wardrobe" && !includeWardrobe);
+        const active = step === s;
+        return (
+          <button
+            key={s}
+            onClick={() => goTo(s)}
+            disabled={disabled}
+            className={`px-4 py-2 rounded-full text-sm font-semibold border transition ${
+              active
+                ? "bg-[var(--accent-primary)] text-white border-[var(--accent-primary)]"
+                : "bg-[var(--surface-panel)] border-[var(--border-soft)] text-[var(--text-primary)]"
+            } ${disabled ? "opacity-50 cursor-not-allowed" : "hover:border-[var(--accent-primary)]"}`}
+          >
+            {s === "kitchen"
+              ? "Kitchen"
+              : s === "wardrobe"
+              ? "Wardrobe"
+              : "Summary"}
+          </button>
+        );
+      })}
+      <div className="flex items-center gap-2 text-xs sm:text-sm px-3 py-2 rounded-full border border-[var(--border-soft)] bg-[color-mix(in_srgb,var(--surface-panel)85%,transparent)]">
+        <label className="inline-flex items-center gap-1 cursor-pointer">
+          <input
+            type="checkbox"
+            className="accent-[var(--accent-primary)]"
+            checked={hasKitchen}
+            onChange={(e) => setIncludeKitchen(e.target.checked)}
+          />
+          <span>Kitchen</span>
+        </label>
+        <span className="text-[var(--border-muted)]">|</span>
+        <label className="inline-flex items-center gap-1 cursor-pointer">
+          <input
+            type="checkbox"
+            className="accent-[var(--accent-primary)]"
+            checked={hasWardrobe}
+            onChange={(e) => setIncludeWardrobe(e.target.checked)}
+          />
+          <span>Wardrobe</span>
+        </label>
+        {noneSelected && (
+          <span className="text-[var(--accent-danger)] text-[11px] ml-2">
+            Select at least one
+          </span>
+        )}
+      </div>
+    </div>
+  );
+
+  const goTo = useCallback(
+    (target: EstimatorStep) => {
+      if (target === "summary" && noneSelected) return;
+      if (target === "kitchen" && !includeKitchen) return;
+      if (target === "wardrobe" && !includeWardrobe) return;
+      setStep(target);
+    },
+    [includeKitchen, includeWardrobe, noneSelected, setStep]
+  );
+
+  useEffect(() => {
+    if (step === "kitchen" && !includeKitchen) {
+      goTo(includeWardrobe ? "wardrobe" : "summary");
+    }
+    if (step === "wardrobe" && !includeWardrobe) {
+      goTo(includeKitchen ? "kitchen" : "summary");
+    }
+  }, [includeKitchen, includeWardrobe, step, goTo]);
+
   /* 🟣 Summary Mode */
   if (step === "summary") {
     return (
       <section className="w-full space-y-8">
-        {hero}
+        <div className="mt-6 space-y-5">
+          {hero}
+          {toggleRow}
+        </div>
         <div className="w-full max-w-5xl mx-auto">
           <SummaryPanel />
         </div>
         <div className="flex justify-end gap-3 max-w-5xl mx-auto">
           <button
-            onClick={() => setStep("wardrobe")}
+            onClick={() =>
+              setStep(includeWardrobe ? "wardrobe" : includeKitchen ? "kitchen" : "summary")
+            }
             className="px-4 py-2 rounded-xl border border-[var(--border-soft)] text-sm font-medium text-[var(--accent-primary)] hover:bg-[var(--surface-hover)] transition"
+            disabled={!includeWardrobe && !includeKitchen}
           >
-            ← Back to wardrobe specs
+            ← Back
           </button>
         </div>
       </section>
@@ -118,90 +198,44 @@ export default function EstimatorShell(): React.ReactElement {
             "radial-gradient(circle at 10% 5%, rgba(90,93,240,0.1), transparent 60%), radial-gradient(circle at 90% 0%, rgba(236,110,207,0.08), transparent 70%)",
         }}
       />
-      {hero}
-      <div className="w-full max-w-6xl mx-auto space-y-6">
-        <div className="grid md:grid-cols-2 gap-6">
-          <Panel className="space-y-5">
-            {step === "kitchen" ? (
-              <>
-                <KitchenForm
-                  kitchen={kitchen}
-                  setKitchenShape={setKitchenShape}
-                  setKitchenFinish={setKitchenFinish}
-                  setKitchenLength={setKitchenLength}
-                />
-                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-chip)] dark:bg-[var(--surface-chip-dark)] px-4 py-3 text-xs text-[var(--text-secondary)] flex flex-wrap gap-3">
-                  <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-soft)] px-3 py-1 text-[var(--text-primary)]">
-                    Shape · {kitchen.shape.toUpperCase()}
-                  </span>
-                  <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-soft)] px-3 py-1 capitalize">
-                    Finish · {kitchen.finish}
-                  </span>
-                  <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-soft)] px-3 py-1">
-                    Per-wall max · {kitchen.perWallMax} ft
-                  </span>
-                </div>
-              </>
-            ) : (
-              <>
-                <WardrobeForm
-                  wardrobe={wardrobe}
-                  setWardrobeWidth={setWardrobeWidth}
-                  setWardrobeFinish={setWardrobeFinish}
-                />
-                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-chip)] dark:bg-[var(--surface-chip-dark)] px-4 py-3 text-xs text-[var(--text-secondary)] flex flex-wrap gap-3">
-                  <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-soft)] px-3 py-1">
-                    Width · {wardrobe.widthFt.toFixed(1)} ft
-                  </span>
-                  <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-soft)] px-3 py-1">
-                    Loft · 3 ft default
-                  </span>
-                  <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-soft)] px-3 py-1 capitalize">
-                    Finish · {wardrobe.finish}
-                  </span>
-                </div>
-              </>
-            )}
-          </Panel>
+      <div className="mt-6 space-y-5">
+        {hero}
+        {toggleRow}
+      </div>
 
-          <Panel className="relative min-h-[360px] overflow-hidden px-0 py-0">
-            <div
-              className="absolute top-4 left-4 z-10 inline-flex items-center gap-2 rounded-full border border-[var(--border-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent-primary)]"
-              style={{
-                background:
-                  "color-mix(in srgb, var(--surface-light) 80%, transparent)",
-              }}
-            >
-              {step === "kitchen"
-                ? `Shape · ${kitchen.shape.toUpperCase()}`
-                : `Finish · ${wardrobe.finish}`}
-            </div>
-            <div className="rounded-3xl overflow-hidden">
-              {step === "kitchen" ? <KitchenRender /> : <WardrobeRender />}
-            </div>
-          </Panel>
-        </div>
+      <div className="w-full max-w-6xl mx-auto space-y-6">
+        <Panel className="relative min-h-[360px] overflow-hidden px-0 py-0">
+          <div className="rounded-3xl overflow-hidden">
+            {step === "kitchen" ? <KitchenRender /> : <WardrobeRender />}
+          </div>
+        </Panel>
+        {step === "kitchen" && (
+          <p className="text-[11px] text-pink-300/80 max-w-3xl mx-auto px-2">
+            Wall lengths assume a continuous counter with 2 ft depth. Adjust each span to mirror your kitchen layout.
+          </p>
+        )}
 
         <div className="flex justify-end gap-3">
           {step !== "kitchen" && (
             <button
-              onClick={() => setStep("kitchen")}
+              onClick={() => goTo("kitchen")}
               className="px-4 py-2 rounded-xl border border-[var(--border-soft)] text-sm font-medium text-[var(--accent-primary)] hover:bg-[var(--surface-hover)] transition"
+              disabled={!includeKitchen}
             >
               ← Back to kitchen
             </button>
           )}
           {step === "kitchen" && (
             <button
-              onClick={() => setStep("wardrobe")}
+              onClick={() => goTo(includeWardrobe ? "wardrobe" : "summary")}
               className="px-5 py-2 rounded-xl bg-[var(--accent-primary)] text-white text-sm font-semibold shadow-sm hover:opacity-90 transition"
             >
-              Next · Wardrobe
+              {includeWardrobe ? "Next · Wardrobe" : "Next · Summary"}
             </button>
           )}
           {step === "wardrobe" && (
             <button
-              onClick={() => setStep("summary")}
+              onClick={() => goTo("summary")}
               className="px-5 py-2 rounded-xl bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white text-sm font-semibold shadow-sm hover:opacity-95 transition"
             >
               Generate summary →

@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import useEstimator from "@/components/estimator/store/estimatorStore";
 import { kitchenShapes } from "@/components/estimator/blueprintSchema/kitchenShapes";
 import { expandShape } from "@/components/estimator/blueprintSchema/interpreter";
-import { fitToView } from "@/components/utils/cadFitView";
+import PanZoomViewport from "@/components/estimator/common/PanZoomViewport";
 // adaptive stroke-width helper
 const sw = (base, scale) => Math.max(0.7, base / (scale * 1.3));
 
@@ -184,8 +184,18 @@ export default function KitchenSvg2D() {
   const hobPos  = within(hostForHob, hobSize.w, hobSize.h, hobPref);
   const sinkPos = within(hostForSink, sinkSize.w, sinkSize.h, sinkPref);
 
+  const fitKey = `${kitchen.shape}-${dims.A}-${dims.B}-${dims.C}-${kitchen.finish}`;
+
   const fitRects = walls.map(w=>({x:w.x,y:w.y,w:w.w,h:w.h}));
-  const { scale, tx, ty, bbox } = fitToView(fitRects, VIEW_W, VIEW_H, 0.12);
+  const bbox = fitRects.reduce(
+    (acc, r) => ({
+      x: Math.min(acc.x, r.x),
+      y: Math.min(acc.y, r.y),
+      w: Math.max(acc.x + acc.w, r.x + r.w) - Math.min(acc.x, r.x),
+      h: Math.max(acc.y + acc.h, r.y + r.h) - Math.min(acc.y, r.y),
+    }),
+    { x: fitRects[0]?.x ?? 0, y: fitRects[0]?.y ?? 0, w: fitRects[0]?.w ?? 0, h: fitRects[0]?.h ?? 0 }
+  );
 
   let inward="right";
   if(sinkOrient==="v"){
@@ -196,25 +206,37 @@ export default function KitchenSvg2D() {
     inward=(hostForSink.y+hostForSink.h/2)<midY?"down":"up";
   }
 
+  const centerX = bbox.x + bbox.w / 2;
+  const centerY = bbox.y + bbox.h / 2;
+
   return (
-    <svg
-      viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-      preserveAspectRatio="xMidYMid meet"
-      className="w-full h-[420px] bg-transparent"
-    >
-      <ArrowDef/>
-      <g transform={`translate(${tx}, ${ty}) scale(${scale})`}>
-        {walls.map((r,i)=>(
-          <rect key={i}
-            x={toPx(r.x)} y={toPx(r.y)} width={toPx(r.w)} height={toPx(r.h)} rx={toPx(4)}
-            fill={COLORS.counter} stroke={COLORS.counterStroke}
-            strokeWidth={sw(1.2, scale)} vectorEffect="non-scaling-stroke"
-          />
-        ))}
-        <HobIcon  x={hobPos.x}  y={hobPos.y}  w={hobSize.w}  h={hobSize.h}  orient={hobOrient}  scale={scale}/>
-        <SinkIcon x={sinkPos.x} y={sinkPos.y} w={sinkSize.w} h={sinkSize.h} orient={sinkOrient} inward={inward} scale={scale}/>
-        <OuterLeaders bbox={bbox} scale={scale}/>
-      </g>
-    </svg>
+    <PanZoomViewport sceneWidth={VIEW_W} sceneHeight={VIEW_H} fitKey={fitKey} autoFitOnMount autoFitOnFitKeyChange>
+      {(transform) => {
+        const scale = transform.z;
+        const tx = transform.x - toPx(centerX);
+        const ty = transform.y - toPx(centerY);
+        return (
+          <svg
+            viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+            preserveAspectRatio="xMidYMid meet"
+            className="absolute inset-0 w-full h-full"
+          >
+            <ArrowDef/>
+            <g transform={`translate(${tx}, ${ty}) scale(${scale})`}>
+              {walls.map((r,i)=>(
+                <rect key={i}
+                  x={toPx(r.x)} y={toPx(r.y)} width={toPx(r.w)} height={toPx(r.h)} rx={toPx(4)}
+                  fill={COLORS.counter} stroke={COLORS.counterStroke}
+                  strokeWidth={sw(1.2, scale)} vectorEffect="non-scaling-stroke"
+                />
+              ))}
+              <HobIcon  x={hobPos.x}  y={hobPos.y}  w={hobSize.w}  h={hobSize.h}  orient={hobOrient}  scale={scale}/>
+              <SinkIcon x={sinkPos.x} y={sinkPos.y} w={sinkSize.w} h={sinkSize.h} orient={sinkOrient} inward={inward} scale={scale}/>
+              <OuterLeaders bbox={bbox} scale={scale}/>
+            </g>
+          </svg>
+        );
+      }}
+    </PanZoomViewport>
   );
 }

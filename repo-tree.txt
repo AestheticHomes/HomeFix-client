@@ -4,7 +4,15 @@
 
 📂 .vscode  (1 items)
    📄 settings.json
-📂 app  (18 items)
+📂 agent  (7 items)
+   📄 agent.md
+   📄 chatgpt-guide.md
+   📄 codex-guide.md
+   📄 design-laws.md
+   📄 EDITH_NOTES.md
+   📄 README.md
+   📄 shared-rules.md
+📂 app  (20 items)
    📂 animations  (8 items)
       📄 3dKitchen.json
       📄 civil.json
@@ -14,7 +22,7 @@
       📄 interior.json
       📄 map.json
       📄 paint.json
-   📂 api  (14 items)
+   📂 api  (10 items)
       📂 admin  (2 items)
          📂 bookings  (2 items)
             📂 list  (1 items)
@@ -43,38 +51,53 @@
          📂 reschedule  (1 items)
             📄 route.js
          📄 route.js
+      📂 bookings-ledger  (7 items)
+         📂 [id]  (1 items)
+            📄 route.ts
+         📂 cancel  (1 items)
+            📄 route.ts
+         📂 create  (1 items)
+            📄 route.ts
+         📂 list  (1 items)
+            📄 route.ts
+         📂 refund  (1 items)
+            📄 route.ts
+         📂 reschedule  (1 items)
+            📄 route.ts
+         📂 return  (3 items)
+            📂 approve  (1 items)
+               📄 route.ts
+            📂 complete  (1 items)
+               📄 route.ts
+            📄 route.ts
       📂 clients  (1 items)
          📄 route.js
       📂 edith  (1 items)
          📄 route.ts
+      📂 invoices  (1 items)
+         📂 list  (1 items)
+            📄 route.ts
       📂 ledger  (1 items)
          📂 sync  (1 items)
             📄 route.ts
-      📂 link-otp-user  (1 items)
-         📄 route.ts
       📂 profile  (1 items)
          📄 route.js
       📂 services  (1 items)
          📄 route.js
-      📂 test-db  (1 items)
-         📄 route.js
-      📂 verify-email  (1 items)
-         📄 route.js
-      📄 auth.js
-      📄 book.js
-      📄 services.js
    📂 cart  (1 items)
       📄 page.tsx
-   📂 checkout  (2 items)
+   📂 checkout  (3 items)
       📂 success  (1 items)
          📄 page.tsx
       📄 page.tsx
+      📄 page.tsx.bak
    📂 estimator  (1 items)
       📄 page.tsx
    📂 login  (1 items)
       📄 page.tsx
-   📂 mockrazorpay  (1 items)
+   📂 mockrazorpay  (2 items)
       📄 page.tsx
+      📄 page.tsx.bak
    📂 my-orders  (1 items)
       📄 page.tsx
    📂 my-space  (3 items)
@@ -87,6 +110,8 @@
          📄 ViewToggle.tsx
       📂 orders  (1 items)
          📄 page.tsx
+      📄 page.tsx
+   📂 offers  (1 items)
       📄 page.tsx
    📂 profile  (1 items)
       📄 page.tsx
@@ -104,8 +129,9 @@
       📄 page.js
    📄 globals.css
    📄 layout.tsx
+   📄 not-found.tsx
    📄 page.tsx
-📂 components  (28 items)
+📂 components  (29 items)
    📂 checkout  (6 items)
       📄 CheckoutContainer.tsx
       📄 CheckoutFooter.tsx
@@ -114,7 +140,7 @@
       📄 CheckoutToast.tsx
       📄 EdithCard.tsx
    📂 common  (2 items)
-      📄 UniPreviewCanvas.jsx
+      📄 UniPreviewCanvas.tsx
       📄 useAutoFitSvg.js
    📂 edith  (6 items)
       📄 EdithLoader.tsx
@@ -123,28 +149,45 @@
       📄 EdithViewport.tsx
       📄 index.ts
       📄 useEdithStore.ts
-   📂 estimator  (14 items)
+   📂 estimator  (18 items)
       📂 blueprintSchema  (2 items)
          📄 interpreter.js
          📄 kitchenShapes.js
+      📂 common  (1 items)
+         📄 PanZoomViewport.tsx
       📂 store  (1 items)
-         📄 estimatorStore.js
-      📄 EstimatorForm.jsx
-      📄 EstimatorShell.jsx
-      📄 KitchenRender.jsx
-      📄 KitchenScene3D.jsx
+         📄 estimatorStore.ts
+      📄 EstimatorForm.tsx
+      📄 EstimatorInitializer.tsx
+      📄 EstimatorPageClient.tsx
+      📄 EstimatorShell.tsx
+      📄 EstimatorStrip.tsx
+      📄 KitchenRender.tsx
+      📄 KitchenScene3D.tsx
       📄 KitchenSvg2D.jsx
       📄 modelPreload.js
       📄 RateConfig.js
-      📄 SafeScene3D.jsx
-      📄 SummaryPanel.jsx
-      📄 WardrobeRender.jsx
+      📄 SafeScene3D.tsx
+      📄 SummaryPanel.tsx
+      📄 WardrobeRender.tsx
       📄 WardrobeScene3D.jsx
       📄 WardrobeSvg2D.jsx
+   📂 home  (9 items)
+      📄 ComingSoon.tsx
+      📄 Hero.tsx
+      📄 HomePromoClimateStrip.tsx
+      📄 MoreServicesStrip.tsx
+      📄 ProjectsShowcase.tsx
+      📄 PromoStrip.tsx
+      📄 QuickActions.tsx
+      📄 RenovationServices.tsx
+      📄 StoreShowcase.tsx
    📂 hooks  (0 items)
-   📂 layout  (7 items)
+   📂 layout  (9 items)
+      📄 ContextStrip.tsx
       📄 index.ts
       📄 LayoutContent.tsx
+      📄 LiveClimateBar.tsx
       📄 NavBar.tsx
       📄 RootShell.tsx
       📄 SafeViewport.tsx
@@ -158,12 +201,14 @@
       📄 LedgerXItemCard.tsx
       📄 LedgerXProvider.tsx
       📄 useLedgerX.ts
-   📂 store  (4 items)
+   📂 store  (6 items)
+      📄 cartGuards.ts
       📄 cartStore.ts
       📄 CategoryRail.tsx
       📄 ProductCard.tsx
       📄 ProductQuickView.tsx
-   📂 studio  (6 items)
+      📄 StorePromoStrip.tsx
+   📂 studio  (7 items)
       📂 store  (1 items)
          📄 plannerStore.js
       📄 PriceHUD.jsx
@@ -171,6 +216,7 @@
       📄 RoomPlanner3D.jsx
       📄 RoomShapeSelector.jsx
       📄 RoomSummary.jsx
+      📄 StudioTipsStrip.tsx
    📂 ui  (20 items)
       📄 badge.js
       📄 button-group-pro.tsx
@@ -227,7 +273,7 @@
    📄 useOtpManager.ts
    📄 useRoleGuard.js
    📄 useSupabaseUserSafe.ts
-📂 lib  (15 items)
+📂 lib  (19 items)
    📂 assets  (1 items)
       📄 homefix-logo.ts
    📂 supabaseQueries  (3 items)
@@ -240,13 +286,26 @@
    📄 goods.js
    📄 loadGoogleMaps.ts
    📄 mockRazorpay.ts
+   📄 promoEngine.ts
    📄 roles.ts
    📄 supabaseClient.js
    📄 supabaseServerClient.ts
+   📄 track.ts
    📄 twilio.js
    📄 useAuth.ts
+   📄 useDesignStore.ts
+   📄 useInitialCategory.ts
    📄 useServices.ts
    📄 utils.ts
+📂 packages  (1 items)
+   📂 eslint-plugin-edith  (3 items)
+      📂 lib  (1 items)
+         📂 rules  (2 items)
+            📄 no-hardcoded-colors.js
+            📄 no-inline-background-with-bg-class.js
+      📄 index.js
+      📄 package.json
+📂 pages  (0 items)
 📂 public  (8 items)
    📂 icons  (5 items)
       📄 HomeFix.png
@@ -256,18 +315,19 @@
       📄 vc.png
    📂 images  (1 items)
       📄 HomeFix.png
-   📂 models  (6 items)
-      📄 chair.glb
-      📄 interior_scene.glb
-      📄 kitchen.glb
+   📂 models  (1 items)
       📄 placeholder.glb
-      📄 sofa.glb
-      📄 wardrobe.glb
    📄 logo-homefix.svg
    📄 manifest.json
    📄 offline.html
    📄 sw.js
    📄 workbox-4754cb34.js
+📂 return  (3 items)
+   📂 complete  (1 items)
+      📄 route.ts
+   📂 reject  (1 items)
+      📄 route.ts
+   📄 estimator-theme.diff
 📂 Scripts  (1 items)
    📄 HomeFix-Mail-Test.ps1
 📂 supabase  (5 items)
@@ -304,15 +364,19 @@
       📄 20251107_smartmail_v4.sql
    📄 .gitignore
    📄 config.toml
-📂 types  (4 items)
+📂 types  (6 items)
    📄 canvas-confetti.d.ts
+   📄 HomeFixUser.ts
    📄 index.d.ts
    📄 jsx.d.ts
+   📄 r3f.d.ts
    📄 react-three.d.ts
 📄 .env.local
+📄 .eslintrc.cjs
 📄 .gitattributes
 📄 .gitignore
 📄 build_trace.txt
+📄 chatgpt-context.txt
 📄 CLEANUP_LOG.md
 📄 components.json
 📄 deno.json
@@ -327,6 +391,8 @@
 📄 package-lock.json
 📄 package.json
 📄 postcss.config.cjs
+📄 repo-files.txt
+📄 repo-structure.txt
 📄 repo-tree.ps1
 📄 repo-tree.txt
 📄 supabase-tests-direct.json

@@ -232,6 +232,24 @@ export default function CheckoutPage() {
       created_at: new Date().toISOString(),
     };
 
+    basePayload.ledgerx_v3 = {
+      fulfillment: {
+        type: checkoutMode === "product" ? "delivery" : "service",
+        slot: preferredSlot ?? null,
+        preferred_date: preferredDate ?? null,
+      },
+      financials: {
+        subtotal: total,
+        visit_fee: hasServices ? 200 : 0,
+        cod_allowed: false,
+      },
+      metadata: {
+        app_version: "edith-pwa-2025",
+        platform: "web",
+        flow: checkoutMode,
+      },
+    };
+
     if (hasProducts) {
       basePayload.receiver_name = receiverName;
       basePayload.receiver_phone = receiverPhone;
@@ -267,30 +285,31 @@ export default function CheckoutPage() {
     }
 
     try {
-      const result = await addEntry(
+      await addEntry(
         uid ?? "guest",
-        hasServices ? "service-booking" : "checkout-pending",
+        hasServices ? "service-draft" : "product-draft",
         basePayload
       );
-      if (result?.id) {
-        localStorage.setItem("hf_pending_order_id", result.id);
+
+      const ledgerRes = await fetch("/api/bookings-ledger/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(basePayload),
+      });
+
+      const ledgerData = await ledgerRes.json();
+
+      if (!ledgerData?.success) {
+        console.error("Ledger create failed:", ledgerData);
+        createToast("Failed to create booking", "error");
+        setLoading(false);
+        return;
       }
 
-      sessionStorage.setItem(
-        "hf_checkout_payload",
-        JSON.stringify({
-          uid: uid ?? "guest",
-          payload: basePayload,
-          type: checkoutMode,
-        })
-      );
-
-      if (hasProducts) {
-        localStorage.setItem("last_checkout_total", String(total));
-      }
+      const bookingId = ledgerData.booking.id;
+      localStorage.setItem("hf_pending_order_id", bookingId);
     } catch (err) {
-      console.error("Pending ledger entry failed", err);
-      // continue anyway
+      console.error("❌ Checkout ledger error:", err);
     }
 
     await new Promise((r) => setTimeout(r, 900));

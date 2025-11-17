@@ -30,23 +30,27 @@ export default function SummaryPanel() {
   const setStep = useEstimator((s) => s.setStep);
   const k = useEstimator((s) => s.kitchen);
   const w = useEstimator((s) => s.wardrobe);
+  const includeKitchen = useEstimator((s) => s.includeKitchen);
+  const includeWardrobe = useEstimator((s) => s.includeWardrobe);
   const getComputed = useEstimator((s) => s.getComputed);
   const comp = getComputed();
 
   const parts = [
-    { label: "Kitchen Base Units", value: comp.kBaseCost || 0 },
-    { label: "Kitchen Wall Units", value: comp.kWallCost || 0 },
-    { label: "Wardrobe (Bottom)", value: comp.wBaseCost || 0 },
-    { label: "Wardrobe (Loft)", value: comp.wLoftCost || 0 },
-  ];
+    includeKitchen && { label: "Kitchen Base Units", value: comp.kBaseCost || 0 },
+    includeKitchen && { label: "Kitchen Wall Units", value: comp.kWallCost || 0 },
+    includeWardrobe && { label: "Wardrobe (Bottom)", value: comp.wBaseCost || 0 },
+    includeWardrobe && { label: "Wardrobe (Loft)", value: comp.wLoftCost || 0 },
+  ].filter(Boolean) as { label: string; value: number }[];
 
   const total = comp.total || 0;
-  const max = Math.max(...parts.map((p) => p.value), 1);
+  const chartParts = parts.length ? parts : [{ label: "No items", value: 0 }];
+  const max = Math.max(...chartParts.map((p) => p.value), 1);
 
   const pieData = [
-    { name: "Kitchen", value: (comp.kBaseCost || 0) + (comp.kWallCost || 0) },
-    { name: "Wardrobe", value: (comp.wBaseCost || 0) + (comp.wLoftCost || 0) },
-  ];
+    includeKitchen && { name: "Kitchen", value: (comp.kBaseCost || 0) + (comp.kWallCost || 0) },
+    includeWardrobe && { name: "Wardrobe", value: (comp.wBaseCost || 0) + (comp.wLoftCost || 0) },
+  ].filter(Boolean) as { name: string; value: number }[];
+  const pieDisplay = pieData.length ? pieData : [{ name: "No items", value: 1 }];
 
   return (
     <div className="space-y-6 pb-16">
@@ -66,18 +70,26 @@ export default function SummaryPanel() {
             </h2>
 
             <div className="text-sm text-[var(--text-secondary)] space-y-1">
-              <div>
-                Kitchen: <b>{k.shape}</b> · Finish: <b>{k.finish}</b> · Total run:{" "}
-                <b>{comp.totalRun?.toFixed(2)} ft</b>
-              </div>
-              <div>
-                Wardrobe: width <b>{comp.width?.toFixed(1)} ft</b> · Finish:{" "}
-                <b>{w.finish}</b>
-              </div>
+              {includeKitchen ? (
+                <div>
+                  Kitchen: <b>{k.shape}</b> · Finish: <b>{k.finish}</b> · Total run:{" "}
+                  <b>{comp.totalRun?.toFixed(2)} ft</b>
+                </div>
+              ) : (
+                <div>Kitchen: Not included</div>
+              )}
+              {includeWardrobe ? (
+                <div>
+                  Wardrobe: width <b>{comp.width?.toFixed(1)} ft</b> · Finish:{" "}
+                  <b>{w.finish}</b>
+                </div>
+              ) : (
+                <div>Wardrobe: Not included</div>
+              )}
             </div>
 
             <div className="mt-4 space-y-2">
-              {parts.map((p, i) => (
+              {chartParts.map((p, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <div className="w-44 text-sm text-[var(--text-secondary)]">
                     {p.label}
@@ -111,7 +123,7 @@ export default function SummaryPanel() {
             </div>
             <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-panel)] dark:bg-[var(--surface-panel-dark)]/85 p-3 shadow-sm">
               <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={parts}>
+                <BarChart data={chartParts}>
                   <XAxis
                     dataKey="label"
                     tick={{ fontSize: 10, fill: "var(--text-muted)" }}
@@ -123,7 +135,7 @@ export default function SummaryPanel() {
                     }
                   />
                   <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                    {parts.map((_, i) => (
+                    {chartParts.map((_, i) => (
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Bar>
@@ -138,7 +150,7 @@ export default function SummaryPanel() {
               <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
                   <Pie
-                    data={pieData}
+                    data={pieDisplay}
                     cx="50%"
                     cy="50%"
                     outerRadius={70}

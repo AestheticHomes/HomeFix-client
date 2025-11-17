@@ -1,5 +1,6 @@
 "use client";
-//hooks/useMapPicker.ts
+// hooks/useMapPicker.ts
+
 import {
   MutableRefObject,
   useCallback,
@@ -8,7 +9,6 @@ import {
   useState,
 } from "react";
 
-// Type augmentation for the Google Maps Place Web Component
 interface GmpxPlaceAutocompleteElement extends HTMLElement {
   getPlace?: () => any;
 }
@@ -25,7 +25,7 @@ export interface UseMapPickerOptions {
     loc: Coordinates | null,
     address: string,
     confirmed?: boolean
-  ) => void; // ⭐️ Fixed: Ref for the declaratively rendered Web Component
+  ) => void;
   autocompleteElRef?: MutableRefObject<any>;
 }
 
@@ -33,11 +33,11 @@ export function useMapPicker({
   initialLocation = { lat: 13.0827, lng: 80.2707 },
   editable = true,
   onLocationChange,
-  autocompleteElRef, // ⭐️ Destructured and ready to use
+  autocompleteElRef,
 }: UseMapPickerOptions) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  const mapRootRef = useRef<HTMLDivElement | null>(null);
 
+  const mapRootRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
 
@@ -46,93 +46,138 @@ export function useMapPicker({
   const [address, setAddress] = useState("");
   const [satellite, setSatellite] = useState(false);
   const [locating, setLocating] = useState(false);
-  /* ------------------------------------------------------------------
-   * LOAD GOOGLE MAPS SCRIPT
-   * ------------------------------------------------------------------ */
+
+  const autocompleteErrorLoggedRef = useRef(false);
+
+  /* ------------------------------------------------------------------ */
+  /*  LOAD GOOGLE MAPS SCRIPT                                           */
+  /* ------------------------------------------------------------------ */
 
   useEffect(() => {
     if (typeof window === "undefined" || !apiKey) return;
 
-    if ((window as any).google?.maps) {
+    const w = window as any;
+    if (w.google?.maps) {
       setMapsLoaded(true);
       return;
     }
 
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    // Avoid injecting multiple scripts
+    if (w.__homefixGoogleMapsPromise) {
+      (w.__homefixGoogleMapsPromise as Promise<void>).then(() =>
+        setMapsLoaded(true)
+      );
+      return;
+    }
 
-    script.async = true;
-    script.defer = true;
-    script.onload = () => setMapsLoaded(true);
-    script.onerror = () => console.error("Google Maps script failed to load.");
+    w.__homefixGoogleMapsPromise = new Promise<void>((resolve) => {
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+      script.async = true;
+      script.defer = true;
 
-    document.head.appendChild(script);
+      script.onload = () => {
+        setMapsLoaded(true);
+        resolve();
+      };
+
+      script.onerror = () => {
+        console.error("[MapPicker] Google Maps script failed to load.");
+        resolve();
+      };
+
+      document.head.appendChild(script);
+    });
   }, [apiKey]);
-  /* ------------------------------------------------------------------
-   * SAFE REVERSE GEOCODE - STABLE REFERENCE
-   * ------------------------------------------------------------------ */
 
-  const safeReverseGeocode = useCallback(
-    async (coords: Coordinates): Promise<string> => {
-      try {
-        const g = (window as any).google;
-        if (!g?.maps) return "";
-        const geocoder = new g.maps.Geocoder();
-        return await new Promise((resolve) => {
-          geocoder.geocode({ location: coords }, (res: any, status: any) => {
-            if (status === "OK" && res?.[0]) resolve(res[0].formatted_address);
-            else resolve("");
-          });
+  /* ------------------------------------------------------------------ */
+  /*  SAFE REVERSE GEOCODE                                              */
+  /* ------------------------------------------------------------------ */
+
+  const safeReverseGeocode = useCallback(async (coords: Coordinates) => {
+    try {
+      const g = (window as any).google;
+      if (!g?.maps) return "";
+
+      const geocoder = new g.maps.Geocoder();
+
+      return await new Promise<string>((resolve) => {
+        geocoder.geocode({ location: coords }, (res: any, status: any) => {
+          if (status === "OK" && res?.[0]) resolve(res[0].formatted_address);
+          else resolve("");
         });
-      } catch (e) {
-        console.error("Reverse geocode failed:", e);
-        return "";
-      }
-    },
-    [] // Dependencies: None, as it uses global window.google
-  );
-  /* ------------------------------------------------------------------
-   * LOAD WEB COMPONENT (PlaceAutocompleteElement) - STABLE REFERENCE
-   * ------------------------------------------------------------------ */
+      });
+    } catch (e) {
+      console.error("[MapPicker] Reverse geocode failed:", e);
+      return "";
+    }
+  }, []);
+
+  /* ------------------------------------------------------------------ */
+  /*  LOAD PLACE AUTOCOMPLETE WEB COMPONENT                             */
+  /* ------------------------------------------------------------------ */
 
   const loadWebComponent = useCallback(async (): Promise<boolean> => {
-    if ((window as any).customElements?.get("gmpx-place-autocomplete")) {
-      return true;
+    if (typeof window === "undefined") return false;
+
+    const w = window as any;
+
+    if (w.customElements?.get("gmpx-place-autocomplete")) return true;
+
+    if (w.__gmpxPlaceAutocompletePromise) {
+      return w.__gmpxPlaceAutocompletePromise as Promise<boolean>;
     }
 
-    const candidates = [
-      "https://maps.gstatic.com/maps-api-v3/api/js/WebComponent/latest/PlaceAutocompleteElement.js",
-      "https://maps.gstatic.com/maps-api-v3/api/js/WebComponent/PlaceAutocompleteElement.js",
-    ];
+    w.__gmpxPlaceAutocompletePromise = new Promise<boolean>((resolve) => {
+      const candidates = [
+        "https://maps.gstatic.com/maps-api-v3/api/js/WebComponent/latest/PlaceAutocompleteElement.js",
+        "https://maps.gstatic.com/maps-api-v3/api/js/WebComponent/PlaceAutocompleteElement.js",
+      ];
 
-    for (const url of candidates) {
-      try {
-        const s = document.createElement("script");
-        s.type = "module";
-        s.src = url;
-        document.head.appendChild(s);
-        await new Promise((r) => setTimeout(r, 300));
-        if ((window as any).customElements?.get("gmpx-place-autocomplete")) {
-          return true;
+      const tryNext = (index: number) => {
+        if (index >= candidates.length) {
+          resolve(false);
+          return;
         }
-      } catch (e) {
-        // Silently ignore script load failures and try the next candidate
-      }
-    }
-    return false;
+
+        const script = document.createElement("script");
+        script.type = "module";
+        script.src = candidates[index];
+
+        script.onload = () => {
+          const ok = !!w.customElements?.get("gmpx-place-autocomplete");
+          if (ok) resolve(true);
+          else tryNext(index + 1);
+        };
+
+        script.onerror = () => {
+          tryNext(index + 1);
+        };
+
+        document.head.appendChild(script);
+      };
+
+      tryNext(0);
+    });
+
+    return w.__gmpxPlaceAutocompletePromise as Promise<boolean>;
   }, []);
-  /* ------------------------------------------------------------------
-   * INIT MAP + MARKER EFFECT
-   * ------------------------------------------------------------------ */
+
+  /* ------------------------------------------------------------------ */
+  /*  INIT MAP + MARKER                                                 */
+  /* ------------------------------------------------------------------ */
 
   useEffect(() => {
     if (!mapsLoaded || !mapRootRef.current) return;
+
+    let idleListener: google.maps.MapsEventListener | null = null;
+    let dragListener: google.maps.MapsEventListener | null = null;
 
     (async () => {
       const g = (window as any).google;
       if (!g?.maps) return;
 
-      const map = new g.maps.Map(mapRootRef.current, {
+      const map = new g.maps.Map(mapRootRef.current!, {
         center: initialLocation,
         zoom: 16,
         disableDefaultUI: true,
@@ -150,42 +195,46 @@ export function useMapPicker({
         draggable: editable,
       });
 
-      markerRef.current = marker; // Emit initial location
+      markerRef.current = marker;
 
+      // Initial address
       const initAddr = await safeReverseGeocode(initialLocation);
       setAddress(initAddr);
-      onLocationChange?.(initialLocation, initAddr, false); // IDLE PAN LISTENER: updates location when the map stops moving
+      onLocationChange?.(initialLocation, initAddr, false);
 
-      const idleListener = map.addListener("idle", async () => {
+      // When map stops moving
+      idleListener = map.addListener("idle", async () => {
         const c = map.getCenter();
         if (!c) return;
+
         const loc = { lat: c.lat(), lng: c.lng() };
         marker.setPosition(c);
 
         const addr = await safeReverseGeocode(loc);
-        setAddress(addr); // Using a ref or checking for a current change might prevent stale onLocationChange, // but since it's now a dependency, it's safer.
+        setAddress(addr);
         onLocationChange?.(loc, addr, false);
-      }); // MARKER DRAG: updates location when the marker drag ends
+      });
 
-      let dragListener: any = null;
+      // Marker drag
       if (editable) {
         dragListener = marker.addListener("dragend", async () => {
           const p = marker.getPosition();
           if (!p) return;
+
           const loc = { lat: p.lat(), lng: p.lng() };
           map.panTo(p);
+
           const addr = await safeReverseGeocode(loc);
           setAddress(addr);
           onLocationChange?.(loc, addr, false);
         });
       }
-
-      return () => {
-        if (idleListener?.remove) idleListener.remove();
-        if (dragListener?.remove) dragListener.remove();
-      };
     })();
-    // ✅ Dependencies are now complete and correct
+
+    return () => {
+      idleListener?.remove();
+      dragListener?.remove();
+    };
   }, [
     mapsLoaded,
     satellite,
@@ -194,12 +243,14 @@ export function useMapPicker({
     onLocationChange,
     safeReverseGeocode,
   ]);
-  /* ------------------------------------------------------------------
-   * HOOK ACTIONS - STABLE REFERENCES
-   * ------------------------------------------------------------------ */
+
+  /* ------------------------------------------------------------------ */
+  /*  ACTIONS                                                           */
+  /* ------------------------------------------------------------------ */
 
   const locateMe = useCallback(() => {
     if (!navigator.geolocation || !mapRef.current) return;
+
     setLocating(true);
 
     navigator.geolocation.getCurrentPosition(
@@ -208,6 +259,7 @@ export function useMapPicker({
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
         };
+
         const g = (window as any).google;
 
         if (g?.maps && mapRef.current) {
@@ -222,27 +274,33 @@ export function useMapPicker({
         setLocating(false);
       },
       () => {
-        console.warn("Geolocation failed or was denied.");
+        console.warn("[MapPicker] Geolocation failed or was denied.");
         setLocating(false);
       },
       { enableHighAccuracy: true, timeout: 8000 }
     );
-  }, [onLocationChange, safeReverseGeocode]); // Dependencies: State setter (safe), prop function, and other stable functions.
+  }, [onLocationChange, safeReverseGeocode]);
 
   const confirmLocation = useCallback(async () => {
     if (!markerRef.current) return;
+
     const p = markerRef.current.getPosition();
     if (!p) return;
+
     const loc = { lat: p.lat(), lng: p.lng() };
     const addr = await safeReverseGeocode(loc);
+
     setAddress(addr);
     onLocationChange?.(loc, addr, true);
   }, [onLocationChange, safeReverseGeocode]);
 
-  const toggleSatellite = useCallback(() => setSatellite((s) => !s), []);
-  /* ------------------------------------------------------------------
-   * ATTACH AUTOCOMPLETE LOGIC - STABLE REFERENCE
-   * ------------------------------------------------------------------ */
+  const toggleSatellite = useCallback(() => {
+    setSatellite((s) => !s);
+  }, []);
+
+  /* ------------------------------------------------------------------ */
+  /*  ATTACH AUTOCOMPLETE                                               */
+  /* ------------------------------------------------------------------ */
 
   const attachAutocomplete = useCallback(async () => {
     if (!mapsLoaded) return;
@@ -251,11 +309,21 @@ export function useMapPicker({
     const webcompLoaded = await loadWebComponent();
     if (!webcompLoaded) {
       setAutocompleteReady(false);
-      console.warn("PlaceAutocompleteElement could not be loaded.");
+
+      if (!autocompleteErrorLoggedRef.current) {
+        console.warn(
+          "[MapPicker] PlaceAutocompleteElement could not be loaded. " +
+            "Autocomplete will be disabled; check Places API / web component URLs."
+        );
+        autocompleteErrorLoggedRef.current = true;
+      }
+
       return;
     }
 
     const el = autocompleteElRef.current as GmpxPlaceAutocompleteElement;
+    if (!el) return;
+
     setAutocompleteReady(true);
 
     const handler = async (ev: any) => {
@@ -294,21 +362,29 @@ export function useMapPicker({
       el.removeEventListener("change", handler);
     };
   }, [mapsLoaded, autocompleteElRef, loadWebComponent, onLocationChange]);
-  /* ------------------------------------------------------------------
-   * AUTOCOMPLETE EFFECT
-   * ------------------------------------------------------------------ */
 
   useEffect(() => {
-    let cleanupFn: (() => void) | null | undefined = null;
+    let cleanupFn: (() => void) | void;
 
     (async () => {
       cleanupFn = await attachAutocomplete();
     })();
 
     return () => {
-      if (cleanupFn) cleanupFn();
-    }; // ✅ Dependencies are now complete and correct
+      cleanupFn?.();
+    };
   }, [attachAutocomplete]);
+
+  /* ------------------------------------------------------------------ */
+  /*  RETURN HOOK API                                                   */
+  /* ------------------------------------------------------------------ */
+
+  // 🔥 Unified "is maps usable?" flag
+  const mapsDead =
+    !apiKey ||
+    !mapsLoaded ||
+    (typeof window !== "undefined" &&
+      !(window as any).google?.maps?.Map);
 
   return {
     mapRootRef,
@@ -318,7 +394,7 @@ export function useMapPicker({
     locating,
     autocompleteReady,
     mapsLoaded,
-
+    mapsDead,
     locateMe,
     confirmLocation,
     toggleSatellite,

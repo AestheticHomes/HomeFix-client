@@ -40,3 +40,17 @@ export function fitToView(rects, viewW, viewH, paddingRatio = 0.08) {
 
   return { scale, tx, ty, bbox };
 }
+
+export function fitBox(viewW, viewH, bbox, paddingRatio = 0.08) {
+  if (!bbox || !isFinite(bbox.w) || !isFinite(bbox.h)) {
+    return { scale: 1, offsetX: 0, offsetY: 0 };
+  }
+  const padW = bbox.w * paddingRatio;
+  const padH = bbox.h * paddingRatio;
+  const fullW = bbox.w + padW * 2;
+  const fullH = bbox.h + padH * 2;
+  const scale = Math.min(viewW / fullW, viewH / fullH);
+  const offsetX = (viewW - bbox.w * scale) / 2 - bbox.x * scale;
+  const offsetY = (viewH - bbox.h * scale) / 2 - bbox.y * scale;
+  return { scale, offsetX, offsetY };
+}

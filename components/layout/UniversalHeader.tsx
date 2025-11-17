@@ -11,21 +11,11 @@
  * ============================================================
  */
 
-import useEstimator, {
-  type EstimatorStep,
-} from "@/components/estimator/store/estimatorStore";
-import { useProductCartStore } from "@/components/store/cartStore";
 import HomeFixLogo from "@/components/ui/HomeFixLogo";
-import clsx from "clsx";
+import MobileSideNav from "@/components/layout/MobileSideNav";
 import { motion } from "framer-motion";
-import {
-  CalendarDays,
-  Moon,
-  Package,
-  RefreshCw,
-  ShoppingCart,
-  Sun,
-} from "lucide-react";
+import { Moon, Sun, CalendarDays, Package } from "lucide-react";
+import clsx from "clsx";
 import { useTheme } from "next-themes";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
@@ -37,14 +27,7 @@ export default function UniversalHeader(): React.ReactElement {
   const { theme, setTheme, systemTheme } = useTheme();
 
   const [mounted, setMounted] = useState(false);
-  const [isSyncing, setSyncing] = useState(false);
-
-  const totalItems = useProductCartStore((s) => s.totalItems);
-  const estimatorState = useEstimator.getState?.() || {};
-  const step = (estimatorState.step || "kitchen") as EstimatorStep;
-  const fallbackSetStep: (s: EstimatorStep) => void = () => {};
-  const setStep: (s: EstimatorStep) => void =
-    estimatorState.setStep ?? fallbackSetStep;
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const isEstimator = pathname?.startsWith("/estimator");
   const isViewer = pathname?.startsWith("/edith");
@@ -71,38 +54,6 @@ export default function UniversalHeader(): React.ReactElement {
   const toggleTheme = () =>
     setTheme(currentTheme === "light" ? "dark" : "light");
 
-  async function handleSync() {
-    try {
-      setSyncing(true);
-      const { syncEdithAssets } = await import(
-        "@/edith/components/useAssetSync"
-      );
-      await syncEdithAssets((p: number) =>
-        console.log("Sync progress:", Math.round(p * 100) + "%")
-      );
-    } catch (err) {
-      console.error("Sync failed:", err);
-    } finally {
-      setSyncing(false);
-    }
-  }
-
-  const pageTitle = pathname?.startsWith("/studio")
-    ? "HomeFix Studio"
-    : pathname?.startsWith("/store")
-    ? "HomeFix Store"
-    : pathname?.startsWith("/my-space")
-    ? "My Space"
-    : pathname?.startsWith("/services")
-    ? "Our Services"
-    : pathname?.startsWith("/profile")
-    ? "Profile Center"
-    : isViewer
-    ? "Edith Viewer"
-    : isEstimator
-    ? "HomeFix Estimator"
-    : "";
-
   return (
     <motion.header
       ref={headerRef}
@@ -117,7 +68,7 @@ export default function UniversalHeader(): React.ReactElement {
       <div className="flex flex-wrap items-center justify-between px-4 sm:px-6 py-3.5 gap-3">
         <div className="flex items-center gap-3.5">
           <HomeFixLogo size="md" />
-          {mounted && (
+          {mounted && !isEstimator && (
             <motion.span
               className="hidden sm:inline text-sm text-[var(--text-secondary)] italic"
               initial={{ opacity: 0 }}
@@ -129,58 +80,11 @@ export default function UniversalHeader(): React.ReactElement {
           )}
         </div>
 
-        {/* 🛒 Cart */}
-        <button
-          onClick={() => router.push("/cart")}
-          className="relative flex items-center justify-center w-8 h-8 rounded-lg
-                     border border-[var(--border-soft)] hover:border-[var(--accent-primary)]
-                     bg-[var(--surface-card)] transition-colors"
-          aria-label="Open Cart"
-        >
-          <ShoppingCart className="text-[var(--text-primary)]" size={16} />
-          {totalItems > 0 && (
-            <span
-              className="absolute -top-1 -right-1 bg-[var(--accent-primary)]
-                             text-white text-[10px] font-semibold w-4 h-4
-                             rounded-full flex items-center justify-center"
-            >
-              {totalItems}
-            </span>
-          )}
-        </button>
-
-        {/* 🧭 Page Title */}
-        <motion.h1
-          key={pathname}
-          className="text-base sm:text-lg font-semibold text-[var(--accent-primary)]
-                     dark:text-[var(--accent-secondary)] flex-1 text-center sm:text-left truncate"
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          {pageTitle}
-        </motion.h1>
-
-        {/* ☀️ Actions */}
         <div className="flex items-center gap-3 sm:gap-4">
-          {isViewer && (
-            <button
-              onClick={handleSync}
-              disabled={isSyncing}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs md:text-sm
-                         bg-[var(--accent-primary)] text-white hover:opacity-90 shadow-md"
-            >
-              <RefreshCw
-                size={14}
-                className={isSyncing ? "animate-spin" : ""}
-              />
-              {isSyncing ? "Syncing" : "Sync"}
-            </button>
-          )}
           {mounted && (
             <button
               onClick={toggleTheme}
-              className="flex items-center justify-center w-8 h-8 rounded-lg
+              className="flex items-center justify-center w-9 h-9 rounded-lg
                          border border-[var(--border-soft)]
                          bg-[var(--surface-card)] transition"
               aria-label="Toggle Theme"
@@ -192,42 +96,20 @@ export default function UniversalHeader(): React.ReactElement {
               )}
             </button>
           )}
+          <button
+            aria-label="Open navigation"
+            className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-slate-900/70 border border-slate-700 text-white"
+            onClick={() => setMenuOpen(true)}
+          >
+            <span className="flex flex-col items-center justify-center gap-[5px]">
+              <span className="block w-5 h-[2px] bg-current rounded" />
+              <span className="block w-5 h-[2px] bg-current rounded" />
+              <span className="block w-5 h-[2px] bg-current rounded" />
+            </span>
+          </button>
         </div>
       </div>
-
-      {/* 🔸 Estimator Tabs */}
-      {isEstimator && (
-        <motion.nav
-          className="flex flex-wrap items-center justify-center gap-2 py-2 border-t border-[var(--border-soft)]
-                     bg-[var(--surface-header)]"
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          {(
-            ["kitchen", "wardrobe", "summary"] as ReadonlyArray<EstimatorStep>
-          ).map((key, i) => {
-            const label = `${i + 1}. ${
-              key.charAt(0).toUpperCase() + key.slice(1)
-            }`;
-            const active = step === key;
-            return (
-              <button
-                key={key}
-                onClick={() => setStep(key)}
-                className={clsx(
-                  "relative px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200",
-                  active
-                    ? "bg-[var(--accent-primary)] text-white shadow-md"
-                    : "bg-[var(--surface-card)] text-[var(--text-primary)] border border-[var(--border-soft)] hover:border-[var(--accent-primary)]"
-                )}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </motion.nav>
-      )}
+      <MobileSideNav open={menuOpen} onClose={() => setMenuOpen(false)} />
 
       {/* 🔸 MySpace Compact Toggle Bar — Gemini Glow Enhanced */}
       {isMySpace && (

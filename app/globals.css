@@ -64,19 +64,19 @@
 ------------------------------------------------------------ */
 @layer base {
   :root {
-    /* SURFACES — Light (clean white orbit) */
-    --surface-base: #ffffff;
-    --surface-card: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
-    --surface-overlay: linear-gradient(180deg, #f9fafb 0%, #edf2f7 100%);
+    /* SURFACES — Light (dusty cosmic daylight) */
+    --surface-base: #f5f3ff;
+    --surface-card: linear-gradient(180deg, #fdfbff 0%, #f5f3ff 100%);
+    --surface-overlay: linear-gradient(180deg, #f9f6ff 0%, #eef1ff 100%);
     --surface-light: #ffffff;
     --surface-dark: #0f172a;
     --surface-hover: rgba(90, 93, 240, 0.06);
     --surface-card-dark: linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%);
-    --surface-elevated: rgba(255, 255, 255, 0.96);
+    --surface-elevated: rgba(255, 255, 255, 0.94);
     --surface-elevated-dark: rgba(148, 163, 184, 0.18);
     --surface-header: rgba(248, 250, 252, 0.96);
-    --surface-panel: rgba(255, 255, 255, 0.95);
-    --surface-panel-dark: rgba(14, 14, 36, 0.9);
+    --surface-panel: rgba(255, 255, 255, 0.88);
+    --surface-panel-dark: rgba(243, 244, 255, 0.96);
     --surface-input: rgba(247, 248, 255, 0.92);
     --surface-input-dark: rgba(23, 23, 46, 0.92);
     --surface-chip: rgba(90, 93, 240, 0.08);
@@ -87,14 +87,15 @@
     --text-secondary: #334155;
     --text-primary-light: #0f172a;
     --text-primary-dark: #0f172a;
-    --text-muted: #94a3b8;
+    --text-muted: #64748b;
+    --text-muted-soft: #94a3b8;
     --text-hero: #ffffff;
     --text-subtle: color-mix(in srgb, var(--text-secondary) 88%, #ffffff 12%);
 
     /* ACCENTS */
     --accent-primary: #5a5df0;
     --accent-secondary: #ec6ecf;
-    --accent-tertiary: #9b5cf8;
+    --accent-tertiary: #4ade80;
     --accent-success: #22c55e;
     --accent-success-hover: #16a34a;
     --accent-danger: #ef4444;
@@ -105,9 +106,9 @@
     --shadow-elevation: 0 4px 12px rgba(0, 0, 0, 0.08);
     --selection-bg: rgba(91, 115, 255, 0.25);
     --selection-text: #111827;
-    --aura-light: rgba(90, 93, 240, 0.12);
-    --aura-dark: rgba(34, 197, 94, 0.18);
-    --border-soft: rgba(15, 23, 42, 0.08);
+    --aura-light: #f8e7ff;
+    --aura-dark: #d8e9ff;
+    --border-soft: rgba(148, 163, 184, 0.55);
     --border-muted: rgba(148, 163, 184, 0.35);
     --border-subtle: rgba(148, 163, 184, 0.25);
 
@@ -146,18 +147,13 @@
     --section-veil: rgba(148, 163, 184, 0.12);
 
     /* Cosmos canvases */
-    --cosmos-space-light: #f7f9ff;
-    --cosmos-fog-light: #e2e8f0;
+    --cosmos-space-light: #f5f7ff;
+    --cosmos-fog-light: #dce3f5;
   }
 
   html.dark {
     /* SURFACES — Deep Space */
-    --surface-base: radial-gradient(
-        circle at 0% -20%,
-        rgba(27, 25, 72, 0.9) 0%,
-        rgba(2, 6, 23, 1) 42%,
-        rgba(1, 4, 18, 1) 100%
-      );
+    --surface-base: #020617;
     --surface-card: radial-gradient(
         circle at 10% 0%,
         rgba(24, 22, 60, 0.98) 0%,
@@ -177,24 +173,25 @@
     --surface-elevated: rgba(24, 22, 45, 0.9);
     --surface-elevated-dark: rgba(12, 12, 30, 0.95);
     --surface-header: rgba(9, 9, 25, 0.85);
-    --surface-panel: rgba(12, 12, 30, 0.92);
-    --surface-panel-dark: rgba(8, 7, 21, 0.92);
+    --surface-panel: rgba(15, 23, 42, 0.94);
+    --surface-panel-dark: rgba(15, 23, 42, 0.98);
     --surface-input: rgba(18, 18, 38, 0.92);
     --surface-input-dark: rgba(12, 12, 28, 0.92);
     --surface-chip: rgba(236, 110, 207, 0.18);
     --surface-chip-dark: rgba(90, 93, 240, 0.25);
 
-    --text-primary: #f8fafc;
+    --text-primary: #e5e7eb;
     --text-secondary: #cbd5e1;
-    --text-primary-light: #f8fafc;
-    --text-primary-dark: #f8fafc;
-    --text-muted: #94a3b8;
+    --text-primary-light: #e5e7eb;
+    --text-primary-dark: #e5e7eb;
+    --text-muted: #9ca3af;
+    --text-muted-soft: #6b7280;
     --text-hero: #f9fafb;
     --text-subtle: color-mix(in srgb, var(--text-secondary) 92%, #020617 8%);
 
-    --accent-primary: #ec6ecf;
-    --accent-secondary: #5a5df0;
-    --accent-tertiary: #9b5cf8;
+    --accent-primary: #818cf8;
+    --accent-secondary: #f472b6;
+    --accent-tertiary: #22c55e;
     --accent-success: #4ade80;
     --accent-success-hover: #22c55e;
     --accent-danger: #f87171;
@@ -204,11 +201,11 @@
     --shadow-elevation: 0 4px 16px rgba(0, 0, 0, 0.6);
     --selection-bg: rgba(236, 110, 207, 0.3);
     --selection-text: #f8fafc;
-    --aura-light: rgba(90, 93, 240, 0.1);
-    --aura-dark: rgba(34, 197, 94, 0.2);
-    --border-soft: rgba(255, 255, 255, 0.12);
-    --border-muted: rgba(255, 255, 255, 0.18);
-    --border-subtle: rgba(255, 255, 255, 0.14);
+    --aura-light: #7dd3fc;
+    --aura-dark: #4c1d95;
+    --border-soft: rgba(148, 163, 184, 0.4);
+    --border-muted: rgba(30, 64, 175, 0.6);
+    --border-subtle: rgba(30, 64, 175, 0.35);
 
     /* Edith dark */
     --edith-primary: var(--accent-primary);
@@ -238,8 +235,8 @@
     --section-veil: rgba(8, 7, 21, 0.85);
 
     /* Cosmos canvases */
-    --cosmos-space-dark: #0e0b2c;
-    --cosmos-fog-dark: #0a0f26;
+    --cosmos-space-dark: #020617;
+    --cosmos-fog-dark: #020617;
   }
 }
 

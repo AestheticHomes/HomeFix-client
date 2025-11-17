@@ -133,100 +133,6 @@ function EntangledDualityToggle() {
 
 type Transform = { x: number; y: number; z: number };
 
-function PanZoomWrapper({
-  children,
-}: {
-  children: (transform: Transform) => ReactNode;
-}) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [transform, setTransform] = useState<Transform>({
-    x: 600,
-    y: 300,
-    z: 1,
-  });
-  const fitRef = useRef({ fit: 1, min: 0.05, max: 50 });
-  const dragging = useRef(false);
-  const last = useRef({ x: 0, y: 0 });
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const fit = Math.min(rect.width / 1200, rect.height / 600);
-    const initial = fit * 0.92;
-    fitRef.current = { fit: initial, min: initial * 0.05, max: initial * 50 };
-    setTransform({ x: rect.width / 2, y: rect.height / 2, z: initial });
-  }, []);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const rect = el.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
-      const speed = 0.0012;
-      const k = Math.exp(-e.deltaY * speed);
-      setTransform((prev) => {
-        const nextZ = Math.min(
-          fitRef.current.max,
-          Math.max(fitRef.current.min, prev.z * k)
-        );
-        const kz = nextZ / prev.z;
-        return {
-          x: mx - (mx - prev.x) * kz,
-          y: my - (my - prev.y) * kz,
-          z: nextZ,
-        };
-      });
-    };
-
-    const onDown = (e: PointerEvent) => {
-      dragging.current = true;
-      last.current = { x: e.clientX, y: e.clientY };
-      el.setPointerCapture?.(e.pointerId);
-    };
-
-    const onMove = (e: PointerEvent) => {
-      if (!dragging.current) return;
-      const dx = e.clientX - last.current.x;
-      const dy = e.clientY - last.current.y;
-      last.current = { x: e.clientX, y: e.clientY };
-      setTransform((prev) => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
-    };
-
-    const stop = (e: PointerEvent) => {
-      dragging.current = false;
-      el.releasePointerCapture?.(e.pointerId);
-    };
-
-    el.addEventListener("wheel", onWheel, { passive: false });
-    el.addEventListener("pointerdown", onDown);
-    el.addEventListener("pointermove", onMove);
-    el.addEventListener("pointerup", stop);
-    el.addEventListener("pointerleave", stop);
-
-    return () => {
-      el.removeEventListener("wheel", onWheel);
-      el.removeEventListener("pointerdown", onDown);
-      el.removeEventListener("pointermove", onMove);
-      el.removeEventListener("pointerup", stop);
-      el.removeEventListener("pointerleave", stop);
-    };
-  }, []);
-
-  return (
-    <div
-      ref={ref}
-      className="absolute inset-0 overflow-hidden cursor-grab active:cursor-grabbing bg-[var(--surface-panel)] dark:bg-[var(--surface-panel-dark)]"
-    >
-      {children(transform)}
-    </div>
-  );
-}
-
 export default function UniPreviewCanvas({
   SvgComponent,
   ModelComponent,
@@ -315,26 +221,17 @@ export default function UniPreviewCanvas({
           </div>
         </div>
       ) : (
-        <PanZoomWrapper>
-          {(transform) => (
-            <svg
-              viewBox="0 0 1200 600"
-              className="absolute inset-0 w-full h-full bg-[var(--surface-panel)] dark:bg-[var(--surface-panel-dark)]"
-            >
-              <g
-                transform={`translate(${transform.x}, ${transform.y}) scale(${transform.z})`}
-              >
-                {SvgComponent ? (
-                  <SvgComponent />
-                ) : (
-                  <text x="0" y="0" fontSize="12">
-                    No 2D View
-                  </text>
-                )}
-              </g>
+        <div className="absolute inset-0 bg-[var(--surface-panel)] dark:bg-[var(--surface-panel-dark)]">
+          {SvgComponent ? (
+            <SvgComponent />
+          ) : (
+            <svg viewBox="0 0 1200 600" className="absolute inset-0 w-full h-full">
+              <text x="20" y="30" fontSize="12">
+                No 2D View
+              </text>
             </svg>
           )}
-        </PanZoomWrapper>
+        </div>
       )}
 
       <div

@@ -1,17 +1,5 @@
-// 🚨 REQUIRED: stops Next from prerendering this route
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
+import EstimatorPageClient from "@/components/estimator/EstimatorPageClient";
 
-export const metadata = {
-  title: "HomeFix Interior Estimator",
-  description:
-    "Kitchen & Wardrobe Estimator — HomeFix India · Edith Technologies",
-};
-
-export default function EstimatorPage() {
-  return (
-    <div style={{ padding: "4rem", textAlign: "center" }}>
-      Estimator route temporarily disabled for build debugging.
-    </div>
-  );
+export default function Page() {
+  return <EstimatorPageClient />;
 }

@@ -44,12 +44,20 @@ interface ComputedEstimate {
 interface EstimatorState {
   step: EstimatorStep;
   mode: ViewMode;
+  includeKitchen: boolean;
+  includeWardrobe: boolean;
+  hasKitchen: boolean;
+  hasWardrobe: boolean;
   rates: Rates;
   finishMult: Record<Finish, number>;
   kitchen: KitchenData;
   wardrobe: WardrobeData;
   setStep: (step: EstimatorStep) => void;
   setMode: (mode: ViewMode) => void;
+  setIncludeKitchen: (v: boolean) => void;
+  setIncludeWardrobe: (v: boolean) => void;
+  setHasKitchen: (v: boolean) => void;
+  setHasWardrobe: (v: boolean) => void;
   setKitchenShape: (shape: string) => void;
   setKitchenFinish: (finish: Finish) => void;
   setKitchenLength: (key: string, value: number) => void;
@@ -70,6 +78,10 @@ const VALID_SHAPES: Shape[] = ["linear", "parallel", "lshape", "u"];
 const useEstimator = create<EstimatorState>((set, get) => ({
   step: "kitchen",
   mode: "2d",
+  includeKitchen: true,
+  includeWardrobe: true,
+  hasKitchen: true,
+  hasWardrobe: true,
   rates: {
     kitchen: { base: 2000, wall: 1500 },
     wardrobe: { base: 1800, loft: 1000 },
@@ -90,6 +102,10 @@ const useEstimator = create<EstimatorState>((set, get) => ({
   },
   setStep: (step) => set({ step }),
   setMode: (mode) => set({ mode }),
+  setIncludeKitchen: (v) => set({ includeKitchen: v, hasKitchen: v }),
+  setIncludeWardrobe: (v) => set({ includeWardrobe: v, hasWardrobe: v }),
+  setHasKitchen: (v) => set({ includeKitchen: v, hasKitchen: v }),
+  setHasWardrobe: (v) => set({ includeWardrobe: v, hasWardrobe: v }),
   setKitchenShape: (shape) =>
     set((state) => {
       const raw =
@@ -129,7 +145,7 @@ const useEstimator = create<EstimatorState>((set, get) => ({
   setWardrobeFinish: (finish) =>
     set((state) => ({ wardrobe: { ...state.wardrobe, finish } })),
   getComputed: () => {
-    const { kitchen, wardrobe, rates, finishMult } = get();
+    const { kitchen, wardrobe, rates, finishMult, includeKitchen, includeWardrobe } = get();
     const totalRun = Object.values(kitchen.lengths).reduce(
       (acc, ft) => acc + (Number(ft) || 0),
       0
@@ -150,11 +166,13 @@ const useEstimator = create<EstimatorState>((set, get) => ({
     return {
       kBaseSqft,
       kWallSqft,
-      kBaseCost,
-      kWallCost,
-      wBaseCost,
-      wLoftCost,
-      total: kBaseCost + kWallCost + wBaseCost + wLoftCost,
+      kBaseCost: includeKitchen ? kBaseCost : 0,
+      kWallCost: includeKitchen ? kWallCost : 0,
+      wBaseCost: includeWardrobe ? wBaseCost : 0,
+      wLoftCost: includeWardrobe ? wLoftCost : 0,
+      total:
+        (includeKitchen ? kBaseCost + kWallCost : 0) +
+        (includeWardrobe ? wBaseCost + wLoftCost : 0),
       totalRun,
       width: wardrobe.widthFt,
     };

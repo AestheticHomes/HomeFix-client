@@ -1,4 +1,5 @@
 "use client";
+
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
@@ -12,17 +13,20 @@ export interface Coordinates {
 export interface MapPickerProps {
   initialLocation?: Coordinates;
   onLocationChange?: (
-    loc: Coordinates,
+    loc: Coordinates | null,
     address: string,
     confirmed?: boolean
   ) => void;
   editable?: boolean;
+  /** Optional: force manual mode even if Maps works */
+  forceManualMode?: boolean;
 }
 
 export default function MapPicker({
   initialLocation = { lat: 13.0827, lng: 80.2707 },
   onLocationChange,
   editable = true,
+  forceManualMode = false,
 }: MapPickerProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const missingApiKey = !apiKey;
@@ -36,16 +40,8 @@ export default function MapPicker({
     addr: string,
     confirmed?: boolean
   ) => {
-    if (!loc) return;
     onLocationChange?.(loc, addr, confirmed);
   };
-
-  const hookResult = useMapPicker({
-    initialLocation,
-    editable,
-    onLocationChange: handleHookChange,
-    autocompleteElRef,
-  });
 
   const {
     mapRootRef,
@@ -54,12 +50,21 @@ export default function MapPicker({
     locating,
     autocompleteReady,
     mapsLoaded,
+    mapsDead,
     locateMe,
     confirmLocation,
-  } = hookResult;
+  } = useMapPicker({
+    initialLocation,
+    editable,
+    onLocationChange: handleHookChange,
+    autocompleteElRef,
+  });
+
+  const manualOnly = forceManualMode || missingApiKey || mapsDead;
 
   useEffect(() => {
-    if (!mapRef.current || !window.google?.maps) return;
+    if (manualOnly) return;
+    if (!mapRef.current || !(window as any).google?.maps) return;
 
     const darkStyles: google.maps.MapTypeStyle[] = [
       { elementType: "geometry", stylers: [{ color: "#0b0a1a" }] },
@@ -75,34 +80,77 @@ export default function MapPicker({
     mapRef.current.setOptions({
       styles: theme === "dark" ? darkStyles : lightStyles,
     });
-  }, [theme, mapRef]);
+  }, [theme, mapRef, manualOnly]);
 
   useEffect(() => {
     setConfirmed(false);
   }, [address]);
 
   const handleLocate = () => {
+    if (manualOnly) return;
     locateMe();
     setConfirmed(false);
   };
 
   const handleConfirm = async () => {
     if (!address) return;
-    await confirmLocation();
+    if (!manualOnly) {
+      await confirmLocation();
+    }
     setConfirmed(true);
   };
 
-  if (missingApiKey) {
+  if (manualOnly) {
     return (
-      <div className="w-full h-[340px] rounded-xl bg-zinc-900/20 dark:bg-zinc-100/10 flex items-center justify-center border border-[var(--edith-border)] text-[var(--text-secondary)]">
-        🗺️ Google Maps not enabled — add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+      <div className="flex flex-col gap-4 w-full">
+        <div className="w-full rounded-xl border border-[var(--edith-border)] bg-[var(--surface-card)] p-4 text-sm text-[var(--text-secondary)]">
+          <p className="font-medium mb-1">📍 Map unavailable</p>
+          {missingApiKey ? (
+            <p className="text-xs opacity-70">
+              Google Maps is not configured. Add{" "}
+              <code className="px-1 py-0.5 rounded bg-black/10 text-[10px]">
+                NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+              </code>{" "}
+              to enable live map selection.
+            </p>
+          ) : (
+            <p className="text-xs opacity-70">
+              Maps services are temporarily unavailable (quota / billing
+              verification). You can still enter your address manually.
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <input
+            type="text"
+            placeholder="Enter your full address, landmark, city…"
+            onChange={(e) =>
+              onLocationChange?.(null, e.target.value, false)
+            }
+            className="flex-1 bg-[var(--edith-surface)] text-sm px-3 py-2 rounded-xl
+              border border-[var(--edith-border)]"
+          />
+
+          {editable && (
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={handleConfirm}
+              className="relative sm:w-auto w-full min-h-[44px] px-6 py-2.5 rounded-xl text-sm font-semibold
+                text-white shadow-lg transition-all
+                bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)]"
+            >
+              {confirmed ? "✓ Address Saved" : "Save Address"}
+            </motion.button>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-4 w-full relative">
-{editable && (
+      {editable && (
         <div className="space-y-2">
           <gmpx-place-autocomplete
             ref={autocompleteElRef}
@@ -181,7 +229,7 @@ export default function MapPicker({
               bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)]
               disabled:opacity-50`}
           >
-            {confirmed ? "✓ Confirmed" : "Confirm Location"}
+            {confirmed ? "✓ Confirm Location" : "Confirm Location"}
           </motion.button>
         )}
       </div>

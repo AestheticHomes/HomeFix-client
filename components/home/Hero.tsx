@@ -1,0 +1,148 @@
+"use client";
+
+import HomePreviewModel from "@/components/3d/HomePreviewModel";
+import { track } from "@/lib/track";
+import { motion, useReducedMotion } from "framer-motion";
+import Link from "next/link";
+
+function HeroParallaxLayer() {
+  const reduceMotion = useReducedMotion();
+  const nebulaA = reduceMotion ? { x: 0, y: 0 } : { x: 10, y: -10 };
+  const nebulaB = reduceMotion ? { x: 0, y: 0 } : { x: -16, y: 12 };
+  const transitionA = reduceMotion
+    ? { duration: 0 }
+    : { duration: 32, repeat: Infinity, repeatType: "reverse" };
+  const transitionB = reduceMotion
+    ? { duration: 0 }
+    : { duration: 36, repeat: Infinity, repeatType: "reverse" };
+
+  return (
+    <div className="absolute inset-0 overflow-hidden rounded-[32px] pointer-events-none">
+      <motion.div
+        className="absolute -top-24 -left-20 w-[420px] h-[420px] rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle, color-mix(in srgb,var(--aura-light)70%,transparent) 0%, transparent 65%)",
+          opacity: 0.9,
+        }}
+        initial={{ x: -20, y: 10 }}
+        animate={nebulaA}
+        transition={transitionA}
+      />
+      <motion.div
+        className="absolute -bottom-24 -right-10 w-[380px] h-[380px] rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle, color-mix(in srgb,var(--aura-dark)65%,transparent) 0%, transparent 70%)",
+          opacity: 0.85,
+        }}
+        initial={{ x: 16, y: -8 }}
+        animate={nebulaB}
+        transition={transitionB}
+      />
+    </div>
+  );
+}
+
+export default function Hero() {
+  return (
+    <section className="px-4 sm:px-8 pt-6">
+      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-10 items-stretch">
+        {/* Left column: copy & CTA */}
+        <div className="flex-1 flex flex-col justify-center gap-5">
+          <span className="inline-flex items-center gap-2 text-[11px] font-medium rounded-full px-3 py-1 bg-[color-mix(in_srgb,var(--surface-panel)80%,transparent)] border border-[var(--border-soft)] text-[var(--text-muted-soft)] w-fit">
+            <span className="w-2 h-2 rounded-full bg-[var(--accent-primary)] shadow-[0_0_10px_color-mix(in_srgb,var(--accent-primary)80%,transparent)]" />
+            Turnkey interiors by AestheticHomes
+          </span>
+
+          <h1 className="text-3xl sm:text-4xl lg:text-[40px] max-[399px]:text-[26px] font-semibold leading-tight text-[var(--text-primary)]">
+            Full home interiors,{" "}
+            <span className="text-[var(--accent-primary)]">
+              from measurement to handover.
+            </span>
+          </h1>
+
+          <p className="text-sm sm:text-base text-[var(--text-muted-soft)] max-w-xl">
+            We handle everything: on-site measurement, layouts, 3D renders,
+            factory-made modules and site execution. Edith keeps your entire
+            project transparent from first visit to final handover.
+          </p>
+
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/consultation"
+              className="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-[var(--accent-primary)] hover:bg-[color-mix(in_srgb,var(--accent-primary)85%,black)] shadow-[0_14px_35px_rgba(15,23,42,0.45)] transition-transform hover:-translate-y-0.5"
+              onClick={() => track("start_turnkey_project")}
+            >
+              Start a turnkey project
+            </Link>
+            <Link
+              href="/estimator"
+              className="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-semibold border border-[var(--border-soft)] bg-[color-mix(in_srgb,var(--surface-panel)80%,transparent)] text-[var(--text-primary)] hover:border-[var(--accent-primary)] transition-colors"
+              onClick={() => track("explore_3d_studio")}
+            >
+              Explore 2D / 3D studio (beta)
+            </Link>
+          </div>
+
+          <div className="mt-2 flex gap-2 text-[11px] overflow-x-auto whitespace-nowrap py-1 -mx-1 px-1">
+            {[
+              "On-site measurement",
+              "Initial layout plan",
+              "3D renders & revisions",
+              "Factory build & site execution",
+              "Final handover",
+            ].map((step, idx) => (
+              <div
+                key={step}
+                className="inline-flex items-center gap-1 rounded-full border border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--surface-panel)85%,transparent)] px-3 py-1 text-[var(--text-muted-soft)]"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)]" />
+                <span>{step}</span>
+                {idx < 4 && (
+                  <span className="text-[var(--text-muted-soft)]">→</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right column: 3D hero card */}
+        <div className="flex-1">
+          <div className="relative h-full min-h-[260px] rounded-[32px] border border-[var(--border-muted)] bg-[color-mix(in_srgb,var(--surface-panel)92%,transparent)] shadow-[0_26px_70px_rgba(15,23,42,0.65)] overflow-hidden">
+            <HeroParallaxLayer />
+
+            <div className="relative z-10 flex flex-col h-full justify-between">
+              <div className="flex items-center justify-between px-5 pt-4 pb-2 text-[11px] text-[var(--text-muted-soft)]">
+                <span className="inline-flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[var(--accent-primary)]" />
+                  2D · 3D interactive modules
+                </span>
+                <span className="rounded-full border border-[color-mix(in_srgb,var(--border-soft)80%,transparent)] px-3 py-1">
+                  Linked to estimator
+                </span>
+              </div>
+
+              <div className="flex-1 px-5 pb-4 flex items-center justify-center">
+                {/* GLB preview */}
+                <HomePreviewModel url="/models/l-shape-kitchen.glb" />
+              </div>
+
+              <div className="flex items-center justify-between px-5 pb-4 text-[11px]">
+                <span className="text-[var(--text-muted-soft)]">
+                  Drag, preview, refine in Edith Studio.
+                </span>
+                <Link
+                  href="/estimator"
+                  className="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-[11px] font-semibold text-white bg-[var(--accent-primary)] hover:bg-[color-mix(in_srgb,var(--accent-primary)85%,black)]"
+                >
+                  Try Online Estimator →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

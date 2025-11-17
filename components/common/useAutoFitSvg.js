@@ -1,5 +1,6 @@
 // /components/common/useAutoFitSvg.js
 import { useMemo } from "react";
+import { fitBox } from "@/components/utils/cadFitView";
 
 /**
  * Computes an auto-fitting SVG scale + translation so any mm-based layout
@@ -9,20 +10,31 @@ export default function useAutoFitSvg(totalW, totalH, options = {}) {
   const {
     viewportW = 1600,
     viewportH = 900,
-    fitRatio = 0.75,
-    offsetY = 40,
+    paddingRatio = 0.08,
   } = options;
 
   return useMemo(() => {
-    if (!totalW || !totalH) return { scale: 1, offsetX: 0, offsetY: 0, vbW: viewportW, vbH: viewportH };
-
-    const scale = Math.min(
-      (viewportW * fitRatio) / totalW,
-      (viewportH * (fitRatio + 0.1)) / totalH
+    if (!totalW || !totalH) {
+      return {
+        scale: 1,
+        offsetX: 0,
+        offsetY: 0,
+        vbW: viewportW,
+        vbH: viewportH,
+      };
+    }
+    const fit = fitBox(
+      viewportW,
+      viewportH,
+      { x: 0, y: 0, w: totalW, h: totalH },
+      paddingRatio
     );
-    const offsetX = (viewportW - totalW * scale) / 2;
-    const offsetYAdj = (viewportH - totalH * scale) / 2 + offsetY;
-
-    return { scale, offsetX, offsetY: offsetYAdj, vbW: viewportW, vbH: viewportH };
-  }, [totalW, totalH, viewportW, viewportH, fitRatio, offsetY]);
+    return {
+      scale: fit.scale,
+      offsetX: fit.offsetX,
+      offsetY: fit.offsetY,
+      vbW: viewportW,
+      vbH: viewportH,
+    };
+  }, [totalW, totalH, viewportW, viewportH, paddingRatio]);
 }

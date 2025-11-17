@@ -6,6 +6,8 @@ import { OrbitControls, Environment, Text, Grid, Float, Stars } from "@react-thr
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useTheme } from "next-themes";
+import StudioTipsStrip from "@/components/studio/StudioTipsStrip";
+import { useInitialCategory } from "@/lib/useInitialCategory";
 
 /* ===========================
    3D PRIMITIVES (no GLBs needed)
@@ -209,6 +211,7 @@ export default function StudioPage() {
     space: "#f7f9ff",
     fog: "#e2e8f0",
   });
+  useInitialCategory();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -240,6 +243,7 @@ export default function StudioPage() {
           "radial-gradient(circle at 15% 15%, color-mix(in srgb, var(--aura-light) 65%, transparent), transparent 55%), radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--aura-dark) 45%, transparent), transparent 70%), var(--surface-base)",
       }}
     >
+      <StudioTipsStrip />
       {/* Canvas */}
       <Canvas
         camera={{ position: [0, 3.2, 6.5], fov: 45 }}

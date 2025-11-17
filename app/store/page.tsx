@@ -10,6 +10,7 @@
  * ============================================================
  */
 
+import StorePromoStrip from "@/components/store/StorePromoStrip";
 import { useProductCartStore } from "@/components/store/cartStore";
 import ProductCard, { Product } from "@/components/store/ProductCard";
 import { useSidebar } from "@/contexts/SidebarContext";
@@ -101,6 +102,7 @@ export default function StorePage() {
         minHeight: "calc(100vh - var(--header-h) - var(--mbnav-h,72px))",
       }}
     >
+      <StorePromoStrip />
       {/* 🔍 Search */}
       <div className="relative flex w-full sm:max-w-md mx-auto mt-4 mb-3 px-4">
         <Search className="absolute left-6 top-2.5 w-4 h-4 text-[var(--text-muted)]" />

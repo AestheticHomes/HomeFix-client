@@ -11,7 +11,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { MapPin, Thermometer, CloudSun, Loader2 } from "lucide-react";
-import { motion } from "framer-motion";
 
 interface ClimateData {
   temp: number | null;
@@ -95,46 +94,39 @@ export default function LiveClimateBar() {
 
   /* 🌈 Render */
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-      className="w-full border-b border-[#9B5CF8]/30 bg-gradient-to-r 
-        from-[#F8F7FF]/70 via-[#F2F0FF]/50 to-[#EAE8FF]/60 
-        dark:from-[#0D0B2B]/60 dark:via-[#1B1545]/50 dark:to-[#241A55]/60
-        backdrop-blur-xl shadow-sm py-2 px-4 flex items-center justify-between
-        text-sm sm:text-base font-medium"
-    >
-      {/* Left: Location */}
-      <div className="flex items-center gap-2 text-[#5A5DF0] dark:text-[#CBA0FF]">
+    <div className="flex items-center justify-between w-full text-xs sm:text-sm font-medium">
+      <div className="flex items-center gap-2 text-[var(--accent-primary)] min-w-0">
         <MapPin className="w-4 h-4" />
         {loading ? (
-          <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+          <span className="flex items-center gap-1 text-[var(--text-muted)]">
             <Loader2 className="animate-spin w-3 h-3" /> Locating...
           </span>
         ) : error ? (
-          <span className="text-gray-400">{error}</span>
+          <span className="text-[var(--text-muted)] overflow-hidden whitespace-nowrap text-ellipsis">
+            {error}
+          </span>
         ) : (
-          <span>{data.city}</span>
+          <span className="text-[var(--text-primary)] overflow-hidden whitespace-nowrap text-ellipsis">
+            {data.city}
+          </span>
         )}
       </div>
 
-      {/* Right: Weather */}
-      <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+      <div className="flex items-center gap-2 text-[var(--accent-tertiary)]">
         {data.temp !== null ? (
           <>
             <Thermometer className="w-4 h-4" />
-            <span>{data.temp}°C</span>
+            <span className="text-[var(--text-primary)]">{data.temp}°C</span>
             {data.condition && (
-              <span className="hidden sm:inline text-xs text-gray-500 dark:text-gray-400">
+              <span className="hidden sm:inline text-[10px] text-[var(--text-muted-soft)] overflow-hidden whitespace-nowrap text-ellipsis">
                 {data.condition}
               </span>
             )}
           </>
         ) : (
-          <CloudSun className="w-4 h-4 text-gray-400" />
+          <CloudSun className="w-4 h-4 text-[var(--text-muted)]" />
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
