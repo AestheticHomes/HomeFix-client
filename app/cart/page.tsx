@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 type CartView = "product" | "service";
 
@@ -34,7 +34,7 @@ const formatInr = (value: number) =>
     minimumFractionDigits: 2,
   }).format(value);
 
-export default function CartPage() {
+function CartPageContent() {
   const router = useRouter();
   const params = useSearchParams();
 
@@ -290,6 +290,14 @@ export default function CartPage() {
         </motion.div>
       )}
     </section>
+  );
+}
+
+export default function CartPage() {
+  return (
+    <Suspense fallback={null}>
+      <CartPageContent />
+    </Suspense>
   );
 }
 

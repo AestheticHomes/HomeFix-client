@@ -7,9 +7,9 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle, Loader2, SmartphoneNfc } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 
-export default function MockRazorpayPage() {
+function MockRazorpayPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const checkoutType =
@@ -225,5 +225,13 @@ function StageCard({
       </h2>
       <p className="text-sm text-[var(--text-secondary)]">{subtitle}</p>
     </motion.div>
+  );
+}
+
+export default function MockRazorpayPage() {
+  return (
+    <Suspense fallback={null}>
+      <MockRazorpayPageContent />
+    </Suspense>
   );
 }

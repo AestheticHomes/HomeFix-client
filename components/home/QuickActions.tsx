@@ -40,8 +40,8 @@ const ACTIONS: Action[] = [
 export default function QuickActions() {
   const router = useRouter();
   return (
-    <section className="px-4 sm:px-8 py-3 border-t border-b border-[var(--border-muted)] bg-[var(--surface-base)]/90">
-      <div className="w-full max-w-5xl mx-auto grid grid-flow-col auto-cols-[70%] sm:auto-cols-[170px] gap-3 overflow-x-auto pb-1">
+    <section className="px-3 sm:px-4 lg:px-8 xl:px-12 py-3 border-t border-b border-[var(--border-muted)] bg-[var(--surface-base)]/90">
+      <div className="w-full max-w-[1200px] 2xl:max-w-[1360px] mx-auto grid grid-flow-col auto-cols-[70%] sm:auto-cols-[170px] gap-3 overflow-x-auto pb-1">
         {ACTIONS.map((action) => (
           <button
             key={action.id}

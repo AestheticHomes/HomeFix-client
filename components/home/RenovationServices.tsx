@@ -50,8 +50,8 @@ const auraShadow: CSSProperties = {
 
 export default function RenovationServices() {
   return (
-    <section className="px-4 sm:px-8 pt-8 pb-6">
-      <div className="max-w-6xl mx-auto">
+    <section className="px-3 sm:px-4 lg:px-8 xl:px-12 pt-8 pb-6">
+      <div className="w-full max-w-[1200px] 2xl:max-w-[1360px] mx-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)]">
             Renovation & interior services

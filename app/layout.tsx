@@ -66,7 +66,7 @@ export default function RootLayout({
 
       <body
         suppressHydrationWarning
-        className="antialiased
+        className="antialiased app-shell
                    bg-[var(--surface-base)]
                    text-[var(--text-primary-light)] dark:text-[var(--text-primary-dark)]
                    selection:bg-[var(--edith-selection-bg-light)] selection:text-[var(--edith-selection-text-light)]

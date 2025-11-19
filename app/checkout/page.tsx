@@ -28,7 +28,7 @@ import { CheckCircle, Loader2, MapPin, WifiOff, Wrench } from "lucide-react";
 import { nanoid } from "nanoid";
 import NextDynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChangeEventHandler, useEffect, useMemo, useState } from "react";
+import { ChangeEventHandler, Suspense, useEffect, useMemo, useState } from "react";
 type Item = CartItem;
 
 const MapPicker = NextDynamic(() => import("@/components/MapPicker"), {
@@ -60,7 +60,7 @@ interface CardProps {
 /* MAIN CHECKOUT PAGE */
 /* =================================================================== */
 
-export default function CheckoutPage() {
+function CheckoutPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useUser();
@@ -705,6 +705,13 @@ function InstallationSuggestion() {
   );
 }
 
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={null}>
+      <CheckoutPageInner />
+    </Suspense>
+  );
+}
 
 
 

@@ -2,8 +2,8 @@
 
 export default function MoreServicesStrip() {
   return (
-    <section className="px-4 sm:px-8 pb-10 pt-4">
-      <div className="max-w-6xl mx-auto">
+    <section className="px-3 sm:px-4 lg:px-8 xl:px-12 pb-10 pt-4">
+      <div className="w-full max-w-[1200px] 2xl:max-w-[1360px] mx-auto">
         <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[color-mix(in_srgb,var(--surface-panel) 80%,transparent)] px-4 py-3 sm:px-5 sm:py-4">
           <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-1">
             More services coming soon

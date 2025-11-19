@@ -18,7 +18,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 type OrderType = "store" | "service";
 
@@ -41,7 +41,7 @@ type OrderEntry = {
   raw?: any;
 };
 
-export default function MyOrdersPage() {
+function MyOrdersPageInner() {
   const { user, isLoaded, isLoggedIn, setUser } = useUser();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -202,6 +202,14 @@ export default function MyOrdersPage() {
         )}
       </div>
     </SafeViewport>
+  );
+}
+
+export default function MyOrdersPage() {
+  return (
+    <Suspense fallback={null}>
+      <MyOrdersPageInner />
+    </Suspense>
   );
 }
 

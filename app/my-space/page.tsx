@@ -14,10 +14,11 @@
 import SafeViewport from "@/components/layout/SafeViewport";
 import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import BookingsView from "./components/BookingsView";
 import OrdersView from "./components/OrdersView";
 
-export default function MySpacePage() {
+function MySpacePageInner() {
   const params = useSearchParams();
   const view = (params?.get("view") as "bookings" | "orders") ?? "bookings";
 
@@ -40,5 +41,13 @@ export default function MySpacePage() {
         </div>
       </motion.div>
     </SafeViewport>
+  );
+}
+
+export default function MySpacePage() {
+  return (
+    <Suspense fallback={null}>
+      <MySpacePageInner />
+    </Suspense>
   );
 }

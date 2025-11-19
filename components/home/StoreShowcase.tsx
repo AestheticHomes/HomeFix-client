@@ -1,9 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import type { CSSProperties } from "react";
-import { useReducedMotion } from "framer-motion";
 import { track } from "@/lib/track";
 
 type StoreCategory = {
@@ -58,21 +55,10 @@ const CATEGORIES: StoreCategory[] = [
   },
 ] as const;
 
-const cardBase: CSSProperties = {
-  boxShadow: "0 18px 40px rgba(15,23,42,0.35)",
-};
-
 export default function StoreShowcase() {
-  const reduceMotion = useReducedMotion();
-  const hoverLift = reduceMotion ? "" : "md:hover:-translate-y-1";
-  const auraHover = reduceMotion
-    ? "md:group-hover:opacity-75"
-    : "md:group-hover:opacity-100";
-  const router = useRouter();
-
   return (
-    <section className="px-4 sm:px-8 pt-4 pb-6">
-      <div className="w-full max-w-5xl mx-auto">
+    <section className="px-3 sm:px-4 lg:px-8 xl:px-12 pt-4 pb-6">
+      <div className="w-full max-w-[1200px] 2xl:max-w-[1360px] mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-4">
           <div>
             <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)]">
@@ -90,101 +76,48 @@ export default function StoreShowcase() {
           </Link>
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-6">
           {CATEGORIES.map((cat) => (
             <div
               key={cat.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => router.push(cat.href)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  router.push(cat.href);
-                }
-              }}
-              className={`group relative rounded-3xl border border-[var(--edith-border)] bg-gradient-to-br from-[#0d1b2a] via-[#14273d] to-[#0a1624] shadow-[0_12px_40px_rgba(0,0,0,0.45)] overflow-hidden transition-transform ${hoverLift}`}
-              style={cardBase}
+              className="rounded-3xl border border-[var(--border-muted)]
+                         bg-[color-mix(in_srgb,var(--surface-panel)90%,black_5%)]
+                         hover:bg-[color-mix(in_srgb,var(--surface-panel)96%,white_4%)]
+                         transition-colors shadow-[0_18px_45px_rgba(15,23,42,0.5)]
+                         flex flex-col md:flex-row items-stretch gap-4 px-4 sm:px-6 py-4 sm:py-5"
             >
-              <div
-                className="absolute inset-0 opacity-35 transition-opacity md:group-hover:opacity-55"
-                style={{
-                  background:
-                    cat.id === "kitchens"
-                      ? "radial-gradient(circle at 20% 20%, #4f46e5 30%, transparent 60%)"
-                      : cat.id === "wardrobes"
-                      ? "radial-gradient(circle at 20% 20%, #7c3aed 30%, transparent 60%)"
-                      : cat.id === "tv-units"
-                      ? "radial-gradient(circle at 20% 20%, #2563eb 30%, transparent 60%)"
-                      : cat.id === "shoe-racks"
-                      ? "radial-gradient(circle at 20% 20%, #f59e0b 30%, transparent 60%)"
-                      : "radial-gradient(circle at 20% 20%, #10b981 30%, transparent 60%)",
-                }}
-              />
-
-              <div
-                className={`pointer-events-none absolute inset-0 opacity-0 transition-opacity ${auraHover}`}
-                aria-hidden
-                style={{
-                  boxShadow:
-                    "0 26px 80px color-mix(in srgb,var(--aura-light)45%,transparent)",
-                }}
-              />
-
-              <div className="relative px-5 pt-5 pb-4 flex flex-col gap-3">
-                <div>
-                  <h3 className="text-sm sm:text-base font-semibold text-[color-mix(in_srgb,var(--text-primary)90%,black)]">
-                    {cat.title}
-                  </h3>
-                  <p className="mt-1 text-[11px] sm:text-xs text-[color-mix(in_srgb,var(--text-muted-soft)90%,black)]">
-                    {cat.subtitle}
-                  </p>
+              <div className="flex-1 flex flex-col gap-2">
+                <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">
+                  {cat.title}
+                </h3>
+                <p className="text-[13px] text-[var(--text-muted-soft)]">
+                  {cat.subtitle}
+                </p>
+                <div className="mt-auto flex items-center gap-3">
+                  <Link
+                    href={cat.href}
+                    onClick={() =>
+                      track("view_modules", { category: cat.slug, target: "store" })
+                    }
+                    className="text-[13px] text-[var(--accent-primary)] font-medium"
+                  >
+                    View modules →
+                  </Link>
+                  <Link
+                    href={`/studio?category=${cat.slug}`}
+                    onClick={() =>
+                      track("view_modules", { category: cat.slug, target: "studio" })
+                    }
+                    className="px-3 py-1.5 text-[11px] rounded-full border border-[var(--border-soft)] hover:border-[var(--accent-primary)]"
+                  >
+                    Studio
+                  </Link>
                 </div>
+              </div>
 
-                <div className="mt-auto">
-                  <div className="flex items-center justify-between rounded-2xl bg-black/40 text-[11px] sm:text-xs text-white px-3 py-2">
-                    <div className="flex flex-col">
-                      <span className="font-semibold">Sample layout</span>
-                      <span className="opacity-80">Tap to explore finishes & sizes</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          track("view_modules", { category: cat.slug, target: "estimator" });
-                          router.push(`/estimator?category=${cat.slug}`);
-                        }}
-                        className="inline-flex items-center gap-2 rounded-full bg-[var(--accent-primary)] px-3 py-1 text-[10px] font-semibold shadow-[0_0_15px_color-mix(in_srgb,var(--accent-primary)75%,transparent)]"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                        {cat.ctaLabel}
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          track("view_modules", { category: cat.slug, target: "studio" });
-                          router.push(`/studio?category=${cat.slug}`);
-                        }}
-                        className="inline-flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--surface-panel)70%,transparent)] text-[10px] font-semibold text-[var(--text-primary)] px-3 py-1"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)]" />
-                        Studio
-                      </button>
-                    </div>
-                  </div>
-                  <div className="mt-2 text-[10px] text-[var(--text-muted-soft)] flex items-center justify-between">
-                    <span>Configurable in Online Estimator</span>
-                    <button
-                      className="font-semibold text-[var(--text-primary)]"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        track("view_modules", { category: cat.slug, target: "store" });
-                        router.push(cat.href);
-                      }}
-                    >
-                      View modules →
-                    </button>
-                  </div>
+              <div className="md:w-[140px] flex md:flex-col gap-2 items-center justify-center">
+                <div className="w-[120px] h-[80px] md:w-full md:h-[100px] rounded-2xl bg-[color-mix(in_srgb,var(--surface-panel)80%,transparent)] flex items-center justify-center text-[11px] text-[var(--text-muted-soft)]">
+                  {cat.ctaLabel}
                 </div>
               </div>
             </div>

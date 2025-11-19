@@ -4,6 +4,7 @@ import HomePreviewModel from "@/components/3d/HomePreviewModel";
 import { track } from "@/lib/track";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
+import { useState } from "react";
 
 function HeroParallaxLayer() {
   const reduceMotion = useReducedMotion();
@@ -45,11 +46,14 @@ function HeroParallaxLayer() {
 }
 
 export default function Hero() {
+  const [expanded, setExpanded] = useState(false);
+
   return (
-    <section className="px-4 sm:px-8 pt-6">
-      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-10 items-stretch">
+    <section className="w-full px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+      <div className="mx-auto w-full max-w-[1360px]">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-stretch">
         {/* Left column: copy & CTA */}
-        <div className="flex-1 flex flex-col justify-center gap-5">
+        <div className="flex flex-col justify-center gap-5 lg:pr-4">
           <span className="inline-flex items-center gap-2 text-[11px] font-medium rounded-full px-3 py-1 bg-[color-mix(in_srgb,var(--surface-panel)80%,transparent)] border border-[var(--border-soft)] text-[var(--text-muted-soft)] w-fit">
             <span className="w-2 h-2 rounded-full bg-[var(--accent-primary)] shadow-[0_0_10px_color-mix(in_srgb,var(--accent-primary)80%,transparent)]" />
             Turnkey interiors by AestheticHomes
@@ -85,7 +89,7 @@ export default function Hero() {
             </Link>
           </div>
 
-          <div className="mt-2 flex gap-2 text-[11px] overflow-x-auto whitespace-nowrap py-1 -mx-1 px-1">
+          <div className="mt-3 flex flex-wrap gap-2 text-[11px] py-1">
             {[
               "On-site measurement",
               "Initial layout plan",
@@ -108,8 +112,8 @@ export default function Hero() {
         </div>
 
         {/* Right column: 3D hero card */}
-        <div className="flex-1">
-          <div className="relative h-full min-h-[260px] rounded-[32px] border border-[var(--border-muted)] bg-[color-mix(in_srgb,var(--surface-panel)92%,transparent)] shadow-[0_26px_70px_rgba(15,23,42,0.65)] overflow-hidden">
+        <div className="w-full flex lg:justify-end">
+          <div className="relative w-full max-w-[520px] min-h-[260px] lg:min-h-[300px] rounded-[32px] border border-[var(--border-muted)] bg-[color-mix(in_srgb,var(--surface-panel)92%,transparent)] shadow-[0_26px_70px_rgba(15,23,42,0.65)] overflow-hidden lg:ml-auto">
             <HeroParallaxLayer />
 
             <div className="relative z-10 flex flex-col h-full justify-between">
@@ -118,14 +122,22 @@ export default function Hero() {
                   <span className="w-2 h-2 rounded-full bg-[var(--accent-primary)]" />
                   2D · 3D interactive modules
                 </span>
-                <span className="rounded-full border border-[color-mix(in_srgb,var(--border-soft)80%,transparent)] px-3 py-1">
-                  Linked to estimator
-                </span>
+                <button
+                  onClick={() => setExpanded(true)}
+                  className="rounded-full border border-[color-mix(in_srgb,var(--border-soft)80%,transparent)] px-3 py-1 hover:border-[var(--accent-primary)] transition-colors"
+                >
+                  Expand
+                </button>
               </div>
 
-              <div className="flex-1 px-5 pb-4 flex items-center justify-center">
-                {/* GLB preview */}
-                <HomePreviewModel url="/models/l-shape-kitchen.glb" />
+              <div className="flex-1 px-5 pb-4 flex items-center justify-center w-full h-full">
+                <div className="w-full h-[180px] rounded-[24px] overflow-hidden">
+                  <HomePreviewModel
+                    url="/models/l-shape-kitchen.glb"
+                    mode="hero-inline"
+                    showFullscreenToggle={false}
+                  />
+                </div>
               </div>
 
               <div className="flex items-center justify-between px-5 pb-4 text-[11px]">
@@ -141,8 +153,41 @@ export default function Hero() {
               </div>
             </div>
           </div>
+          </div>
         </div>
       </div>
+
+      {expanded && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <button
+            className="absolute inset-0 w-full h-full cursor-zoom-out"
+            onClick={() => setExpanded(false)}
+            aria-label="Close 3D preview"
+          />
+
+          <div className="relative z-50 w-full max-w-[960px] h-[520px] sm:h-[560px] lg:h-[620px] rounded-[32px] border border-[var(--border-muted)] bg-[color-mix(in_srgb,var(--surface-panel)96%,transparent)] shadow-[0_32px_90px_rgba(0,0,0,0.7)] overflow-hidden">
+            <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+              <span className="rounded-full bg-black/50 text-[10px] px-3 py-1 text-white/80">
+                Click units to inspect · double-click to focus
+              </span>
+              <button
+                onClick={() => setExpanded(false)}
+                className="h-8 px-3 rounded-full bg-black/70 text-xs text-white hover:bg-black/90"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="w-full h-full">
+              <HomePreviewModel
+                url="/models/l-shape-kitchen.glb"
+                mode="hero-fullscreen"
+                showFullscreenToggle={false}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

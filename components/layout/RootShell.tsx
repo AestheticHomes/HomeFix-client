@@ -1,35 +1,30 @@
 "use client";
-import { LayoutContent, UniversalHeader } from "@/components/layout";
+
+import { ReactNode, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import BackgroundWaves from "@/components/chrome/BackgroundWaves";
+import SafeViewport from "@/components/layout/SafeViewport";
+import UniversalHeader from "@/components/chrome/UniversalHeader";
+import AppSidebar from "@/components/chrome/AppSidebar";
 import SessionSync from "@/components/SessionSync";
 import { EdithToaster } from "@/components/ui/toaster";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { UserProvider } from "@/contexts/UserContext";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
 
-export default function RootShell({ children }: { children: React.ReactNode }) {
+export default function RootShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const isAdmin = pathname?.startsWith("/admin");
   const isAuth =
     pathname?.startsWith("/login") || pathname?.startsWith("/signup");
 
-  /* ------------------------------------------------------------
-     🚫 Post-checkout redirect safeguard
-     Prevent /profile reroute immediately after payment success
-  ------------------------------------------------------------ */
   useEffect(() => {
     if (typeof window === "undefined") return;
     const skip = sessionStorage.getItem("skipProfileRedirect");
 
     if (skip) {
-      console.log("🧭 [RootShell] skipProfileRedirect detected.");
       sessionStorage.removeItem("skipProfileRedirect");
-
-      // If the user somehow gets pushed toward /profile,
-      // bring them back to /my-orders immediately.
       if (pathname === "/profile") {
-        console.warn("🔁 [RootShell] Canceling profile redirect → /my-orders");
         router.replace("/my-orders");
       }
     }
@@ -49,37 +44,28 @@ export default function RootShell({ children }: { children: React.ReactNode }) {
       <UserProvider>
         <SessionSync />
 
-        {!isAuth && <UniversalHeader />}
+        <div className="min-h-screen bg-[var(--surface-base)] text-[var(--text-primary)] relative">
+          <BackgroundWaves />
+
+          <div className="relative z-10 flex h-screen w-screen overflow-hidden">
+            <AppSidebar />
+
+            <div className="flex min-w-0 flex-1 flex-col">
+              {!isAuth && <UniversalHeader />}
+
+              <main className="flex-1 min-h-0 overflow-y-auto md:pl-[256px] pt-[72px]">
+                <SafeViewport>{children}</SafeViewport>
+              </main>
+            </div>
+          </div>
+        </div>
 
         <div
-          id="root-safe-viewport"
-          className="relative flex flex-col w-full min-h-[100dvh]
-                     bg-[var(--surface-base)]
-                     text-[var(--text-primary-light)] dark:text-[var(--text-primary-dark)]
-                     transition-colors duration-500"
+          id="edith-toast-safe"
+          className="fixed left-0 right-0 z-[120] flex justify-center bottom-6 pointer-events-none pb-4 px-3"
         >
-          <main
-            id="safe-scroll-zone"
-            className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth"
-            style={{
-              paddingTop: "var(--header-h,72px)",
-              paddingBottom:
-                "calc(var(--mbnav-h,72px) + env(safe-area-inset-bottom))",
-              WebkitOverflowScrolling: "touch",
-            }}
-          >
-            <LayoutContent>{children}</LayoutContent>
-          </main>
-
-          <div
-            id="edith-toast-safe"
-            className="fixed left-0 right-0 z-[120] flex justify-center
-                       bottom-[calc(var(--mbnav-h,72px)+env(safe-area-inset-bottom))] 
-                       pointer-events-none pb-4 px-3"
-          >
-            <div className="w-full max-w-sm">
-              <EdithToaster />
-            </div>
+          <div className="w-full max-w-sm">
+            <EdithToaster />
           </div>
         </div>
       </UserProvider>

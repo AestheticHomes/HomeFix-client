@@ -30,8 +30,8 @@ const auraShadow: CSSProperties = {
 
 export default function ProjectsShowcase() {
   return (
-    <section className="px-4 sm:px-8 pt-4 pb-8">
-      <div className="max-w-6xl mx-auto">
+    <section className="px-3 sm:px-4 lg:px-8 xl:px-12 pt-4 pb-8">
+      <div className="w-full max-w-[1200px] 2xl:max-w-[1360px] mx-auto">
         <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mb-4">
           Recent projects
         </h2>

@@ -13,6 +13,7 @@
 
 import HomeFixLogo from "@/components/ui/HomeFixLogo";
 import MobileSideNav from "@/components/layout/MobileSideNav";
+import WeatherStrip from "@/components/chrome/WeatherStrip";
 import { motion } from "framer-motion";
 import { Moon, Sun, CalendarDays, Package } from "lucide-react";
 import clsx from "clsx";
@@ -30,7 +31,6 @@ export default function UniversalHeader(): React.ReactElement {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isEstimator = pathname?.startsWith("/estimator");
-  const isViewer = pathname?.startsWith("/edith");
   const isMySpace = pathname?.startsWith("/my-space");
 
   useEffect(() => setMounted(true), []);
@@ -57,15 +57,13 @@ export default function UniversalHeader(): React.ReactElement {
   return (
     <motion.header
       ref={headerRef}
-      className="fixed top-0 left-0 right-0 z-[70] flex flex-col select-none
-                 border-b border-[var(--border-soft)] backdrop-blur-xl
-                 bg-[var(--surface-header)]/95 transition-all duration-500"
+      className="sticky top-0 left-0 right-0 z-[40] flex flex-col select-none border-b border-[var(--border-soft)] bg-[var(--surface-header)]/95 transition-all duration-500 md:pl-[256px]"
       initial={{ opacity: 0, y: -15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
     >
       {/* 🌈 Primary Header Bar */}
-      <div className="flex flex-wrap items-center justify-between px-4 sm:px-6 py-3.5 gap-3">
+      <div className="mx-auto flex w-full max-w-[1360px] flex-wrap items-center justify-between px-4 sm:px-6 py-3.5 gap-3">
         <div className="flex items-center gap-3.5">
           <HomeFixLogo size="md" />
           {mounted && !isEstimator && (
@@ -110,6 +108,7 @@ export default function UniversalHeader(): React.ReactElement {
         </div>
       </div>
       <MobileSideNav open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <WeatherStrip />
 
       {/* 🔸 MySpace Compact Toggle Bar — Gemini Glow Enhanced */}
       {isMySpace && (

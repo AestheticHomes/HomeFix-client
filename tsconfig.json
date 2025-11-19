@@ -53,7 +53,7 @@
     "components/studio/RoomCanvas3d.jsx",
     "components/studio/EdithBot.tsx",
     "app/studio/oldpage.jsx",
-    "app/studio/page.js",
+    "app/studio/page.tsx",
     "hooks/use-toast.tsx",
     "app/api/ledger/sync/route.ts"
   ],

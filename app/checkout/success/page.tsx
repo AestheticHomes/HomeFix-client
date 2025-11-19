@@ -10,7 +10,7 @@ import confetti from "canvas-confetti";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle, Home, Package } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 declare module "canvas-confetti" {
   interface ConfettiOptions {
@@ -25,7 +25,7 @@ const formatInr = (value: number) =>
     minimumFractionDigits: 2,
   }).format(value);
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
@@ -139,3 +139,10 @@ export default function CheckoutSuccessPage() {
   );
 }
 
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={null}>
+      <CheckoutSuccessPageContent />
+    </Suspense>
+  );
+}
