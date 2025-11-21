@@ -13,13 +13,14 @@
 
 import HomeFixLogo from "@/components/ui/HomeFixLogo";
 import MobileSideNav from "@/components/layout/MobileSideNav";
-import WeatherStrip from "@/components/chrome/WeatherStrip";
+import { ClimateBar } from "@/components/chrome/ClimateBar";
 import { motion } from "framer-motion";
 import { Moon, Sun, CalendarDays, Package } from "lucide-react";
 import clsx from "clsx";
 import { useTheme } from "next-themes";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
+import { useHomefixWeather } from "@/hooks/useHomefixWeather";
 
 export default function UniversalHeader(): React.ReactElement {
   const headerRef = useRef<HTMLElement | null>(null);
@@ -32,6 +33,10 @@ export default function UniversalHeader(): React.ReactElement {
 
   const isEstimator = pathname?.startsWith("/estimator");
   const isMySpace = pathname?.startsWith("/my-space");
+  const weather = useHomefixWeather();
+  const climateCity = weather.cityName ?? "Chennai";
+  const climateTemp = weather.currentTempC ?? 0;
+  const climateCondition = weather.summary ?? "Clear skies";
 
   useEffect(() => setMounted(true), []);
 
@@ -39,11 +44,11 @@ export default function UniversalHeader(): React.ReactElement {
   useEffect(() => {
     const el = headerRef.current;
     if (!el) return;
-    const updateHeight = () =>
-      document.documentElement.style.setProperty(
-        "--header-h",
-        `${el.getBoundingClientRect().height}px`
-      );
+    const updateHeight = () => {
+      const height = `${el.getBoundingClientRect().height}px`;
+      document.documentElement.style.setProperty("--header-h", height);
+      document.documentElement.style.setProperty("--hf-header-height", height);
+    };
     const ro = new ResizeObserver(updateHeight);
     ro.observe(el);
     updateHeight();
@@ -57,7 +62,7 @@ export default function UniversalHeader(): React.ReactElement {
   return (
     <motion.header
       ref={headerRef}
-      className="sticky top-0 left-0 right-0 z-[40] flex flex-col select-none border-b border-[var(--border-soft)] bg-[var(--surface-header)]/95 transition-all duration-500 md:pl-[256px]"
+      className="fixed inset-x-0 top-0 z-[90] flex flex-col select-none border-b border-[var(--border-soft)] bg-[var(--surface-header)]/95 backdrop-blur-md transition-all duration-500"
       initial={{ opacity: 0, y: -15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
@@ -108,7 +113,13 @@ export default function UniversalHeader(): React.ReactElement {
         </div>
       </div>
       <MobileSideNav open={menuOpen} onClose={() => setMenuOpen(false)} />
-      <WeatherStrip />
+      <ClimateBar
+        city={weather.cityName ?? "Chennai"}
+        tempC={weather.currentTempC ?? 27}
+        condition={weather.summary ?? "Mainly clear"}
+        highC={weather.todayHighC ?? 29}
+        lowC={weather.todayLowC ?? 23}
+      />
 
       {/* 🔸 MySpace Compact Toggle Bar — Gemini Glow Enhanced */}
       {isMySpace && (

@@ -89,24 +89,23 @@ export default function Hero() {
             </Link>
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-2 text-[11px] py-1">
+          <div className="mt-6 flex flex-wrap gap-3 max-md:overflow-x-auto max-md:whitespace-nowrap">
             {[
               "On-site measurement",
               "Initial layout plan",
               "3D renders & revisions",
               "Factory build & site execution",
               "Final handover",
-            ].map((step, idx) => (
-              <div
+            ].map((step) => (
+              <button
                 key={step}
-                className="inline-flex items-center gap-1 rounded-full border border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--surface-panel)85%,transparent)] px-3 py-1 text-[var(--text-muted-soft)]"
+                type="button"
+                className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-[11px] md:text-sm text-[var(--text-muted-soft)] backdrop-blur transition hover:border-[var(--accent-primary)]"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-primary)]" />
                 <span>{step}</span>
-                {idx < 4 && (
-                  <span className="text-[var(--text-muted-soft)]">→</span>
-                )}
-              </div>
+                <span>→</span>
+              </button>
             ))}
           </div>
         </div>

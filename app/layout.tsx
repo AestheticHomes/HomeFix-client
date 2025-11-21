@@ -1,11 +1,26 @@
+// app/layout.tsx
+/**
+ * =====================================================================
+ * 🌗 Root Layout — SafeViewport Host (v10.2)
+ * ---------------------------------------------------------------------
+ * PURPOSE
+ *   - Own the global app shell (ThemeProvider + RootShell)
+ *   - Provide PWA meta/icons and viewport settings
+ *   - Keep a11y route announcements via a local SR-only announcer
+ *
+ * NOTES
+ *   - Removed invalid <next-route-announcer /> usage.
+ *   - Next.js App Router already injects an announcer, but we add our
+ *     own SR-only component for consistency with our design system.
+ * =====================================================================
+ */
+
+import RouteAnnouncer from "@/components/a11y/RouteAnnouncer";
 import { RootShell } from "@/components/layout";
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
-/* ------------------------------------------------------------
-   🧭 Metadata + Viewport — Edith SafeViewport v10.1
------------------------------------------------------------- */
 export const metadata: Metadata = {
   title: "HomeFix India",
   description:
@@ -37,22 +52,15 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-/* ------------------------------------------------------------
-   🌗 Root Layout (Server) — SafeViewport host
-   ------------------------------------------------------------
-   ✅ RootShell owns header/sidebar/nav/scroll
-   ✅ Body safe for PWA + iOS
-   ✅ No double padding or hidden overflow
------------------------------------------------------------- */
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="dark">
       <head>
-        {/* ✅ PWA Essentials */}
+        {/* PWA essentials */}
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/icons/icon-192x192.png" sizes="192x192" />
         <link rel="apple-touch-icon" href="/icons/icon-512x512.png" />
@@ -66,12 +74,14 @@ export default function RootLayout({
 
       <body
         suppressHydrationWarning
-        className="antialiased app-shell
-                   bg-[var(--surface-base)]
-                   text-[var(--text-primary-light)] dark:text-[var(--text-primary-dark)]
-                   selection:bg-[var(--edith-selection-bg-light)] selection:text-[var(--edith-selection-text-light)]
-                   dark:selection:bg-[var(--edith-selection-bg-dark)] dark:selection:text-[var(--edith-selection-text-dark)]
-                   transition-colors duration-500"
+        className="
+          antialiased app-shell
+          bg-[var(--surface-base)] text-[var(--text-primary)]
+          selection:bg-[var(--selection-bg)] selection:text-[var(--selection-text)]
+          dark:text-[var(--text-primary-dark)]
+          dark:selection:bg-[var(--selection-bg)] dark:selection:text-[var(--selection-text)]
+          transition-colors duration-500
+        "
       >
         <ThemeProvider
           attribute="class"
@@ -79,9 +89,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {/* 🧱 RootShell provides SafeViewport + scroll + toasts */}
+          {/* RootShell owns header/sidebar/nav/scroll/toasts */}
           <RootShell>{children}</RootShell>
         </ThemeProvider>
+
+        {/* SR-only, polite live region for route changes */}
+        <RouteAnnouncer />
       </body>
     </html>
   );

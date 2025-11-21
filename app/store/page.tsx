@@ -1,24 +1,21 @@
 "use client";
 /**
- * ============================================================
- * 🏬 HomeFix Store — Edith Continuum v11.0 🌿 Checkout-Aware
- * ------------------------------------------------------------
- * ✅ Floating "Proceed to Checkout" bar (cart > 0)
- * ✅ Smooth appear/disappear animation
- * ✅ Works on mobile + desktop
- * ✅ Edith gradient button style
- * ============================================================
+ * Store — single-scroll page
+ * - Body scroll only
+ * - Category rail fixed & scrollable
+ * - Grid does NOT create its own scroll
+ * - Floating checkout footer hovers above the dock (RootShell pads the scene)
  */
 
-import StorePromoStrip from "@/components/store/StorePromoStrip";
 import { useProductCartStore } from "@/components/store/cartStore";
 import ProductCard, { Product } from "@/components/store/ProductCard";
+import StorePromoStrip from "@/components/store/StorePromoStrip";
 import { useSidebar } from "@/contexts/SidebarContext";
 import supabase from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 import { PackageOpen, Search, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function StorePage() {
   const router = useRouter();
@@ -33,40 +30,41 @@ export default function StorePage() {
   const [category, setCategory] = useState("all");
   const [isDesktop, setIsDesktop] = useState(false);
 
-  const categories = [
-    { name: "all", icon: <Tag size={20} /> },
-    { name: "Doors", icon: <Tag size={20} /> },
-    { name: "CNC Elements", icon: <Tag size={20} /> },
-    { name: "Wooden Panels", icon: <Tag size={20} /> },
-    { name: "Paint Finishes", icon: <Tag size={20} /> },
-    { name: "Hardware", icon: <Tag size={20} /> },
-    { name: "Lighting", icon: <Tag size={20} /> },
-    { name: "Bathroom", icon: <Tag size={20} /> },
-  ];
+  const categories = useMemo(
+    () => [
+      { name: "all", icon: <Tag size={20} /> },
+      { name: "Doors", icon: <Tag size={20} /> },
+      { name: "CNC Elements", icon: <Tag size={20} /> },
+      { name: "Wooden Panels", icon: <Tag size={20} /> },
+      { name: "Paint Finishes", icon: <Tag size={20} /> },
+      { name: "Hardware", icon: <Tag size={20} /> },
+      { name: "Lighting", icon: <Tag size={20} /> },
+      { name: "Bathroom", icon: <Tag size={20} /> },
+    ],
+    []
+  );
 
-  /* 🔥 Fetch from Supabase */
+  // Fetch
   useEffect(() => {
     let active = true;
-    const fetchProducts = async () => {
+    (async () => {
       setLoading(true);
       const { data, error } = await supabase
         .from("goods")
         .select("*")
         .returns<Product[]>();
-      if (active) {
-        if (!error) setProducts(data || []);
-        setLoading(false);
-      }
-    };
-    fetchProducts();
+      if (!active) return;
+      if (!error) setProducts(data || []);
+      setLoading(false);
+    })();
     return () => {
       active = false;
     };
   }, []);
 
-  /* 🎯 Search + Filter */
+  // Filter + search
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const t = setTimeout(() => {
       let list = [...products];
       if (category !== "all") {
         list = list.filter(
@@ -79,31 +77,25 @@ export default function StorePage() {
       }
       setFiltered(list);
     }, 120);
-    return () => clearTimeout(timer);
+    return () => clearTimeout(t);
   }, [search, category, products]);
 
-  /* 🖥️ Detect desktop for rail positioning */
+  // Responsive
   useEffect(() => {
-    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    const onResize = () => setIsDesktop(window.innerWidth >= 768);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  /* 💎 UI */
   return (
     <section
       id="store-safe-zone"
-      className="relative flex flex-col w-full mx-auto
-                 overflow-hidden
-                 bg-[var(--surface-base)]
-                 transition-colors duration-500"
-      style={{
-        minHeight: "calc(100vh - var(--header-h) - var(--mbnav-h,72px))",
-      }}
+      className="relative flex flex-col w-full mx-auto bg-[var(--surface-base)] transition-colors duration-500"
     >
       <StorePromoStrip />
-      {/* 🔍 Search */}
+
+      {/* Search */}
       <div className="relative flex w-full sm:max-w-md mx-auto mt-4 mb-3 px-4">
         <Search className="absolute left-6 top-2.5 w-4 h-4 text-[var(--text-muted)]" />
         <input
@@ -120,20 +112,16 @@ export default function StorePage() {
       </div>
 
       <div className="relative flex-1 flex flex-row">
-        {/* 📁 Category Rail */}
+        {/* Category rail (fixed; its own scroll is OK) */}
         <motion.aside
-          animate={{
-            left: isDesktop ? (collapsed ? 80 : 256) : 0,
-          }}
+          animate={{ left: isDesktop ? (collapsed ? 80 : 256) : 0 }}
           transition={{ type: "spring", stiffness: 180, damping: 22 }}
-          className="fixed z-[60]
-                     border-r border-[var(--edith-border)]
+          className="fixed z-[60] border-r border-[var(--edith-border)]
                      bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)]
-                     flex flex-col items-center overflow-y-auto scroll-smooth
-                     touch-pan-y backdrop-blur-md"
+                     flex flex-col items-center overflow-y-auto scroll-smooth touch-pan-y backdrop-blur-md"
           style={{
-            top: "var(--header-h)",
-            bottom: "var(--mbnav-h,72px)",
+            top: "var(--hf-header-height,72px)",
+            bottom: "var(--mbnav-h-safe,72px)",
             width: isDesktop ? "96px" : "80px",
             WebkitOverflowScrolling: "touch",
             scrollbarWidth: "none",
@@ -165,15 +153,14 @@ export default function StorePage() {
           </div>
         </motion.aside>
 
-        {/* 🧩 Product Grid */}
+        {/* Product grid (NO overflow here) */}
         <section
-          className="flex-1 overflow-y-auto px-4 sm:px-8 pb-32 pt-4 transition-all duration-700 ease-in-out
-                     bg-[var(--surface-base)]"
-          style={{
-            marginLeft: isDesktop
-              ? `calc(${collapsed ? 80 : 256}px + 96px)`
-              : "80px",
-          }}
+          className="flex-1 px-4 sm:px-8 pt-4 transition-all duration-700 ease-in-out bg-[var(--surface-base)]"
+        style={{
+          marginLeft: isDesktop
+            ? `calc(${collapsed ? 80 : 256}px + 96px)`
+            : "80px",
+        }}
         >
           <AnimatePresence mode="popLayout">
             {loading ? (
@@ -211,7 +198,7 @@ export default function StorePage() {
         </section>
       </div>
 
-      {/* 🛒 Floating Checkout Bar */}
+      {/* Floating Checkout Bar (pinned above mobile dock) */}
       <AnimatePresence>
         {cartCount > 0 && (
           <motion.footer
@@ -220,10 +207,12 @@ export default function StorePage() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 80, opacity: 0 }}
             transition={{ type: "spring", stiffness: 200, damping: 20 }}
-            className="fixed bottom-0 left-0 right-0 z-[70] 
-                       flex items-center justify-between gap-4 px-5 py-4 
-                       bg-[var(--edith-surface)] border-t border-[var(--edith-border)] 
+            className="fixed left-0 right-0 z-[70] flex items-center justify-between gap-4 px-5 py-4
+                       bg-[var(--edith-surface)] border-t border-[var(--edith-border)]
                        backdrop-blur-lg rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)]"
+            style={{
+              bottom: "var(--mbnav-h-safe,72px)", // sit above the mobile dock
+            }}
           >
             <div className="flex flex-col">
               <span className="text-xs text-[var(--text-secondary)]">

@@ -1,15 +1,33 @@
 "use client";
 /**
- * ============================================================
- * File: /components/AuthCenterDrawer.tsx
- * Version: v13.0 — LiveSync Verified Edition 🌿
- * ------------------------------------------------------------
- * ✅ Triggers `profile-updated` event after any change (name/email/verify)
- * ✅ Auto-normalizes phone number before save
- * ✅ Merges API response into cache + context
- * ✅ Ensures real-time profile reload on /profile
- * ✅ Toast-safe + haptic feedback retained
- * ============================================================
+ * =============================================================================
+ * 📦 FILE: /components/AuthCenterDrawer.tsx
+ * 🧩 MODULE: Auth Center v15 — Verified-First, CSS-Vars, Graceful OTP UX
+ * -----------------------------------------------------------------------------
+ * PURPOSE
+ *   - Profile editor that respects global CSS tokens and verified flags.
+ *   - Never marks verified on "Save" (server remains source of truth).
+ *   - Blocks saving if email changed but is not verified.
+ *   - OTP flows with resend cooldown, inline errors, and accessible labels.
+ *
+ * DEPENDENCIES
+ *   - hooks/useOtpManager (v3.4+)  → send/resend/verify + cooldown & messages
+ *   - contexts/UserContext         → login(updatedUser, true)
+ *   - /api/profile                 → preserves flags server-side
+ *
+ * UX RULES
+ *   1) Re-entering *same verified* email keeps pill = Verified.
+ *   2) Entering a *new* email shows "Unverified — Verify"; Save disabled.
+ *   3) Phone uses +91 E.164; verify logic mirrors email OTP UX.
+ *   4) Error messages from OTP manager are shown inline; resend when allowed.
+ *
+ * EVENTS
+ *   - window.dispatchEvent(new Event("profile-updated")) on changes/verification
+ *
+ * STYLE
+ *   - Uses CSS variables (surface/text/border/accent) where sensible.
+ *   - No layout paddings tied to header/footer; layout handles chrome.
+ * =============================================================================
  */
 
 import OTPInput from "@/components/OTPInput";
@@ -24,20 +42,35 @@ import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import { useOtpManager } from "@/hooks/useOtpManager";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Mail, Phone, UserRound } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  Mail,
+  Phone,
+  RefreshCw,
+  UserRound,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+
+/* -------------------------------- Types ------------------------------- */
 
 type Panel = "form" | "phone-otp" | "email-otp" | "success";
 
-/* 🔧 Helper: Normalize phone */
-function normalizePhone(raw: string): string {
+/* ----------------------------- Utilities ------------------------------ */
+
+function normPhoneE164(raw: string): string {
   if (!raw) return "";
-  let p = raw.replace(/\D/g, "");
-  if (p.startsWith("91") && p.length === 12) return "+" + p;
-  if (p.length === 10) return "+91" + p;
-  if (p.startsWith("+91")) return p;
-  return "+91" + p.slice(-10);
+  const p = raw.replace(/\D/g, "");
+  if (p.startsWith("91") && p.length === 12) return `+${p}`;
+  if (p.startsWith("+91") && p.length === 13) return p.slice(0, 13);
+  if (p.length >= 10) return `+91${p.slice(-10)}`;
+  return "";
 }
+function only10(raw: string): string {
+  return (raw || "").replace(/\D/g, "").slice(-10);
+}
+
+/* ============================ Component =============================== */
 
 export default function AuthCenterDrawer({
   open,
@@ -52,60 +85,89 @@ export default function AuthCenterDrawer({
 }) {
   const { success, error } = useToast();
   const { user, login } = useUser();
-  const { sendOtp, verifyOtp, loading, verifying } = useOtpManager();
 
+  const {
+    sendOtp,
+    verifyOtp,
+    loading,
+    verifying,
+    canResend,
+    resendIn,
+    lastErrorCode,
+    lastMessage,
+    resetError,
+  } = useOtpManager();
+
+  // Base form state
   const [panel, setPanel] = useState<Panel>("form");
   const [saving, setSaving] = useState(false);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [emailVerified, setEmailVerified] = useState(false);
-  const [phone, setPhone] = useState("");
-  const [origPhone, setOrigPhone] = useState("");
+
+  const [phone, setPhone] = useState(""); // 10-digit UI value
+  const [origPhoneE164, setOrigPhoneE164] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
+
   const [otp, setOtp] = useState("");
   const otpRefs = useRef<HTMLInputElement[]>([]);
 
-  const phoneDigits = phone.replace(/\D/g, "");
-  const isPhoneChanged = useMemo(() => {
-    const normalizedOrig = origPhone.replace(/\D/g, "").replace(/^91/, "");
-    return phoneDigits.length === 10 && phoneDigits !== normalizedOrig;
-  }, [phoneDigits, origPhone]);
+  // Derivations
+  const cached =
+    typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("user") || "null")
+      : null;
 
-  /* ------------------------------------------------------------
-     Prefill cached data
-  ------------------------------------------------------------ */
+  const cachedEmail = (cached?.email || "").trim().toLowerCase();
+  const phone10 = only10(phone);
+
+  const isPhoneChanged = useMemo(() => {
+    const orig10 = only10(origPhoneE164);
+    return phone10.length === 10 && phone10 !== orig10;
+  }, [phone10, origPhoneE164]);
+
+  const emailChanged = useMemo(() => {
+    const next = (email || "").trim().toLowerCase();
+    return !!next && next !== cachedEmail;
+  }, [email, cachedEmail]);
+
+  /* -------------------------- Prefill data ---------------------------- */
   useEffect(() => {
     if (!open) return;
-    const cached = JSON.parse(localStorage.getItem("user") || "null");
+
     const pre = cached || user || {};
     setName(pre.name || pre.full_name || "");
-    const p = (pre.phone || "")
-      .toString()
-      .replace(/\D/g, "")
-      .replace(/^91/, "");
-    setPhone(p || "");
-    setOrigPhone(pre.phone || p || "");
-    setPhoneVerified(!!pre.phone_verified || pre.loggedOut === false);
     setEmail(pre.email || "");
     setEmailVerified(!!pre.email_verified);
+
+    const e164 = normPhoneE164(pre.phone || "");
+    setOrigPhoneE164(e164 || "");
+    setPhone(only10(e164)); // UI shows only 10 digits
+    setPhoneVerified(!!pre.phone_verified || pre.loggedOut === false);
+
     setPanel(initialMode === "form" ? "form" : (initialMode as Panel));
     setOtp("");
-  }, [open, user, initialMode]);
+    resetError();
+  }, [open, user, initialMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ------------------------------------------------------------
-     Save Name + Email (with LiveSync dispatch)
-  ------------------------------------------------------------ */
+  /* ------------------------- Save (name/email) ------------------------ */
   async function saveNameEmail() {
     setSaving(true);
     try {
-      const cached = JSON.parse(localStorage.getItem("user") || "{}");
-      const phoneSafe = normalizePhone(
-        cached?.phone || (phoneDigits ? `+91${phoneDigits}` : "")
-      );
+      // Require verified phone for identity anchoring
+      const phoneE164 =
+        normPhoneE164(cached?.phone || (phone10 ? `+91${phone10}` : "")) || "";
 
-      if (!phoneSafe) {
+      if (!phoneE164) {
         error("Verify your phone before saving.");
+        setSaving(false);
+        return;
+      }
+
+      // If email changed but not verified, block save (UX guard)
+      if (emailChanged && !emailVerified) {
+        error("Please verify your new email before saving.");
         setSaving(false);
         return;
       }
@@ -113,7 +175,7 @@ export default function AuthCenterDrawer({
       const payload = {
         name: name.trim(),
         email: email.trim(),
-        phone: phoneSafe,
+        phone: phoneE164,
       };
 
       const res = await fetch("/api/profile", {
@@ -124,77 +186,91 @@ export default function AuthCenterDrawer({
       });
 
       const data = await res.json();
-      if (!data.success) throw new Error(data.message || "Save failed");
+      if (!data?.success) throw new Error(data?.message || "Save failed");
 
-      const updatedUser = { ...cached, ...data.user };
+      const updatedUser = { ...(cached || {}), ...(data.user || {}) };
       localStorage.setItem("user", JSON.stringify(updatedUser));
       login(updatedUser, true);
 
-      // ✅ LiveSync trigger — ProfilePage listens to this event
       window.dispatchEvent(new Event("profile-updated"));
-
       success("Profile updated successfully!");
       navigator.vibrate?.(20);
-      setPanel("success");
 
+      setPanel("success");
       setTimeout(() => {
         setPanel("form");
         onClose?.();
-      }, 1200);
-    } catch (err: any) {
-      console.error("💥 [saveNameEmail]", err.message);
+      }, 1000);
+    } catch (e: any) {
+      console.error("💥 [AuthCenterDrawer.saveNameEmail]", e?.message || e);
       error("Failed to save changes.");
     } finally {
       setSaving(false);
     }
   }
 
-  /* ------------------------------------------------------------
-     OTP Flow (LiveSync integrated)
-  ------------------------------------------------------------ */
-  const handlePhoneOtpSend = async () => {
-    const ok = await sendOtp(phoneDigits, "phone");
+  /* ----------------------------- OTP flows ---------------------------- */
+
+  const onSendPhoneOtp = async () => {
+    resetError();
+    const ok = await sendOtp(phone10, "phone");
     if (ok) setPanel("phone-otp");
   };
 
-  const handlePhoneOtpVerify = async () => {
-    const verified = await verifyOtp(otp, phoneDigits, "phone");
-    if (verified) {
+  const onVerifyPhoneOtp = async () => {
+    resetError();
+    const ok = await verifyOtp(otp, phone10, "phone");
+    if (ok) {
       setPhoneVerified(true);
-      setOrigPhone(`+91${phoneDigits}`);
-      window.dispatchEvent(new Event("profile-updated")); // ✅ LiveSync
+      setOrigPhoneE164(`+91${phone10}`);
+      window.dispatchEvent(new Event("profile-updated"));
       setPanel("success");
-      setTimeout(() => setPanel("form"), 1500);
+      setTimeout(() => setPanel("form"), 900);
     }
   };
 
-  const handleEmailOtpSend = async () => {
+  const onSendEmailOtp = async () => {
+    resetError();
     const ok = await sendOtp(email, "email");
     if (ok) setPanel("email-otp");
   };
 
-  const handleEmailOtpVerify = async () => {
-    const verified = await verifyOtp(otp, email, "email");
-    if (verified) {
+  const onVerifyEmailOtp = async () => {
+    resetError();
+    const ok = await verifyOtp(otp, email, "email");
+    if (ok) {
       setEmailVerified(true);
-      window.dispatchEvent(new Event("profile-updated")); // ✅ LiveSync
+      window.dispatchEvent(new Event("profile-updated"));
       setPanel("success");
-      setTimeout(() => setPanel("form"), 1500);
+      setTimeout(() => setPanel("form"), 900);
     }
   };
 
-  /* ------------------------------------------------------------
-     Verify Pills
-  ------------------------------------------------------------ */
+  /* ---------------------------- Verify pills -------------------------- */
+
   const EmailVerifyPill = emailVerified ? (
-    <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 flex items-center gap-1">
+    <span
+      className="ml-2 text-xs px-2 py-0.5 rounded-full flex items-center gap-1"
+      style={{
+        background:
+          "color-mix(in srgb, var(--accent-success) 18%, transparent)",
+        color: "var(--accent-success)",
+      }}
+      aria-label="Email verified"
+    >
       <Check size={14} /> Verified
     </span>
   ) : (
     <button
-      onClick={handleEmailOtpSend}
-      disabled={loading}
-      className="ml-2 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition"
+      onClick={onSendEmailOtp}
+      disabled={loading || !email.trim()}
+      className="ml-2 text-xs px-2 py-0.5 rounded-full transition"
+      style={{
+        background:
+          "color-mix(in srgb, var(--accent-danger, #ef4444) 16%, transparent)",
+        color: "var(--accent-danger, #ef4444)",
+      }}
+      aria-label="Verify email"
     >
       Unverified — Verify
     </button>
@@ -202,114 +278,269 @@ export default function AuthCenterDrawer({
 
   const PhoneInlineAction = isPhoneChanged ? (
     <button
-      onClick={handlePhoneOtpSend}
-      disabled={loading}
-      className="ml-2 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 hover:bg-amber-200 transition"
+      onClick={onSendPhoneOtp}
+      disabled={loading || phone10.length !== 10}
+      className="ml-2 text-xs px-2 py-0.5 rounded-full transition"
+      style={{
+        background:
+          "color-mix(in srgb, var(--accent-warning, #f59e0b) 16%, transparent)",
+        color: "var(--accent-warning, #b45309)",
+      }}
+      aria-label="Verify new phone number"
     >
       Verify new number
     </button>
   ) : phoneVerified ? (
-    <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 flex items-center gap-1">
+    <span
+      className="ml-2 text-xs px-2 py-0.5 rounded-full flex items-center gap-1"
+      style={{
+        background:
+          "color-mix(in srgb, var(--accent-success) 18%, transparent)",
+        color: "var(--accent-success)",
+      }}
+      aria-label="Phone verified"
+    >
       <Check size={14} /> Verified
     </span>
   ) : (
     <button
-      onClick={handlePhoneOtpSend}
-      disabled={loading}
-      className="ml-2 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition"
+      onClick={onSendPhoneOtp}
+      disabled={loading || phone10.length !== 10}
+      className="ml-2 text-xs px-2 py-0.5 rounded-full transition"
+      style={{
+        background:
+          "color-mix(in srgb, var(--accent-danger, #ef4444) 16%, transparent)",
+        color: "var(--accent-danger, #ef4444)",
+      }}
+      aria-label="Verify phone"
     >
       Verify
     </button>
   );
 
-  /* ------------------------------------------------------------
-     UI Panels
-  ------------------------------------------------------------ */
+  /* --------------------------- Inline alerts --------------------------- */
+
+  function InlineOtpError() {
+    if (!lastMessage) return null;
+    return (
+      <div
+        className="mt-2 flex items-start gap-2 rounded-lg px-3 py-2 text-sm"
+        style={{
+          background:
+            "color-mix(in srgb, var(--accent-danger, #ef4444) 10%, transparent)",
+          color: "var(--text-primary)",
+          border:
+            "1px solid color-mix(in srgb, var(--accent-danger, #ef4444) 25%, transparent)",
+        }}
+        role="alert"
+        aria-live="polite"
+      >
+        <AlertTriangle size={16} className="mt-0.5" />
+        <span>{lastMessage}</span>
+      </div>
+    );
+  }
+
+  function ResendRow({
+    onResend,
+    channel,
+  }: {
+    onResend: () => void;
+    channel: "phone" | "email";
+  }) {
+    return (
+      <div className="mt-3 flex items-center justify-between">
+        <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
+          {canResend
+            ? "Didn’t receive a code?"
+            : `You can request a new code in ${resendIn}s`}
+        </span>
+        <button
+          onClick={onResend}
+          disabled={!canResend}
+          className="inline-flex items-center gap-1 text-xs font-medium rounded-md px-2 py-1 transition"
+          style={{
+            background: canResend
+              ? "color-mix(in srgb, var(--accent-primary, #6366f1) 14%, transparent)"
+              : "transparent",
+            color: canResend
+              ? "var(--accent-primary, #6366f1)"
+              : "var(--text-muted)",
+            border:
+              "1px solid color-mix(in srgb, var(--accent-primary, #6366f1) 25%, transparent)",
+          }}
+          aria-label={`Resend ${channel} OTP`}
+        >
+          <RefreshCw size={14} /> Resend
+        </button>
+      </div>
+    );
+  }
+
+  /* ----------------------------- Panels ------------------------------- */
+
   const PanelContent = (
     <AnimatePresence mode="wait">
       {panel === "form" && (
-        <motion.div key="form" className="p-6 sm:p-8">
+        <motion.div
+          key="form"
+          className="p-6 sm:p-8"
+          style={{
+            background: "var(--surface-base)",
+            color: "var(--text-primary)",
+          }}
+        >
           <h2 className="text-lg font-semibold mb-4">Account Center</h2>
 
           {/* Name */}
-          <label className="text-sm text-gray-500">Name</label>
-          <div className="flex items-center gap-2 border rounded-xl px-3 py-2 mb-3 dark:border-slate-700">
-            <UserRound size={18} className="text-emerald-600" />
+          <label className="text-sm" style={{ color: "var(--text-muted)" }}>
+            Name
+          </label>
+          <div
+            className="flex items-center gap-2 rounded-xl px-3 py-2 mb-3"
+            style={{
+              border: "1px solid var(--border-soft)",
+              background: "var(--surface-card, transparent)",
+            }}
+          >
+            <UserRound size={18} style={{ color: "var(--accent-success)" }} />
             <input
               type="text"
               placeholder="Your Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="flex-1 bg-transparent outline-none text-sm"
+              style={{ color: "var(--text-primary)" }}
+              aria-label="Name"
             />
           </div>
 
           {/* Phone */}
-          <label className="text-sm text-gray-500">Phone</label>
-          <div className="flex items-center border rounded-xl px-3 py-2 mb-3 dark:border-slate-700">
-            <Phone size={18} className="text-emerald-600 mr-2" />
+          <label className="text-sm" style={{ color: "var(--text-muted)" }}>
+            Phone
+          </label>
+          <div
+            className="flex items-center rounded-xl px-3 py-2 mb-3"
+            style={{
+              border: "1px solid var(--border-soft)",
+              background: "var(--surface-card, transparent)",
+            }}
+          >
+            <Phone size={18} style={{ color: "var(--accent-success)" }} />
             <input
               type="tel"
               inputMode="numeric"
               placeholder="10-digit mobile number"
               value={phone}
-              onChange={(e) =>
-                setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
-              }
-              className="flex-1 bg-transparent outline-none text-sm"
+              onChange={(e) => setPhone(only10(e.target.value))}
+              className="flex-1 bg-transparent outline-none text-sm ml-2"
+              style={{ color: "var(--text-primary)" }}
+              aria-label="Phone number"
             />
             {PhoneInlineAction}
           </div>
 
           {/* Email */}
-          <label className="text-sm text-gray-500">Email</label>
-          <div className="flex items-center border rounded-xl px-3 py-2 dark:border-slate-700">
-            <Mail size={18} className="text-emerald-600 mr-2" />
+          <label className="text-sm" style={{ color: "var(--text-muted)" }}>
+            Email
+          </label>
+          <div
+            className="flex items-center rounded-xl px-3 py-2"
+            style={{
+              border: "1px solid var(--border-soft)",
+              background: "var(--surface-card, transparent)",
+            }}
+          >
+            <Mail size={18} style={{ color: "var(--accent-success)" }} />
             <input
               type="email"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => {
-                const newEmail = e.target.value.trim();
-                setEmail(newEmail);
-
-                // ✅ Keep verified if user re-enters same verified email
-                const cached = JSON.parse(localStorage.getItem("user") || "{}");
-                const cachedEmail = cached?.email?.trim()?.toLowerCase();
-
-                if (cachedEmail && newEmail.toLowerCase() === cachedEmail) {
+                const next = e.target.value.trim();
+                setEmail(next);
+                // keep pill = Verified when user re-enters the exact same verified email
+                if (cachedEmail && next.toLowerCase() === cachedEmail) {
                   setEmailVerified(true);
                 } else {
                   setEmailVerified(false);
                 }
               }}
-              className="flex-1 bg-transparent outline-none text-sm"
+              className="flex-1 bg-transparent outline-none text-sm ml-2"
+              style={{ color: "var(--text-primary)" }}
+              aria-label="Email address"
             />
             {EmailVerifyPill}
           </div>
 
+          {/* Save button + guard note */}
           <button
             onClick={saveNameEmail}
-            disabled={saving}
-            className="w-full py-3 mt-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold active:scale-[0.98]"
+            disabled={saving || (emailChanged && !emailVerified)}
+            className="w-full py-3 mt-4 rounded-xl font-semibold active:scale-[0.98] transition"
+            style={{
+              background: saving
+                ? "color-mix(in srgb, var(--accent-success) 50%, black 10%)"
+                : "var(--accent-success)",
+              color: "white",
+              opacity: saving || (emailChanged && !emailVerified) ? 0.7 : 1,
+            }}
+            aria-disabled={saving || (emailChanged && !emailVerified)}
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>
+
+          {emailChanged && !emailVerified && (
+            <div
+              className="mt-2 text-xs rounded-md px-3 py-2 flex gap-2 items-start"
+              style={{
+                background:
+                  "color-mix(in srgb, var(--accent-warning, #f59e0b) 10%, transparent)",
+                border:
+                  "1px solid color-mix(in srgb, var(--accent-warning, #f59e0b) 22%, transparent)",
+                color: "var(--text-primary)",
+              }}
+            >
+              <AlertTriangle size={14} className="mt-0.5" />
+              Please verify your new email before saving.
+            </div>
+          )}
         </motion.div>
       )}
 
       {/* Phone OTP */}
       {panel === "phone-otp" && (
-        <motion.div key="phone" className="p-6">
+        <motion.div
+          key="phone"
+          className="p-6"
+          style={{
+            background: "var(--surface-base)",
+            color: "var(--text-primary)",
+          }}
+        >
           <h3 className="font-semibold mb-2">Verify Phone</h3>
-          <p className="text-sm text-gray-600 mb-2">
-            Enter the OTP sent to +91 {phoneDigits}
+          <p
+            className="text-sm mb-2"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Enter the code sent to +91 {phone10}
           </p>
+
           <OTPInput otp={otp} setOtp={setOtp} refs={otpRefs} />
+
+          <InlineOtpError />
+          <ResendRow onResend={onSendPhoneOtp} channel="phone" />
+
           <button
-            onClick={handlePhoneOtpVerify}
-            disabled={verifying}
-            className="w-full mt-3 py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold"
+            onClick={onVerifyPhoneOtp}
+            disabled={verifying || otp.length !== 6}
+            className="w-full mt-3 py-3 rounded-xl font-semibold transition"
+            style={{
+              background: "var(--accent-primary, #6366f1)",
+              color: "white",
+              opacity: verifying || otp.length !== 6 ? 0.7 : 1,
+            }}
+            aria-disabled={verifying || otp.length !== 6}
           >
             {verifying ? "Verifying..." : "Verify OTP"}
           </button>
@@ -318,16 +549,37 @@ export default function AuthCenterDrawer({
 
       {/* Email OTP */}
       {panel === "email-otp" && (
-        <motion.div key="email" className="p-6">
+        <motion.div
+          key="email"
+          className="p-6"
+          style={{
+            background: "var(--surface-base)",
+            color: "var(--text-primary)",
+          }}
+        >
           <h3 className="font-semibold mb-2">Verify Email</h3>
-          <p className="text-sm text-gray-600 mb-2">
-            Enter the OTP sent to {email}
+          <p
+            className="text-sm mb-2"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Enter the code sent to {email}
           </p>
+
           <OTPInput otp={otp} setOtp={setOtp} refs={otpRefs} />
+
+          <InlineOtpError />
+          <ResendRow onResend={onSendEmailOtp} channel="email" />
+
           <button
-            onClick={handleEmailOtpVerify}
-            disabled={verifying}
-            className="w-full mt-3 py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold"
+            onClick={onVerifyEmailOtp}
+            disabled={verifying || otp.length !== 6}
+            className="w-full mt-3 py-3 rounded-xl font-semibold transition"
+            style={{
+              background: "var(--accent-primary, #6366f1)",
+              color: "white",
+              opacity: verifying || otp.length !== 6 ? 0.7 : 1,
+            }}
+            aria-disabled={verifying || otp.length !== 6}
           >
             {verifying ? "Verifying..." : "Verify OTP"}
           </button>
@@ -336,15 +588,32 @@ export default function AuthCenterDrawer({
 
       {/* Success */}
       {panel === "success" && (
-        <motion.div key="success" className="p-8 text-center">
+        <motion.div
+          key="success"
+          className="p-8 text-center"
+          style={{
+            background: "var(--surface-base)",
+            color: "var(--text-primary)",
+          }}
+        >
           <motion.div
             initial={{ scale: 0.5 }}
             animate={{ scale: 1 }}
-            className="w-20 h-20 bg-green-600 text-white mx-auto rounded-full flex items-center justify-center shadow-xl"
+            className="mx-auto rounded-full flex items-center justify-center shadow-xl"
+            style={{
+              width: "72px",
+              height: "72px",
+              background: "var(--accent-success)",
+              color: "white",
+            }}
+            aria-hidden
           >
             <Check size={40} />
           </motion.div>
-          <p className="mt-3 text-green-600 font-semibold">
+          <p
+            className="mt-3 font-semibold"
+            style={{ color: "var(--accent-success)" }}
+          >
             Verified Successfully
           </p>
         </motion.div>
@@ -352,13 +621,24 @@ export default function AuthCenterDrawer({
     </AnimatePresence>
   );
 
-  /* ------------------------------------------------------------
-     Drawer Layout
-  ------------------------------------------------------------ */
+  /* ---------------------------- Drawers ------------------------------- */
+
   if (standalone) {
     return (
-      <motion.div className="min-h-screen flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl">
+      <motion.div
+        className="min-h-screen flex items-end sm:items-center justify-center"
+        style={{
+          background: "color-mix(in srgb, black 40%, transparent)",
+          backdropFilter: "blur(6px)",
+        }}
+      >
+        <div
+          className="w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl"
+          style={{
+            background: "var(--surface-base)",
+            color: "var(--text-primary)",
+          }}
+        >
           {PanelContent}
         </div>
       </motion.div>
@@ -367,10 +647,20 @@ export default function AuthCenterDrawer({
 
   return (
     <Drawer open={open} onOpenChange={onClose}>
-      <DrawerContent className="bg-white dark:bg-slate-900 rounded-t-3xl">
+      <DrawerContent
+        className="rounded-t-3xl"
+        style={{
+          background: "var(--surface-base)",
+          color: "var(--text-primary)",
+          borderTop: "1px solid var(--border-soft)",
+        }}
+      >
         <DrawerHeader>
           <DrawerTitle className="text-center">Account Center</DrawerTitle>
-          <DrawerDescription className="text-center text-xs">
+          <DrawerDescription
+            className="text-center text-xs"
+            style={{ color: "var(--text-secondary)" }}
+          >
             Manage your profile and verification
           </DrawerDescription>
         </DrawerHeader>

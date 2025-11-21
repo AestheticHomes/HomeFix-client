@@ -111,7 +111,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const invoices =
+    const rawInvoices =
       data?.map((row: any) => {
         const payload = row.payload || {};
         const orderType = inferOrderType(row);
@@ -150,6 +150,14 @@ export async function GET(req: Request) {
           raw: row,
         };
       }) ?? [];
+
+    const seen = new Set<string>();
+    const invoices = rawInvoices.filter((invoice: any) => {
+      const key = String(invoice.invoice_id ?? invoice.id);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 
     return NextResponse.json(
       {

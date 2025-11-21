@@ -1,14 +1,28 @@
 "use client";
-
 /**
- * ============================================================
- * 🧩 FILE: /app/profile/page.tsx (FIXED v5.0)
- * ------------------------------------------------------------
- * ⭐ NO MORE direct localStorage writes
- * ⭐ Uses UserContext.setUser() instead
- * ⭐ Does NOT overwrite Supabase/Session user object
- * ⭐ My Orders + LedgerX finally get correct UID
- * ============================================================
+ * =============================================================================
+ * 📄 FILE: /app/profile/page.tsx
+ * 🧩 MODULE: Profile Page v6 — Verified-First, CSS-Vars, LiveSync
+ * -----------------------------------------------------------------------------
+ * PURPOSE
+ *   - Show and edit account info without ever flipping verification flags here.
+ *   - Uses UserContext as the single source of truth (no direct localStorage).
+ *   - Plays nicely with the new AuthCenterDrawer (OTP flows & error handling).
+ *   - Follows global CSS tokens (no hardcoded color values).
+ *
+ * KEY BEHAVIOR
+ *   - Loads from UserContext, then freshens from /api/profile?phone=… (newest row).
+ *   - Listens to "profile-updated" and rehydrates state seamlessly.
+ *   - “Edit / Verify Account” opens the AuthCenter; address editing is separate.
+ *   - Buttons are token-styled and accessibility-friendly.
+ *
+ * DEPENDENCIES
+ *   - components/AuthCenterDrawer (v15+)
+ *   - components/MapPicker
+ *   - components/layout/SafeViewport
+ *   - contexts/UserContext  → { user, setUser, logout, isLoaded }
+ *   - /api/profile (v5.4+)  → preserves verified flags on the server
+ * =============================================================================
  */
 
 import AuthCenterDrawer from "@/components/AuthCenterDrawer";
@@ -17,8 +31,9 @@ import SafeViewport from "@/components/layout/SafeViewport";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+/* -------------------------------- Types -------------------------------- */
 
 interface ProfileData {
   id?: string;
@@ -34,101 +49,140 @@ interface ProfileData {
   role?: string;
 }
 
+/* ----------------------------- Utilities ------------------------------- */
+
+function only10(raw?: string): string {
+  return (raw || "").replace(/\D/g, "").slice(-10);
+}
+function normE164(raw?: string): string {
+  if (!raw) return "";
+  const digits = raw.replace(/\D/g, "");
+  if (digits.startsWith("91") && digits.length === 12) return `+${digits}`;
+  if (digits.startsWith("+91") && digits.length === 13) return digits;
+  if (digits.length >= 10) return `+91${digits.slice(-10)}`;
+  return "";
+}
+
+/* =============================== Page ================================== */
+
 export default function ProfilePage() {
-  const router = useRouter();
   const { user, setUser, logout, isLoaded } = useUser();
-  const { success, error, info } = useToast();
+  const { success, error } = useToast();
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+
   const [coords, setCoords] = useState({ lat: 13.0827, lng: 80.2707 });
   const [address, setAddress] = useState("");
+
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<
     "form" | "phone-otp" | "email-otp"
   >("form");
   const [editingAddress, setEditingAddress] = useState(false);
 
-  /* ------------------------------------------------------------
-     🧠 Safely hydrate WITHOUT overwriting auth/session state
-  ------------------------------------------------------------ */
+  const cachedUser = useMemo(() => {
+    try {
+      return JSON.parse(
+        typeof window !== "undefined"
+          ? localStorage.getItem("user") || "null"
+          : "null"
+      );
+    } catch {
+      return null;
+    }
+  }, []);
+
+  /**
+   * Safely merge fresh server/user data into UI + UserContext.
+   * We DO NOT mutate verification flags here; server is canonical.
+   */
   const hydrate = useCallback(
     (fresh: any, base: any = user) => {
-      const merged = {
+      const merged: ProfileData = {
         ...(base || {}),
         ...(fresh || {}),
-      name: fresh?.name || fresh?.full_name || base?.name,
-      email_verified: fresh?.email_verified ?? base?.email_verified ?? false,
-      phone_verified: fresh?.phone_verified ?? base?.phone_verified ?? false,
-    };
+        name: fresh?.name || fresh?.full_name || base?.name || base?.full_name,
+        email_verified: fresh?.email_verified ?? base?.email_verified ?? false,
+        phone_verified: fresh?.phone_verified ?? base?.phone_verified ?? false,
+      };
 
-    setProfile(merged);
-    setUser(merged); // <--- SAFE. Updates React + UserContext + storage.
+      setProfile(merged);
+      setUser(merged); // updates React state + your storage layer safely
 
       if (merged.address) setAddress(merged.address);
-
-      if (merged.latitude && merged.longitude)
+      if (merged.latitude && merged.longitude) {
         setCoords({ lat: merged.latitude, lng: merged.longitude });
+      }
     },
     [setUser, user]
   );
 
-  /* ------------------------------------------------------------
-     🔁 Fetch profile from backend
-  ------------------------------------------------------------ */
-  const prefetchProfile = useCallback(async () => {
+  /**
+   * Fetch latest profile snapshot from API (deduped by newest row).
+   * Falls back to current user if API not available or fails.
+   */
+  const fetchServerProfile = useCallback(async () => {
     try {
-      const phone = user?.phone;
-      if (!phone) {
+      const phoneE164 = normE164(user?.phone || cachedUser?.phone);
+      if (!phoneE164) {
         if (user) hydrate(user, user);
         setLoading(false);
         return;
       }
 
-      const resp = await fetch(`/api/profile?phone=${phone}`, {
-        cache: "no-store",
-      });
-
+      const resp = await fetch(
+        `/api/profile?phone=${encodeURIComponent(phoneE164)}`,
+        {
+          cache: "no-store",
+        }
+      );
       const json = await resp.json();
-      if (json?.user) hydrate(json.user, user);
-      else hydrate(user, user);
-    } catch (err) {
-      console.error("Profile fetch failed:", err);
-      hydrate(user, user);
+
+      if (json?.user) hydrate(json.user, user || cachedUser);
+      else hydrate(user || cachedUser, user || cachedUser);
+    } catch (e) {
+      console.error("🔴 /api/profile fetch error:", e);
+      hydrate(user || cachedUser, user || cachedUser);
     } finally {
       setLoading(false);
     }
-  }, [hydrate, user]);
+  }, [hydrate, user, cachedUser]);
 
+  // Track last seen id to avoid redundant fetches on every render.
   const lastFetchedId = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      if (!isLoaded) return;
-      try {
-        const cached = JSON.parse(localStorage.getItem("user") || "null");
-        if (cached) {
-          hydrate(cached, cached);
-          lastFetchedId.current = cached.id ?? null;
-        }
-      } catch {
-        // ignore parse errors
-      } finally {
-        setLoading(false);
-      }
+    // wait until UserContext decides if there's a session
+    if (!isLoaded) return;
+
+    // On first mount or when user changes, hydrate + fetch server copy
+    const effective = user || cachedUser;
+    if (!effective) {
+      setLoading(false);
       return;
     }
 
-    if (lastFetchedId.current === user.id) return;
-    lastFetchedId.current = user.id ?? null;
+    if (lastFetchedId.current === effective.id) return;
+    lastFetchedId.current = effective.id ?? null;
 
-    hydrate(user, user);
-    prefetchProfile();
-  }, [user, isLoaded, hydrate, prefetchProfile]);
+    hydrate(effective, effective);
+    fetchServerProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isLoaded]);
 
-  /* ------------------------------------------------------------
-     📍 Save Location
-  ------------------------------------------------------------ */
+  // LiveSync: update immediately when other parts of app modify profile
+  useEffect(() => {
+    function onProfileUpdated() {
+      fetchServerProfile();
+    }
+    window.addEventListener("profile-updated", onProfileUpdated);
+    return () =>
+      window.removeEventListener("profile-updated", onProfileUpdated);
+  }, [fetchServerProfile]);
+
+  /* ---------------------------- Actions -------------------------------- */
+
   async function saveLocation() {
     if (!profile?.phone) return;
 
@@ -149,76 +203,112 @@ export default function ProfilePage() {
       const data = await res.json();
       if (!data.success) throw new Error(data.message);
 
-      hydrate(data.user);
-
+      hydrate(data.user, profile);
       success("📍 Location saved.");
       navigator.vibrate?.(20);
 
       setEditingAddress(false);
       window.dispatchEvent(new Event("profile-updated"));
     } catch (e: any) {
+      console.error("🔴 saveLocation error:", e?.message || e);
       error("Failed to save location.");
-      console.error(e);
       navigator.vibrate?.([120]);
     }
   }
 
-  /* ------------------------------------------------------------
-     🚪 Logout
-  ------------------------------------------------------------ */
   async function handleLogout() {
-    await logout().catch(() => {});
+    try {
+      await logout();
+    } catch {
+      /* no-op */
+    }
     success("Logged out.");
     navigator.vibrate?.([60, 40, 120]);
-    router.replace("/login");
+    // Don’t push here; your router guards should redirect on auth state change
   }
 
-  /* ------------------------------------------------------------
-     🧱 UI
-  ------------------------------------------------------------ */
+  /* ------------------------------ UI ----------------------------------- */
+
   if (loading) {
     return (
       <SafeViewport>
-        <div className="max-w-5xl mx-auto p-6 text-center text-[var(--text-secondary)]">
-          <p className="animate-pulse">Loading your profile...</p>
+        <div className="max-w-5xl mx-auto p-6">
+          <div
+            className="rounded-xl p-4 animate-pulse"
+            style={{
+              background: "var(--surface-card)",
+              border: "1px solid var(--border-soft)",
+              color: "var(--text-secondary)",
+            }}
+          >
+            Loading your profile…
+          </div>
         </div>
       </SafeViewport>
     );
   }
+
   const fullyVerified = !!(profile?.email_verified && profile?.phone_verified);
 
   return (
     <SafeViewport>
-      <div className="max-w-5xl mx-auto p-6 space-y-6 pb-[var(--mbnav-h-safe)]">
-        {/* Banner */}
-        <div
+      <div className="max-w-5xl mx-auto p-6 space-y-6">
+        {/* Verification Banner */}
+        <button
           onClick={() => {
             if (!fullyVerified) {
               setDrawerMode("form");
               setDrawerOpen(true);
             }
           }}
-          className={`cursor-pointer rounded-xl px-4 py-3 shadow-sm border flex items-center justify-between ${
-            fullyVerified
-              ? "bg-[color-mix(in_srgb,var(--accent-success)10%,transparent)] border-[color-mix(in_srgb,var(--accent-success)35%,transparent)] text-[var(--accent-success)]"
-              : "bg-[color-mix(in_srgb,var(--accent-danger)10%,transparent)] border-[color-mix(in_srgb,var(--accent-danger)35%,transparent)] text-[var(--accent-danger)]"
-          }`}
+          className="w-full rounded-xl px-4 py-3 shadow-sm border text-left"
+          style={{
+            background: fullyVerified
+              ? "color-mix(in srgb, var(--accent-success) 10%, transparent)"
+              : "color-mix(in srgb, var(--accent-danger) 10%, transparent)",
+            border: fullyVerified
+              ? "1px solid color-mix(in srgb, var(--accent-success) 35%, transparent)"
+              : "1px solid color-mix(in srgb, var(--accent-danger) 35%, transparent)",
+            color: fullyVerified
+              ? "var(--accent-success)"
+              : "var(--accent-danger)",
+          }}
+          aria-label={
+            fullyVerified ? "Verified Profile" : "Unverified — Verify Now"
+          }
         >
-          <span className="font-medium">
-            {fullyVerified ? "Verified Profile ✓" : "Unverified — Verify Now"}
-          </span>
-          {!fullyVerified && <span className="text-sm underline">Open</span>}
-        </div>
+          <div className="flex items-center justify-between">
+            <span className="font-medium">
+              {fullyVerified ? "Verified Profile ✓" : "Unverified — Verify Now"}
+            </span>
+            {!fullyVerified && (
+              <span
+                className="text-sm underline"
+                style={{ color: "var(--text-primary)" }}
+              >
+                Open
+              </span>
+            )}
+          </div>
+        </button>
 
-        <h1 className="text-2xl font-bold text-[var(--text-primary)] dark:text-[var(--text-primary-dark)]">
+        <h1
+          className="text-2xl font-bold"
+          style={{ color: "var(--text-primary)" }}
+        >
           My Profile
         </h1>
 
-        {/* Card */}
+        {/* Profile Card */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="border border-[var(--border-soft)] p-5 rounded-2xl shadow-sm bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)]"
+          className="rounded-2xl shadow-sm p-5"
+          style={{
+            background: "var(--surface-card)",
+            border: "1px solid var(--border-soft)",
+            color: "var(--text-primary)",
+          }}
         >
           <div className="grid gap-3">
             <Field label="Name" value={profile?.name} />
@@ -229,8 +319,11 @@ export default function ProfilePage() {
 
           <div className="flex flex-wrap gap-3 mt-5">
             <button
-              onClick={() => setDrawerOpen(true)}
-              className="text-white px-4 py-2 rounded-lg font-medium"
+              onClick={() => {
+                setDrawerMode("form");
+                setDrawerOpen(true);
+              }}
+              className="px-4 py-2 rounded-lg font-medium text-white"
               style={{ background: "var(--accent-primary)" }}
             >
               Edit / Verify Account
@@ -238,7 +331,7 @@ export default function ProfilePage() {
 
             <button
               onClick={() => setEditingAddress(true)}
-              className="text-white px-4 py-2 rounded-lg font-medium"
+              className="px-4 py-2 rounded-lg font-medium text-white"
               style={{ background: "var(--accent-warning)" }}
             >
               Edit Address
@@ -247,7 +340,7 @@ export default function ProfilePage() {
             {editingAddress && (
               <button
                 onClick={saveLocation}
-                className="text-white px-4 py-2 rounded-lg font-medium"
+                className="px-4 py-2 rounded-lg font-medium text-white"
                 style={{ background: "var(--accent-success)" }}
               >
                 Save Location
@@ -256,7 +349,7 @@ export default function ProfilePage() {
 
             <button
               onClick={handleLogout}
-              className="text-white px-4 py-2 rounded-lg font-medium ml-auto"
+              className="px-4 py-2 rounded-lg font-medium text-white ml-auto"
               style={{ background: "var(--accent-danger)" }}
             >
               Logout
@@ -269,9 +362,19 @@ export default function ProfilePage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="border border-[var(--border-soft)] p-5 rounded-2xl shadow-sm bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)]"
+            className="rounded-2xl shadow-sm p-5"
+            style={{
+              background: "var(--surface-card)",
+              border: "1px solid var(--border-soft)",
+            }}
           >
-            <h2 className="font-semibold text-lg mb-2">📍 Update Address</h2>
+            <h2
+              className="font-semibold text-lg mb-2"
+              style={{ color: "var(--text-primary)" }}
+            >
+              📍 Update Address
+            </h2>
+
             <MapPicker
               initialLocation={coords}
               editable
@@ -281,8 +384,13 @@ export default function ProfilePage() {
               }}
             />
 
-            <p className="text-sm mt-2">
-              <strong>Detected Address:</strong>{" "}
+            <p
+              className="text-sm mt-2"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              <strong style={{ color: "var(--text-primary)" }}>
+                Detected Address:
+              </strong>{" "}
               {address || "Move the pin to detect address"}
             </p>
           </motion.div>
@@ -298,11 +406,19 @@ export default function ProfilePage() {
   );
 }
 
+/* ------------------------------ Bits ---------------------------------- */
+
 function Field({ label, value }: { label: string; value?: string }) {
   return (
     <div>
-      <label className="text-sm text-[var(--text-muted)]">{label}</label>
-      <div className="font-medium text-[var(--text-primary)] dark:text-[var(--text-primary-dark)]">
+      <label className="text-sm" style={{ color: "var(--text-muted)" }}>
+        {label}
+      </label>
+      <div
+        className="font-medium"
+        style={{ color: "var(--text-primary)" }}
+        aria-live="polite"
+      >
         {value || "—"}
       </div>
     </div>

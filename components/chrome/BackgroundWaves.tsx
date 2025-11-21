@@ -13,13 +13,18 @@ export default function BackgroundWaves() {
           fixed inset-0 -z-10
           bg-[radial-gradient(circle_at_10%_0%,rgba(129,140,248,0.22),transparent_60%),radial-gradient(circle_at_90%_100%,rgba(45,212,191,0.18),transparent_55%),radial-gradient(circle_at_50%_100%,rgba(244,114,182,0.14),transparent_65%)]
         "
+        style={{ transform: "none" }}
       />
     );
   }
 
   return (
     <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(129,140,248,0.22),transparent_60%),radial-gradient(circle_at_90%_100%,rgba(45,212,191,0.18),transparent_55%),radial-gradient(circle_at_50%_100%,rgba(244,114,182,0.14),transparent_65%)]" />
+      <div
+        className="pointer-events-none fixed inset-0
+                   bg-[radial-gradient(circle_at_10%_0%,rgba(129,140,248,0.22),transparent_60%),radial-gradient(circle_at_90%_100%,rgba(45,212,191,0.18),transparent_55%),radial-gradient(circle_at_50%_100%,rgba(244,114,182,0.14),transparent_65%)]"
+        style={{ transform: "none" }}
+      />
 
       <motion.div
         className="absolute -left-1/4 top-1/3 w-[160%] h-[260px] opacity-[0.38]"

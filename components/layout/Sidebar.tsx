@@ -119,7 +119,7 @@ export default function Sidebar() {
         borderRight: "1px solid var(--border-soft)",
       }}
       className={`
-    relative flex flex-col h-[calc(100vh-64px)]
+    relative flex flex-col h-full
     overflow-y-hidden overflow-x-hidden
     backdrop-blur-xl transition-all duration-500
   `}
