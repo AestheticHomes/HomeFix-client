@@ -1,6 +1,6 @@
 "use client";
 
-import HomePreviewModel from "@/components/3d/HomePreviewModel";
+import UniversalPreview from "@/components/preview/UniversalPreview";
 import { track } from "@/lib/track";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
@@ -52,106 +52,111 @@ export default function Hero() {
     <section className="w-full px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
       <div className="mx-auto w-full max-w-[1360px]">
         <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-stretch">
-        {/* Left column: copy & CTA */}
-        <div className="flex flex-col justify-center gap-5 lg:pr-4">
-          <span className="inline-flex items-center gap-2 text-[11px] font-medium rounded-full px-3 py-1 bg-[color-mix(in_srgb,var(--surface-panel)80%,transparent)] border border-[var(--border-soft)] text-[var(--text-muted-soft)] w-fit">
-            <span className="w-2 h-2 rounded-full bg-[var(--accent-primary)] shadow-[0_0_10px_color-mix(in_srgb,var(--accent-primary)80%,transparent)]" />
-            Turnkey interiors by AestheticHomes
-          </span>
-
-          <h1 className="text-3xl sm:text-4xl lg:text-[40px] max-[399px]:text-[26px] font-semibold leading-tight text-[var(--text-primary)]">
-            Full home interiors,{" "}
-            <span className="text-[var(--accent-primary)]">
-              from measurement to handover.
+          {/* Left column: copy & CTA */}
+          <div className="flex flex-col justify-center gap-5 lg:pr-4">
+            <span className="inline-flex items-center gap-2 text-[11px] font-medium rounded-full px-3 py-1 bg-[color-mix(in_srgb,var(--surface-panel)80%,transparent)] border border-[var(--border-soft)] text-[var(--text-muted-soft)] w-fit">
+              <span className="w-2 h-2 rounded-full bg-[var(--accent-primary)] shadow-[0_0_10px_color-mix(in_srgb,var(--accent-primary)80%,transparent)]" />
+              Turnkey interiors by AestheticHomes
             </span>
-          </h1>
 
-          <p className="text-sm sm:text-base text-[var(--text-muted-soft)] max-w-xl">
-            We handle everything: on-site measurement, layouts, 3D renders,
-            factory-made modules and site execution. Edith keeps your entire
-            project transparent from first visit to final handover.
-          </p>
+            <h1 className="text-3xl sm:text-4xl lg:text-[40px] max-[399px]:text-[26px] font-semibold leading-tight text-[var(--text-primary)]">
+              Full home interiors,{" "}
+              <span className="text-[var(--accent-primary)]">
+                from measurement to handover.
+              </span>
+            </h1>
 
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/consultation"
-              className="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-[var(--accent-primary)] hover:bg-[color-mix(in_srgb,var(--accent-primary)85%,black)] shadow-[0_14px_35px_rgba(15,23,42,0.45)] transition-transform hover:-translate-y-0.5"
-              onClick={() => track("start_turnkey_project")}
-            >
-              Start a turnkey project
-            </Link>
-            <Link
-              href="/estimator"
-              className="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-semibold border border-[var(--border-soft)] bg-[color-mix(in_srgb,var(--surface-panel)80%,transparent)] text-[var(--text-primary)] hover:border-[var(--accent-primary)] transition-colors"
-              onClick={() => track("explore_3d_studio")}
-            >
-              Explore 2D / 3D studio (beta)
-            </Link>
-          </div>
+            <p className="text-sm sm:text-base text-[var(--text-muted-soft)] max-w-xl">
+              We handle everything: on-site measurement, layouts, 3D renders,
+              factory-made modules and site execution. Edith keeps your entire
+              project transparent from first visit to final handover.
+            </p>
 
-          <div className="mt-6 flex flex-wrap gap-3 max-md:overflow-x-auto max-md:whitespace-nowrap">
-            {[
-              "On-site measurement",
-              "Initial layout plan",
-              "3D renders & revisions",
-              "Factory build & site execution",
-              "Final handover",
-            ].map((step) => (
-              <button
-                key={step}
-                type="button"
-                className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-[11px] md:text-sm text-[var(--text-muted-soft)] backdrop-blur transition hover:border-[var(--accent-primary)]"
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/consultation"
+                className="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-[var(--accent-primary)] hover:bg-[color-mix(in_srgb,var(--accent-primary)85%,black)] shadow-[0_14px_35px_rgba(15,23,42,0.45)] transition-transform hover:-translate-y-0.5"
+                onClick={() => track("start_turnkey_project")}
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-primary)]" />
-                <span>{step}</span>
-                <span>→</span>
-              </button>
-            ))}
-          </div>
-        </div>
+                Start a turnkey project
+              </Link>
+              <Link
+                href="/estimator"
+                className="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-semibold border border-[var(--border-soft)] bg-[color-mix(in_srgb,var(--surface-panel)80%,transparent)] text-[var(--text-primary)] hover:border-[var(--accent-primary)] transition-colors"
+                onClick={() => track("explore_3d_studio")}
+              >
+                Explore 2D / 3D studio (beta)
+              </Link>
+            </div>
 
-        {/* Right column: 3D hero card */}
-        <div className="w-full flex lg:justify-end">
-          <div className="relative w-full max-w-[520px] min-h-[260px] lg:min-h-[300px] rounded-[32px] border border-[var(--border-muted)] bg-[color-mix(in_srgb,var(--surface-panel)92%,transparent)] shadow-[0_26px_70px_rgba(15,23,42,0.65)] overflow-hidden lg:ml-auto">
-            <HeroParallaxLayer />
-
-            <div className="relative z-10 flex flex-col h-full justify-between">
-              <div className="flex items-center justify-between px-5 pt-4 pb-2 text-[11px] text-[var(--text-muted-soft)]">
-                <span className="inline-flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[var(--accent-primary)]" />
-                  2D · 3D interactive modules
-                </span>
+            <div className="mt-6 flex flex-wrap gap-3 max-md:overflow-x-auto max-md:whitespace-nowrap">
+              {[
+                "On-site measurement",
+                "Initial layout plan",
+                "3D renders & revisions",
+                "Factory build & site execution",
+                "Final handover",
+              ].map((step) => (
                 <button
-                  onClick={() => setExpanded(true)}
-                  className="rounded-full border border-[color-mix(in_srgb,var(--border-soft)80%,transparent)] px-3 py-1 hover:border-[var(--accent-primary)] transition-colors"
+                  key={step}
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-[11px] md:text-sm text-[var(--text-muted-soft)] backdrop-blur transition hover:border-[var(--accent-primary)]"
                 >
-                  Expand
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-primary)]" />
+                  <span>{step}</span>
+                  <span>→</span>
                 </button>
-              </div>
-
-              <div className="flex-1 px-5 pb-4 flex items-center justify-center w-full h-full">
-                <div className="w-full h-[180px] rounded-[24px] overflow-hidden">
-                  <HomePreviewModel
-                    url="/models/l-shape-kitchen.glb"
-                    mode="hero-inline"
-                    showFullscreenToggle={false}
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between px-5 pb-4 text-[11px]">
-                <span className="text-[var(--text-muted-soft)]">
-                  Drag, preview, refine in Edith Studio.
-                </span>
-                <Link
-                  href="/estimator"
-                  className="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-[11px] font-semibold text-white bg-[var(--accent-primary)] hover:bg-[color-mix(in_srgb,var(--accent-primary)85%,black)]"
-                >
-                  Try Online Estimator →
-                </Link>
-              </div>
+              ))}
             </div>
           </div>
+
+          {/* Right column: 3D hero card */}
+          <div className="w-full flex lg:justify-end">
+            <div className="relative w-full max-w-[520px] min-h-[260px] lg:min-h-[300px] rounded-[32px] border border-[var(--border-muted)] bg-[color-mix(in_srgb,var(--surface-panel)92%,transparent)] shadow-[0_26px_70px_rgba(15,23,42,0.65)] overflow-hidden lg:ml-auto">
+              <HeroParallaxLayer />
+
+              <div className="relative z-10 flex flex-col h-full justify-between">
+                <div className="flex items-center justify-between px-5 pt-4 pb-2 text-[11px] text-[var(--text-muted-soft)]">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[var(--accent-primary)]" />
+                    2D · 3D interactive modules
+                  </span>
+                  <button
+                    onClick={() => setExpanded(true)}
+                    className="rounded-full border border-[color-mix(in_srgb,var(--border-soft)80%,transparent)] px-3 py-1 hover:border-[var(--accent-primary)] transition-colors"
+                  >
+                    Expand
+                  </button>
+                </div>
+
+                <div className="flex-1 px-5 pb-4 flex items-center justify-center w-full h-full">
+                  <div className="relative w-full h-full rounded-[24px] overflow-hidden">
+                    <UniversalPreview
+                      glbUrl="/models/l-shape-kitchen.glb"
+                      imageUrl={null}
+                      mode="hero-inline"
+                      enableSelectionOverlay
+                      showFullscreenToggle={false}
+                      fillContainer
+                      showInteractionHint
+                    />
+                  </div>
+                </div>
+
+
+                <div className="flex items-center justify-between px-5 pb-4 text-[11px]">
+                  <span className="text-[var(--text-muted-soft)]">
+                    Drag, preview, refine in Edith Studio.
+                  </span>
+                  <Link
+                    href="/estimator"
+                    className="inline-flex items-center justify-center px-3 py-1.5 rounded-full text-[11px] font-semibold text-white bg-[var(--accent-primary)] hover:bg-[color-mix(in_srgb,var(--accent-primary)85%,black)]"
+                  >
+                    Try Online Estimator →
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -178,10 +183,13 @@ export default function Hero() {
             </div>
 
             <div className="w-full h-full">
-              <HomePreviewModel
-                url="/models/l-shape-kitchen.glb"
+              <UniversalPreview
+                glbUrl="/models/l-shape-kitchen.glb"
+                imageUrl={null}
                 mode="hero-fullscreen"
+                enableSelectionOverlay
                 showFullscreenToggle={false}
+                fillContainer
               />
             </div>
           </div>

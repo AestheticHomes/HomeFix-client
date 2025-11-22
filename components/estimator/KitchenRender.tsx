@@ -1,146 +1,114 @@
 "use client";
-import UniPreviewCanvas, {
-  type PreviewModelProps,
-} from "@/components/common/UniPreviewCanvas";
+
+/**
+ * KitchenRender
+ * ---------------------------------------------------------
+ * Step-level container for the Kitchen estimator.
+ *
+ * Responsibilities:
+ *  - Show the kitchen configuration summary / controls.
+ *  - Own the 2D ↔ 3D view toggle.
+ *  - Mount <KitchenSvg2D /> for 2D view.
+ *  - Show a lightweight placeholder for 3D for now
+ *    (we can swap this with UniversalPreview / 3D later).
+ */
+
 import KitchenSvg2D from "@/components/estimator/KitchenSvg2D";
-import useEstimator, {
-  type Finish,
-  type Shape,
-  type ViewMode,
-} from "@/components/estimator/store/estimatorStore";
-import { Environment } from "@react-three/drei";
-import { motion } from "framer-motion";
-import React from "react";
+import useEstimator from "@/components/estimator/store/estimatorStore";
+import React, { useState } from "react";
 
-/* =========================================================
-   🔹 Minimal 3D Placeholder Model (fine-line edition)
-   ========================================================= */
-function KitchenModel3D(_: PreviewModelProps): React.ReactElement {
-  return (
-    <group>
-      {/* Base counter block */}
-      <mesh position={[0, 0.4, 0]}>
-        <boxGeometry args={[2.4, 0.8, 0.6]} />
-        <meshStandardMaterial
-          color="#C7C3FF"
-          metalness={0.25}
-          roughness={0.55}
-        />
-      </mesh>
+type ViewMode = "2d" | "3d";
 
-      {/* Wall backsplash */}
-      <mesh position={[0, 1.0, -0.25]}>
-        <boxGeometry args={[2.4, 0.4, 0.05]} />
-        <meshStandardMaterial color="#DAD8FF" metalness={0.2} roughness={0.6} />
-      </mesh>
-
-      <Environment preset="studio" />
-    </group>
-  );
-}
-
-/* =========================================================
-   🔸 MAIN KITCHEN RENDER WRAPPER
-   ========================================================= */
 export default function KitchenRender(): React.ReactElement {
-  const mode = useEstimator((s) => s.mode as ViewMode);
-  const setMode = useEstimator((s) => s.setMode);
   const kitchen = useEstimator((s) => s.kitchen);
-  const setShape = useEstimator((s) => s.setKitchenShape);
-  const setFinish = useEstimator((s) => s.setKitchenFinish);
-  const setLength = useEstimator((s) => s.setKitchenLength);
+  const [viewMode, setViewMode] = useState<ViewMode>("2d");
 
-  const shape = kitchen.shape;
-  const finish = kitchen.finish;
-  const wallA = kitchen.lengths.A ?? 10;
-  const wallB = kitchen.lengths.B ?? 10;
-  const wallC = kitchen.lengths.C ?? 10;
+  const handleModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+  };
 
   return (
-    <div className="relative w-full h-full flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-3 px-3 py-3 rounded-2xl bg-slate-900/60 border border-slate-700/60">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-300">Shape</span>
-          <select
-            value={shape}
-            onChange={(e) => setShape(e.target.value as Shape)}
-            className="bg-slate-900/80 border border-slate-600 rounded-lg px-2 py-1 text-xs text-slate-50"
-          >
-            <option value="linear">Single wall</option>
-            <option value="parallel">Parallel</option>
-            <option value="lshape">L-shape</option>
-            <option value="u">U-shape</option>
-          </select>
-        </div>
+    <div className="grid gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,2.1fr)_minmax(0,2.4fr)]">
+      {/* LEFT: copy + summary / (real form goes here in your existing file) */}
+      <section className="space-y-4">
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-[var(--text-primary)]">
+              Kitchen layout
+            </h2>
+            <p className="text-xs text-[var(--text-secondary)]">
+              Adjust wall lengths, layout shape and finishes. 2D plan is used
+              for pricing.
+            </p>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-300">Walls</span>
-          <input
-            type="number"
-            min={10}
-            max={kitchen.perWallMax || 20}
-            value={wallA}
-            onChange={(e) => setLength("A", Number(e.target.value) || 0)}
-            className="w-14 bg-slate-900/80 border border-slate-600 rounded-lg px-2 py-1 text-xs text-slate-50 text-center"
-            aria-label="Wall A (ft)"
-          />
-          {shape !== "linear" && (
-            <input
-              type="number"
-              min={10}
-              max={kitchen.perWallMax || 20}
-              value={wallB}
-              onChange={(e) => setLength("B", Number(e.target.value) || 0)}
-              className="w-14 bg-slate-900/80 border border-slate-600 rounded-lg px-2 py-1 text-xs text-slate-50 text-center"
-              aria-label="Wall B (ft)"
-            />
+          {/* 2D / 3D toggle */}
+          <div className="inline-flex items-center rounded-full bg-[color-mix(in_srgb,var(--surface-panel)90%,transparent)] p-1 text-xs font-medium">
+            <button
+              type="button"
+              onClick={() => handleModeChange("2d")}
+              className={`px-3 py-1 rounded-full transition ${
+                viewMode === "2d"
+                  ? "bg-[var(--accent-primary)] text-white shadow-sm"
+                  : "text-[var(--text-secondary)]"
+              }`}
+            >
+              2D
+            </button>
+            <button
+              type="button"
+              onClick={() => handleModeChange("3d")}
+              className={`px-3 py-1 rounded-full transition ${
+                viewMode === "3d"
+                  ? "bg-[var(--accent-primary)] text-white shadow-sm"
+                  : "text-[var(--text-secondary)]"
+              }`}
+            >
+              3D
+            </button>
+          </div>
+        </header>
+
+        {/* Simple summary block – plug your real form controls back here */}
+        <div className="space-y-2 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-subtle)] px-4 py-4 text-xs text-[var(--text-secondary)]">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            Current configuration
+          </p>
+          <p>
+            Shape:{" "}
+            <span className="font-mono">
+              {kitchen.shape ? kitchen.shape : "linear"}
+            </span>
+          </p>
+          <p className="font-mono">
+            A: {kitchen.lengths?.A ?? 10} ft · B: {kitchen.lengths?.B ?? 10} ft
+            · C: {kitchen.lengths?.C ?? 10} ft
+          </p>
+          <p>Finish: {kitchen.finish || "Essential"}</p>
+        </div>
+      </section>
+
+      {/* RIGHT: Preview panel */}
+      <section className="relative">
+        <div className="relative h-[320px] w-full overflow-hidden rounded-3xl border border-[var(--border-soft)] bg-[var(--surface-panel)]">
+          {viewMode === "2d" ? (
+            // 2D CAD – this is the important wire
+            <div className="relative h-full w-full">
+              <KitchenSvg2D />
+            </div>
+          ) : (
+            // 3D placeholder – replace with UniversalPreview / 3D later
+            <div className="flex h-full w-full items-center justify-center text-xs text-[var(--text-secondary)]">
+              3D preview will be wired back in next pass.
+            </div>
           )}
-          {shape === "u" && (
-            <input
-              type="number"
-              min={10}
-              max={kitchen.perWallMax || 20}
-              value={wallC}
-              onChange={(e) => setLength("C", Number(e.target.value) || 0)}
-              className="w-14 bg-slate-900/80 border border-slate-600 rounded-lg px-2 py-1 text-xs text-slate-50 text-center"
-              aria-label="Wall C (ft)"
-            />
-          )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-300">Finish</span>
-          <select
-            value={finish}
-            onChange={(e) => setFinish(e.target.value as Finish)}
-            className="bg-slate-900/80 border border-slate-600 rounded-lg px-2 py-1 text-xs text-slate-50"
-          >
-            <option value="essential">Essential</option>
-            <option value="premium">Premium</option>
-            <option value="luxury">Luxury</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="relative w-full h-full flex items-center justify-center">
-        <UniPreviewCanvas
-          SvgComponent={KitchenSvg2D}
-          ModelComponent={KitchenModel3D}
-        />
-        <motion.div
-          className="absolute bottom-3 right-4 px-3 py-1.5 text-xs rounded-full backdrop-blur-sm shadow-sm"
-          style={{
-            background:
-              "color-mix(in srgb, var(--surface-light) 90%, transparent)",
-            color: "var(--text-primary)",
-          }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.9 }}
-          transition={{ duration: 0.6 }}
-        >
-          {mode === "3d" ? "3D View — Kitchen" : "2D CAD Plan — Kitchen"}
-        </motion.div>
-      </div>
+        <p className="mt-2 text-[11px] text-[var(--text-muted)]">
+          2D plan is the exact layout used for pricing. 3D view is an
+          approximate visual to help orientation.
+        </p>
+      </section>
     </div>
   );
 }

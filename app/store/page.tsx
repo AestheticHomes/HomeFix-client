@@ -1,34 +1,58 @@
 "use client";
 /**
- * Store — single-scroll page
- * - Body scroll only
- * - Category rail fixed & scrollable
- * - Grid does NOT create its own scroll
- * - Floating checkout footer hovers above the dock (RootShell pads the scene)
+ * ============================================================
+ * 🛒 FILE: /app/store/page.tsx
+ * 🧩 MODULE: Store (HomePreview-backed) v3.0 — Offline First
+ * ------------------------------------------------------------
+ * DATA CONTRACT
+ *   - Source of truth: JSON in Supabase bucket via CDN
+ *     (NEXT_PUBLIC_GOODS_CATALOG_URL)
+ *   - Runtime truth: localStorage cache (catalog + timestamp)
+ *
+ * BEHAVIOR
+ *   - On mount:
+ *       1) Read cache → instant UI if present
+ *       2) Background refresh from CDN → update cache + UI
+ *   - If offline and cache exists → still works
+ * ============================================================
  */
 
+import CatalogPreviewCard from "@/components/catalog/CatalogPreviewCard";
 import { useProductCartStore } from "@/components/store/cartStore";
-import ProductCard, { Product } from "@/components/store/ProductCard";
-import StorePromoStrip from "@/components/store/StorePromoStrip";
 import { useSidebar } from "@/contexts/SidebarContext";
-import supabase from "@/lib/supabaseClient";
+import {
+  mapGoodsToCatalog,
+  type GoodsRow,
+} from "@/lib/catalog/mapGoodsToCatalog";
+import type { CatalogItem } from "@/types/catalog";
 import { AnimatePresence, motion } from "framer-motion";
 import { PackageOpen, Search, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+const CATALOG_CACHE_KEY = "edith_goods_catalog_v1";
+const CATALOG_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours
+
+type CatalogCachePayload = {
+  updatedAt: number;
+  items: CatalogItem[];
+};
+
 export default function StorePage() {
   const router = useRouter();
   const { collapsed } = useSidebar();
-  const { items, totalPrice } = useProductCartStore();
+  const { addItem, items, totalPrice } = useProductCartStore();
   const cartCount = items.length;
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filtered, setFiltered] = useState<Product[]>([]);
+  const [all, setAll] = useState<CatalogItem[]>([]);
+  const [view, setView] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [isDesktop, setIsDesktop] = useState(false);
+
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
+  const [isStale, setIsStale] = useState(false);
 
   const categories = useMemo(
     () => [
@@ -44,43 +68,118 @@ export default function StorePage() {
     []
   );
 
-  // Fetch
+  // ---- Helpers for cache ----
+  const readCache = () => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = window.localStorage.getItem(CATALOG_CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as CatalogCachePayload;
+      return parsed;
+    } catch {
+      return null;
+    }
+  };
+
+  const writeCache = (items: CatalogItem[]) => {
+    if (typeof window === "undefined") return;
+    try {
+      const payload: CatalogCachePayload = {
+        updatedAt: Date.now(),
+        items,
+      };
+      window.localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(payload));
+      setLastUpdatedAt(payload.updatedAt);
+      setIsStale(false);
+    } catch {
+      // Ignore quota / serialization errors
+    }
+  };
+
+  // 1) Try to hydrate from local cache immediately (offline-first)
   useEffect(() => {
-    let active = true;
-    (async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("goods")
-        .select("*")
-        .returns<Product[]>();
-      if (!active) return;
-      if (!error) setProducts(data || []);
+    const cached = readCache();
+    if (cached && cached.items?.length) {
+      setAll(cached.items);
       setLoading(false);
+      setLastUpdatedAt(cached.updatedAt);
+
+      const age = Date.now() - cached.updatedAt;
+      if (age > CATALOG_TTL_MS) {
+        setIsStale(true);
+      }
+    }
+  }, []);
+
+  // 2) Background refresh from Supabase CDN JSON
+  useEffect(() => {
+    let live = true;
+    const controller = new AbortController();
+
+    const url = process.env.NEXT_PUBLIC_GOODS_CATALOG_URL;
+    if (!url) {
+      console.warn(
+        "[StorePage] NEXT_PUBLIC_GOODS_CATALOG_URL is not set. " +
+          "Expose your goods catalog JSON via Supabase bucket/CDN."
+      );
+      setLoading(false);
+      return;
+    }
+
+    (async () => {
+      try {
+        const res = await fetch(url, {
+          signal: controller.signal,
+          // We control staleness at app level; CDN/browser still help
+          cache: "no-cache",
+        });
+
+        if (!res.ok) {
+          throw new Error(`Catalog fetch failed: ${res.status}`);
+        }
+
+        const rows = (await res.json()) as GoodsRow[];
+        const mapped = mapGoodsToCatalog(rows || []);
+
+        if (!live) return;
+
+        setAll(mapped);
+        writeCache(mapped);
+        setLoading(false);
+      } catch (err) {
+        if (!live) return;
+
+        // If we already have cache, we silently stay on it.
+        // If we had nothing, stop loading so UI can show "no products" or skeleton.
+        setIsStale(true);
+        setLoading(false);
+        console.warn("[StorePage] Catalog sync failed", err);
+      }
     })();
+
     return () => {
-      active = false;
+      live = false;
+      controller.abort();
     };
   }, []);
 
-  // Filter + search
+  // 3) Filter + search (reactive to catalog, search, category)
   useEffect(() => {
     const t = setTimeout(() => {
-      let list = [...products];
-      if (category !== "all") {
-        list = list.filter(
-          (p) => p.category?.toLowerCase() === category.toLowerCase()
-        );
-      }
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        list = list.filter((p) => p.title?.toLowerCase().includes(q));
-      }
-      setFiltered(list);
+      const q = search.trim().toLowerCase();
+      const filtered = all.filter((p) => {
+        const catMatch =
+          category === "all" ||
+          p.category.toLowerCase() === category.toLowerCase();
+        const qMatch = !q || p.title.toLowerCase().includes(q);
+        return catMatch && qMatch;
+      });
+      setView(filtered);
     }, 120);
     return () => clearTimeout(t);
-  }, [search, category, products]);
+  }, [search, category, all]);
 
-  // Responsive
+  // 4) Responsive
   useEffect(() => {
     const onResize = () => setIsDesktop(window.innerWidth >= 768);
     onResize();
@@ -93,10 +192,8 @@ export default function StorePage() {
       id="store-safe-zone"
       className="relative flex flex-col w-full mx-auto bg-[var(--surface-base)] transition-colors duration-500"
     >
-      <StorePromoStrip />
-
       {/* Search */}
-      <div className="relative flex w-full sm:max-w-md mx-auto mt-4 mb-3 px-4">
+      <div className="relative flex w-full sm:max-w-md mx-auto mt-4 mb-1 px-4">
         <Search className="absolute left-6 top-2.5 w-4 h-4 text-[var(--text-muted)]" />
         <input
           id="store-search"
@@ -111,8 +208,19 @@ export default function StorePage() {
         />
       </div>
 
+      {/* Optional tiny stale badge under search */}
+      {lastUpdatedAt && (
+        <p className="px-6 mb-2 text-[10px] text-[var(--text-muted)]">
+          Catalog updated{" "}
+          {new Date(lastUpdatedAt).toLocaleString("en-IN", {
+            hour12: false,
+          })}
+          {isStale ? " • may be out of date (offline cache)" : ""}
+        </p>
+      )}
+
       <div className="relative flex-1 flex flex-row">
-        {/* Category rail (fixed; its own scroll is OK) */}
+        {/* Category rail (fixed under header) */}
         <motion.aside
           animate={{ left: isDesktop ? (collapsed ? 80 : 256) : 0 }}
           transition={{ type: "spring", stiffness: 180, damping: 22 }}
@@ -129,7 +237,7 @@ export default function StorePage() {
         >
           <div className="flex flex-col py-3 gap-3 items-center w-full">
             {categories.map((cat) => {
-              const isActive = cat.name === category;
+              const active = cat.name === category;
               return (
                 <motion.button
                   key={cat.name}
@@ -138,7 +246,7 @@ export default function StorePage() {
                   className={`relative w-[72px] h-[72px] rounded-2xl flex flex-col items-center justify-center text-[11px] font-medium
                     overflow-hidden transition-all duration-300 text-center
                     ${
-                      isActive
+                      active
                         ? "bg-gradient-to-b from-[var(--accent-success)] to-[var(--accent-success-hover)] text-white shadow-[0_0_10px_rgba(16,185,129,0.6)]"
                         : "bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
                     }`}
@@ -153,37 +261,47 @@ export default function StorePage() {
           </div>
         </motion.aside>
 
-        {/* Product grid (NO overflow here) */}
+        {/* Grid (RootShell owns padding/scroll) */}
         <section
           className="flex-1 px-4 sm:px-8 pt-4 transition-all duration-700 ease-in-out bg-[var(--surface-base)]"
-        style={{
-          marginLeft: isDesktop
-            ? `calc(${collapsed ? 80 : 256}px + 96px)`
-            : "80px",
-        }}
+          style={{
+            marginLeft: isDesktop
+              ? `calc(${collapsed ? 80 : 256}px + 96px)`
+              : "80px",
+          }}
         >
           <AnimatePresence mode="popLayout">
             {loading ? (
               <motion.div
                 key="loading"
-                className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 px-1 justify-items-center"
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 px-1"
               >
-                {Array.from({ length: 12 }).map((_, i) => (
+                {Array.from({ length: 10 }).map((_, i) => (
                   <div
                     key={i}
-                    className="aspect-[4/5.5] rounded-xl bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)] animate-pulse w-full"
+                    className="aspect-[4/3] rounded-2xl bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)] animate-pulse"
                   />
                 ))}
               </motion.div>
-            ) : filtered.length > 0 ? (
+            ) : view.length > 0 ? (
               <motion.div
                 key="grid"
                 layout
-                className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 px-1 justify-items-center"
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 px-1"
               >
-                {filtered.map(
-                  (p) => p?.id && <ProductCard key={p.id} product={p} />
-                )}
+                {view.map((item) => (
+                  <CatalogPreviewCard
+                    key={item.id}
+                    item={item}
+                    onAdd={() =>
+                      addItem({
+                        id: item.id,
+                        title: item.title,
+                        price: item.price,
+                      })
+                    }
+                  />
+                ))}
               </motion.div>
             ) : (
               <motion.div
@@ -191,14 +309,18 @@ export default function StorePage() {
                 className="flex flex-col items-center justify-center h-[50vh] text-[var(--text-secondary)]"
               >
                 <PackageOpen className="w-10 h-10 mb-2 text-[var(--text-muted)]" />
-                <p>No products found.</p>
+                <p>
+                  {isStale
+                    ? "No products in cache and can't reach catalog."
+                    : "No products found."}
+                </p>
               </motion.div>
             )}
           </AnimatePresence>
         </section>
       </div>
 
-      {/* Floating Checkout Bar (pinned above mobile dock) */}
+      {/* Floating Checkout Footer */}
       <AnimatePresence>
         {cartCount > 0 && (
           <motion.footer
@@ -210,16 +332,14 @@ export default function StorePage() {
             className="fixed left-0 right-0 z-[70] flex items-center justify-between gap-4 px-5 py-4
                        bg-[var(--edith-surface)] border-t border-[var(--edith-border)]
                        backdrop-blur-lg rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)]"
-            style={{
-              bottom: "var(--mbnav-h-safe,72px)", // sit above the mobile dock
-            }}
+            style={{ bottom: "var(--mbnav-h-safe,72px)" }}
           >
             <div className="flex flex-col">
               <span className="text-xs text-[var(--text-secondary)]">
                 {cartCount} {cartCount === 1 ? "item" : "items"} in cart
               </span>
               <span className="font-semibold text-[var(--accent-success)] text-lg">
-                ₹{totalPrice.toLocaleString()}
+                ₹{totalPrice.toLocaleString("en-IN")}
               </span>
             </div>
 

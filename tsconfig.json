@@ -55,7 +55,8 @@
     "app/studio/oldpage.jsx",
     "app/studio/page.tsx",
     "hooks/use-toast.tsx",
-    "app/api/ledger/sync/route.ts"
+    "app/api/ledger/sync/route.ts",
+    "components/estimator/WardrobeSvg2D.tsx"
   ],
 
   "exclude": ["node_modules", "supabase", "dist", ".next"]

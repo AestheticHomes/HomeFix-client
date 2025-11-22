@@ -1,48 +1,31 @@
 "use client";
 
-import React, {
-  useRef,
-  useState,
-  useEffect,
-  useMemo,
-  type ReactNode,
-} from "react";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Stage, Environment } from "@react-three/drei";
-import { motion } from "framer-motion";
+/**
+ * EstimatorPreview.tsx
+ * ---------------------------------------------
+ * Single gateway between estimator state and the actual 2D / 3D viewers.
+ * - Exactly one viewport mounted at a time.
+ * - 2D → PanZoomViewport + provided SVG.
+ * - 3D → UniversalPreview loading GLB derived from shape.
+ */
+
+import KitchenSvg2D from "@/components/estimator/KitchenSvg2D";
+import PanZoomViewport from "@/components/estimator/common/PanZoomViewport";
+import { getEstimatorGlbUrl } from "@/components/estimator/lib/getEstimatorGlbUrl";
 import useEstimator from "@/components/estimator/store/estimatorStore";
-
-type ResolveModelURL = (path: string) => Promise<string>;
-
-export type PreviewModelProps = {
-  resolveModelURL?: ResolveModelURL;
-};
-
-type PreviewProps = {
-  SvgComponent?: React.ComponentType<Record<string, never>>;
-  ModelComponent?: React.ComponentType<PreviewModelProps>;
-  title?: string;
-  showTitle?: boolean;
-};
-
-const SUPABASE_BASE =
-  "https://<YOUR-PROJECT-ID>.supabase.co/storage/v1/object/public/models";
-
-const resolveModelURL: ResolveModelURL = async (path) => {
-  try {
-    const res = await fetch(path, { method: "HEAD" });
-    if (res.ok) return path;
-  } catch {
-    /* noop — fallback below */
-  }
-  return `${SUPABASE_BASE}${path}`;
-};
+import UniversalPreview from "@/components/preview/UniversalPreview";
+import { motion } from "framer-motion";
+import { useMemo } from "react";
 
 const PANEL_SURFACE =
   "color-mix(in srgb, var(--surface-panel) 95%, transparent)";
 
-const WATERMARK_COLOR =
-  "color-mix(in srgb, var(--accent-primary) 80%, transparent)";
+export type EstimatorPreviewProps = {
+  SvgComponent?: React.ComponentType<Record<string, never>>;
+  ModelComponent?: React.ComponentType<Record<string, never>>; // reserved for future custom R3F
+  title?: string;
+  showTitle?: boolean;
+};
 
 function EntangledDualityToggle() {
   const mode = useEstimator((s) => s.mode);
@@ -110,55 +93,46 @@ function EntangledDualityToggle() {
             }}
           />
         </motion.div>
-
-        <motion.div
-          key={is3d ? "to3d" : "to2d"}
-          className="absolute left-1/2 top-1/2 rounded-full"
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: [0, 1, 0], scale: [0, 1.2, 0] }}
-          transition={{ duration: 0.45, ease: "easeOut", delay: 0.05 }}
-          style={{
-            background: "var(--accent-primary)",
-            width: 18,
-            height: 18,
-            filter: "blur(3px)",
-            pointerEvents: "none",
-            transform: "translate(-50%, -50%)",
-          }}
-        />
       </motion.button>
     </div>
   );
 }
 
-type Transform = { x: number; y: number; z: number };
-
-export default function UniPreviewCanvas({
-  SvgComponent,
-  ModelComponent,
+export default function EstimatorPreview({
+  SvgComponent = KitchenSvg2D,
+  ModelComponent: _ModelComponent,
   title,
-  showTitle = false,
-}: PreviewProps) {
+  showTitle,
+}: EstimatorPreviewProps) {
   const mode = useEstimator((s) => s.mode);
-  const is3d = mode === "3d";
+  const shape = useEstimator((s) => s.kitchen.shape);
+
+  const glbUrl = useMemo(() => getEstimatorGlbUrl(shape), [shape]);
+
+  if (process.env.NODE_ENV !== "production" && mode === "3d" && !glbUrl) {
+    // eslint-disable-next-line no-console
+    console.warn("[EstimatorPreview] 3D mode active but glbUrl is null for shape:", shape);
+  }
 
   const watermarkTone = useMemo(
     () =>
-      is3d
+      mode === "3d"
         ? "text-[color-mix(in_srgb,var(--accent-secondary)80%,transparent)]"
         : "text-[color-mix(in_srgb,var(--accent-primary)80%,transparent)]",
-    [is3d]
+    [mode]
   );
 
   return (
     <div
-      className="relative w-full h-[420px] rounded-2xl overflow-hidden border border-[var(--border-muted)] bg-[var(--surface-panel)] dark:bg-[var(--surface-panel-dark)]"
+      className="relative w-full rounded-2xl overflow-hidden border border-[var(--border-muted)] bg-[var(--surface-panel)] dark:bg-[var(--surface-panel-dark)]
+                 min-h-[420px] md:min-h-[520px] lg:min-h-[600px] max-h-[80vh]"
       style={{
         background: PANEL_SURFACE,
         boxShadow:
           "0 28px 90px color-mix(in srgb, var(--text-primary) 9%, transparent)",
       }}
     >
+      {/* Aura background */}
       <div
         className="absolute inset-0 pointer-events-none -z-10 opacity-20 dark:opacity-55"
         style={{
@@ -175,70 +149,49 @@ export default function UniPreviewCanvas({
 
       <EntangledDualityToggle />
 
-      {is3d ? (
-        <div className="relative w-full h-full">
-          <Canvas
-            shadows
-            camera={{ position: [4, 3, 6], fov: 45 }}
-            style={{ background: PANEL_SURFACE }}
-          >
-            <ambientLight intensity={0.7} />
-            <directionalLight position={[5, 10, 5]} intensity={1.2} castShadow />
-            <Environment preset="warehouse" background={false} />
-            <Stage
-              environment="city"
-              intensity={0.5}
-              shadows="contact"
-              adjustCamera
-            >
-              {ModelComponent ? (
-                <ModelComponent resolveModelURL={resolveModelURL} />
-              ) : (
-                <mesh position={[0, 0.5, 0]}>
-                  <boxGeometry args={[2, 1, 1]} />
-                  <meshStandardMaterial
-                    color="#B9B9B9"
-                    metalness={0.3}
-                    roughness={0.6}
-                  />
-                </mesh>
-              )}
-            </Stage>
-            <OrbitControls
-              enableZoom
-              enablePan
-              enableRotate
-              zoomSpeed={0.9}
-              panSpeed={1.2}
-              rotateSpeed={0.95}
-            />
-          </Canvas>
-          <div
-            className="pointer-events-none absolute right-3 bottom-2 text-[11px] font-medium"
-            style={{ color: WATERMARK_COLOR }}
-          >
-            HomeFix Studio • 3D View
-          </div>
-        </div>
-      ) : (
-        <div className="absolute inset-0 bg-[var(--surface-panel)] dark:bg-[var(--surface-panel-dark)]">
-          {SvgComponent ? (
-            <SvgComponent />
-          ) : (
-            <svg viewBox="0 0 1200 600" className="absolute inset-0 w-full h-full">
-              <text x="20" y="30" fontSize="12">
-                No 2D View
-              </text>
-            </svg>
+      {/* VIEWPORT: exactly one branch mounted */}
+      {mode === "2d" ? (
+        <PanZoomViewport
+          sceneWidth={4000}
+          sceneHeight={2000}
+          autoFitOnMount
+          autoFitOnFitKeyChange
+          fitKey={shape}
+        >
+          {() => (
+            <div className="w-full h-full flex items-center justify-center">
+              {SvgComponent ? <SvgComponent /> : null}
+            </div>
           )}
+        </PanZoomViewport>
+      ) : (
+        <div className="absolute inset-0 pt-8 pb-8 px-3">
+          <UniversalPreview
+            glbUrl={glbUrl ?? undefined}
+            imageUrl={undefined}
+            svgComponent={undefined}
+            modelComponent={undefined}
+            initialMode="3d"
+            forcedViewMode="3d"
+            enableModeToggle={false}
+            enableSelectionOverlay={false}
+            showFullscreenToggle={false}
+            fillContainer
+          />
         </div>
       )}
 
+      {/* Watermark & disclaimer */}
       <div
-        className={`pointer-events-none absolute right-3 bottom-2 text-[11px] font-medium select-none ${watermarkTone}`}
+        className={`pointer-events-none absolute right-3 bottom-5 text-[11px] font-medium select-none ${watermarkTone}`}
       >
         HomeFix Studio
       </div>
+
+      <span className="pointer-events-none absolute left-3 bottom-3 text-[10px] text-[var(--text-muted)]">
+        2D plan is the exact layout used for pricing. 3D view is an approximate
+        visual for reference only.
+      </span>
     </div>
   );
 }

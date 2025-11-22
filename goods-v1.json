@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1001,
+    "title": "Parallel Kitchen · 8 ft run",
+    "category": "Kitchen Modules",
+    "price": 145000,
+    "asset_key": "KITCHEN_PARALLEL_8FT",
+    "has_glb": false,
+    "badge": "bestseller"
+  },
+  {
+    "id": 1002,
+    "title": "Wardrobe · 6 ft sliding",
+    "category": "Wardrobes",
+    "price": 98000,
+    "asset_key": "WARDROBE_SLIDING_6FT",
+    "has_glb": true,
+    "badge": "new"
+  }
+]
