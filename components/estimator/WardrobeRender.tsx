@@ -5,144 +5,140 @@
  * ---------------------------------------------------------
  * Step-level container for the Wardrobe estimator.
  *
- * Responsibilities:
- *  - Render a small control strip (width, loft info, finish).
- *  - Own its own 2D ↔ 3D view toggle (local state).
- *  - Mount <WardrobeSvg2D /> directly in 2D mode.
- *  - Show a safe placeholder in 3D mode for now.
+ * Layout:
+ *  - Top: compact “toolbar” card with width + loft info + finish.
+ *  - Bottom: full-width EstimatorPreview canvas (2D/3D).
  *
- * This intentionally avoids EstimatorPreview so that wardrobe
- * cannot be broken by its internal logic. We can re-unify
- * later once both sides are stable.
+ * Rules:
+ *  - 2D elevation (WardrobeSvg2D) is the pricing view.
+ *  - 3D is purely visual; GLB is disabled for now via glbUrlOverride=null
+ *    so EstimatorPreview/UniversalPreview always falls back to 2D.
  */
 
+import EstimatorPreview from "@/components/estimator/EstimatorPreview";
 import useEstimator, {
   type Finish,
 } from "@/components/estimator/store/estimatorStore";
 import WardrobeSvg2D from "@/components/estimator/WardrobeSvg2D";
 import { motion } from "framer-motion";
-import React, { useState } from "react";
-
-type ViewMode = "2d" | "3d";
+import React, { useCallback } from "react";
 
 export default function WardrobeRender(): React.ReactElement {
-  const [viewMode, setViewMode] = useState<ViewMode>("2d");
+  const wardrobe = useEstimator((s) => s.wardrobe);
 
-  const widthFt = useEstimator((s) => s.wardrobe.widthFt);
-  const setWidth = useEstimator((s) => s.setWardrobeWidth);
-  const finish = useEstimator((s) => s.wardrobe.finish);
-  const setFinish = useEstimator((s) => s.setWardrobeFinish);
+  const setWidth = useEstimator(
+    (s) =>
+      (s as any).setWardrobeWidth as ((widthFt: number) => void) | undefined
+  );
+  const setFinish = useEstimator(
+    (s) =>
+      (s as any).setWardrobeFinish as ((finish: Finish) => void) | undefined
+  );
+  const setLoftH = useEstimator(
+    (s) => (s as any).setWardrobeLoftH as ((loftFt: number) => void) | undefined
+  );
+
+  const handleWidthChange = useCallback(
+    (value: string) => {
+      if (!setWidth) return;
+      const numeric = Number(value.replace(/[^\d.]/g, ""));
+      setWidth(Number.isFinite(numeric) ? numeric : 0);
+    },
+    [setWidth]
+  );
+
+  const handleLoftChange = useCallback(
+    (value: string) => {
+      if (!setLoftH) return;
+      const numeric = Number(value.replace(/[^\d.]/g, ""));
+      setLoftH(Number.isFinite(numeric) ? numeric : 0);
+    },
+    [setLoftH]
+  );
 
   return (
-    <div className="grid gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,2.1fr)_minmax(0,2.4fr)]">
-      {/* LEFT: config + toggle */}
-      <section className="space-y-4">
-        <header className="flex flex-wrap items-center justify-between gap-3">
+    <div className="flex w-full flex-col gap-5 px-4 py-4 sm:px-6 sm:py-6">
+      {/* TOOLBAR CARD ------------------------------------------------------ */}
+      <section className="space-y-4 rounded-3xl border border-[var(--border-soft)] bg-[var(--surface-subtle)] px-4 py-4 sm:px-6 sm:py-5">
+        <header className="flex flex-wrap items-baseline justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold text-[var(--text-primary)]">
               Wardrobe layout
             </h2>
             <p className="text-xs text-[var(--text-secondary)]">
-              Configure spans, loft and finish. 2D elevation is used for
-              pricing.
+              Configure spans, loft height and finish. 2D elevation is used for
+              pricing; 3D is a visual reference.
             </p>
-          </div>
-
-          {/* 2D / 3D toggle (local) */}
-          <div className="inline-flex items-center rounded-full bg-[color-mix(in_srgb,var(--surface-panel)90%,transparent)] p-1 text-xs font-medium">
-            <button
-              type="button"
-              onClick={() => setViewMode("2d")}
-              className={`px-3 py-1 rounded-full transition ${
-                viewMode === "2d"
-                  ? "bg-[var(--accent-primary)] text-white shadow-sm"
-                  : "text-[var(--text-secondary)]"
-              }`}
-            >
-              2D
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("3d")}
-              className={`px-3 py-1 rounded-full transition ${
-                viewMode === "3d"
-                  ? "bg-[var(--accent-primary)] text-white shadow-sm"
-                  : "text-[var(--text-secondary)]"
-              }`}
-            >
-              3D
-            </button>
           </div>
         </header>
 
-        {/* Simple config panel — keep or replace with your real form */}
-        <div className="space-y-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-subtle)] px-4 py-4 text-xs text-[var(--text-secondary)]">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-            Current configuration
-          </p>
+        <div className="flex flex-wrap items-center gap-4 text-xs text-[var(--text-secondary)]">
+          {/* Width */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-[var(--text-secondary)]">
+              Width (ft)
+            </span>
+            <input
+              type="number"
+              min={3}
+              max={20}
+              value={Number(wardrobe.widthFt) || 0}
+              onChange={(e) => handleWidthChange(e.target.value)}
+              className="w-16 rounded-lg border border-[var(--border-soft)] bg-[var(--surface-panel)] px-2 py-1 text-center text-[11px] text-[var(--text-primary)]"
+              aria-label="Wardrobe width (ft)"
+            />
+          </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[var(--text-secondary)]">
-                Width (ft)
-              </span>
-              <input
-                type="number"
-                min={4}
-                max={20}
-                value={Number(widthFt) || 0}
-                onChange={(e) => setWidth(Number(e.target.value) || 0)}
-                className="w-16 rounded-lg border border-[var(--border-soft)] bg-[var(--surface-panel)] px-2 py-1 text-center text-xs text-[var(--text-primary)]"
-                aria-label="Wardrobe width (ft)"
-              />
-            </div>
+          {/* Loft height */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-[var(--text-secondary)]">
+              Loft height (ft)
+            </span>
+            <input
+              type="number"
+              min={0}
+              max={5}
+              value={Number(wardrobe.loftH ?? 3)}
+              onChange={(e) => handleLoftChange(e.target.value)}
+              className="w-16 rounded-lg border border-[var(--border-soft)] bg-[var(--surface-panel)] px-2 py-1 text-center text-[11px] text-[var(--text-primary)]"
+              aria-label="Loft height (ft)"
+            />
+          </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[var(--text-secondary)]">Loft</span>
-              <span className="rounded-lg border border-[var(--border-soft)] bg-[var(--surface-panel)] px-2 py-1 text-[11px] text-[var(--text-primary)]">
-                3 ft default
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[var(--text-secondary)]">
-                Finish
-              </span>
-              <select
-                value={finish}
-                onChange={(e) => setFinish(e.target.value as Finish)}
-                className="rounded-lg border border-[var(--border-soft)] bg-[var(--surface-panel)] px-2 py-1 text-xs text-[var(--text-primary)]"
-              >
-                <option value="essential">Essential</option>
-                <option value="premium">Premium</option>
-                <option value="luxury">Luxury</option>
-              </select>
-            </div>
+          {/* Finish */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-[var(--text-secondary)]">
+              Finish
+            </span>
+            <select
+              value={(wardrobe.finish as Finish) || "essential"}
+              onChange={(e) => setFinish && setFinish(e.target.value as Finish)}
+              className="rounded-lg border border-[var(--border-soft)] bg-[var(--surface-panel)] px-2 py-1 text-[11px] text-[var(--text-primary)]"
+            >
+              <option value="essential">Essential</option>
+              <option value="premium">Premium</option>
+              <option value="luxury">Luxury</option>
+            </select>
           </div>
         </div>
       </section>
 
-      {/* RIGHT: preview */}
+      {/* CANVAS MASTERPIECE ------------------------------------------------ */}
       <section className="relative">
-        <div className="relative h-[320px] w-full overflow-hidden rounded-3xl border border-[var(--border-soft)] bg-[var(--surface-panel)]">
-          {viewMode === "2d" ? (
-            <div className="relative h-full w-full">
-              <WardrobeSvg2D />
-            </div>
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-xs text-[var(--text-secondary)]">
-              3D wardrobe preview will be wired back in a later pass.
-            </div>
-          )}
-        </div>
+        <EstimatorPreview
+          SvgComponent={WardrobeSvg2D}
+          glbUrlOverride={null} // 🔒 no GLB yet → always safe 2D fallback
+          title="Wardrobe Layout"
+          showTitle
+        />
 
         <motion.p
           className="mt-2 text-[11px] text-[var(--text-muted)]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 0.9 }}
         >
-          2D elevation is the canonical layout for pricing. 3D view is only for
-          visual orientation.
+          2D elevation is the canonical layout for pricing. 3D mode reuses the
+          same layout as a visual guide until wardrobe GLB assets are added.
         </motion.p>
       </section>
     </div>

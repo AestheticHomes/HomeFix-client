@@ -315,7 +315,7 @@ function KitchenSvg2DInner(): React.ReactElement {
     [kitchenLengths]
   );
 
-  const shapeKey = (kitchenShape || "linear").toLowerCase();
+  const shapeKey = ((kitchenShape as string) || "linear").toLowerCase() as keyof typeof kitchenShapes;
   const schema = kitchenShapes[shapeKey] || kitchenShapes.linear;
 
   // Expand abstract schema → concrete wall / appliance rectangles.
@@ -327,11 +327,17 @@ function KitchenSvg2DInner(): React.ReactElement {
   const shortW = sorted[sorted.length - 1];
 
   const verticalWalls = walls
-    .filter((w) => w.h > w.w)
-    .sort((a, b) => a.x - b.x);
+    .filter((w: { x: number; y: number; w: number; h: number }) => w.h > w.w)
+    .sort(
+      (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) =>
+        a.x - b.x
+    );
   const horizontalWalls = walls
-    .filter((w) => w.w >= w.h)
-    .sort((a, b) => a.y - b.y);
+    .filter((w: { x: number; y: number; w: number; h: number }) => w.w >= w.h)
+    .sort(
+      (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) =>
+        a.y - b.y
+    );
 
   let hostForHob = long;
   let hostForSink = shortW;
@@ -386,9 +392,19 @@ function KitchenSvg2DInner(): React.ReactElement {
   const fitKey = `${shapeKey}-${dims.A}-${dims.B}-${dims.C}-${kitchenFinish}`;
 
   // Bounding box for centering + leaders.
-  const fitRects = walls.map((w) => ({ x: w.x, y: w.y, w: w.w, h: w.h }));
+  const fitRects = walls.map(
+    (w: { x: number; y: number; w: number; h: number }) => ({
+      x: w.x,
+      y: w.y,
+      w: w.w,
+      h: w.h,
+    })
+  );
   const bbox = fitRects.reduce(
-    (acc, r) => ({
+    (
+      acc: { x: number; y: number; w: number; h: number },
+      r: { x: number; y: number; w: number; h: number }
+    ) => ({
       x: Math.min(acc.x, r.x),
       y: Math.min(acc.y, r.y),
       w: Math.max(acc.x + acc.w, r.x + r.w) - Math.min(acc.x, r.x),
@@ -438,20 +454,25 @@ function KitchenSvg2DInner(): React.ReactElement {
             <ArrowDef />
             <g transform={`translate(${tx}, ${ty}) scale(${scale})`}>
               {/* Counters / walls */}
-              {walls.map((r, i) => (
-                <rect
-                  key={i}
-                  x={toPx(r.x)}
-                  y={toPx(r.y)}
-                  width={toPx(r.w)}
-                  height={toPx(r.h)}
-                  rx={toPx(4)}
-                  fill={COLORS.counter}
-                  stroke={COLORS.counterStroke}
-                  strokeWidth={sw(1.2, scale)}
-                  vectorEffect="non-scaling-stroke"
-                />
-              ))}
+              {walls.map(
+                (
+                  r: { x: number; y: number; w: number; h: number },
+                  i: number
+                ) => (
+                  <rect
+                    key={i}
+                    x={toPx(r.x)}
+                    y={toPx(r.y)}
+                    width={toPx(r.w)}
+                    height={toPx(r.h)}
+                    rx={toPx(4)}
+                    fill={COLORS.counter}
+                    stroke={COLORS.counterStroke}
+                    strokeWidth={sw(1.2, scale)}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )
+              )}
 
               {/* Appliances */}
               <HobIcon

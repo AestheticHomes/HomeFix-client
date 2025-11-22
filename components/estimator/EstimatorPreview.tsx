@@ -4,13 +4,19 @@
  * EstimatorPreview.tsx
  * ---------------------------------------------
  * Single gateway between estimator state and the actual 2D / 3D viewers.
- * - Exactly one viewport mounted at a time.
- * - 2D → PanZoomViewport + provided SVG.
- * - 3D → UniversalPreview loading GLB derived from shape.
+ *
+ * Rules:
+ *  - Exactly one viewport mounted at a time.
+ *  - 2D → directly render the provided SvgComponent (which itself can
+ *         use PanZoomViewport / CAD logic).
+ *  - 3D → UniversalPreview with GLB derived from shape, or from an
+ *         explicit override (glbUrlOverride).
+ *
+ * 2D is the canonical pricing view and must never break:
+ *  - If 3D has no GLB or fails, UniversalPreview falls back to SvgComponent.
  */
 
 import KitchenSvg2D from "@/components/estimator/KitchenSvg2D";
-import PanZoomViewport from "@/components/estimator/common/PanZoomViewport";
 import { getEstimatorGlbUrl } from "@/components/estimator/lib/getEstimatorGlbUrl";
 import useEstimator from "@/components/estimator/store/estimatorStore";
 import UniversalPreview from "@/components/preview/UniversalPreview";
@@ -21,12 +27,40 @@ const PANEL_SURFACE =
   "color-mix(in srgb, var(--surface-panel) 95%, transparent)";
 
 export type EstimatorPreviewProps = {
+  /**
+   * 2D renderer. For kitchen this is KitchenSvg2D; for wardrobe it's
+   * WardrobeSvg2D. Component is assumed to be self-contained (it can
+   * include its own PanZoomViewport / svg logic).
+   */
   SvgComponent?: React.ComponentType<Record<string, never>>;
-  ModelComponent?: React.ComponentType<Record<string, never>>; // reserved for future custom R3F
+
+  /**
+   * Reserved for future custom R3F models (instead of GLB). For now,
+   * estimators use GLB via getEstimatorGlbUrl.
+   */
+  ModelComponent?: React.ComponentType<Record<string, never>>;
+
+  /** Optional label in the top-left (e.g., "Kitchen Layout"). */
   title?: string;
+
+  /** Whether to render the title. */
   showTitle?: boolean;
+
+  /**
+   * Optional manual override for GLB URL.
+   * - If provided, estimator will use this exactly.
+   * - If undefined, we derive from kitchen.shape via getEstimatorGlbUrl.
+   * - For wardrobe you can pass null here to effectively disable GLB.
+   */
+  glbUrlOverride?: string | null;
 };
 
+/* =========================================================
+   🔹 MODE TOGGLE (GLOBAL STORE)
+   ---------------------------------------------------------
+   Controls estimator.mode ("2d" | "3d") in Zustand.
+   Shared between kitchen and wardrobe.
+   ========================================================= */
 function EntangledDualityToggle() {
   const mode = useEstimator((s) => s.mode);
   const setMode = useEstimator((s) => s.setMode);
@@ -38,7 +72,7 @@ function EntangledDualityToggle() {
         whileTap={{ scale: 0.96 }}
         onClick={() => setMode(is3d ? "2d" : "3d")}
         aria-label={is3d ? "Switch to 2D Plan" : "Switch to 3D View"}
-        className="relative h-8 w-[118px] rounded-full border border-[var(--border-soft)] bg-[var(--surface-panel)] dark:bg-[var(--surface-panel-dark)] backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.12)] flex items-center justify-between px-4 overflow-hidden transition-colors duration-300"
+        className="relative flex h-8 w-[118px] items-center justify-between overflow-hidden rounded-full border border-[var(--border-soft)] bg-[var(--surface-panel)] shadow-[0_10px_30px_rgba(0,0,0,0.12)] backdrop-blur-md dark:bg-[var(--surface-panel-dark)] px-4 transition-colors duration-300"
       >
         <div
           className={`absolute inset-0 rounded-full transition-colors duration-500 ${
@@ -98,20 +132,40 @@ function EntangledDualityToggle() {
   );
 }
 
+/* =========================================================
+   🔸 MAIN PREVIEW COMPONENT
+   ========================================================= */
 export default function EstimatorPreview({
   SvgComponent = KitchenSvg2D,
-  ModelComponent: _ModelComponent,
+  ModelComponent: _ModelComponent, // reserved for future use
   title,
   showTitle,
+  glbUrlOverride,
 }: EstimatorPreviewProps) {
   const mode = useEstimator((s) => s.mode);
-  const shape = useEstimator((s) => s.kitchen.shape);
+  const kitchenShape = useEstimator((s) => s.kitchen.shape);
 
-  const glbUrl = useMemo(() => getEstimatorGlbUrl(shape), [shape]);
+  // Decide GLB URL:
+  //  - For kitchen: default to getEstimatorGlbUrl(kitchenShape)
+  //  - For wardrobe: caller passes glbUrlOverride = null (no GLB)
+  const glbUrl = useMemo(() => {
+    if (glbUrlOverride !== undefined) return glbUrlOverride;
+    return getEstimatorGlbUrl(kitchenShape);
+  }, [glbUrlOverride, kitchenShape]);
 
-  if (process.env.NODE_ENV !== "production" && mode === "3d" && !glbUrl) {
+  // Dev-only warning *only* for auto-GLB flows (kitchen),
+  // not for places that explicitly disable GLB with glbUrlOverride=null.
+  if (
+    process.env.NODE_ENV !== "production" &&
+    mode === "3d" &&
+    glbUrlOverride === undefined &&
+    !glbUrl
+  ) {
     // eslint-disable-next-line no-console
-    console.warn("[EstimatorPreview] 3D mode active but glbUrl is null for shape:", shape);
+    console.warn(
+      "[EstimatorPreview] 3D mode active but glbUrl is null for shape:",
+      kitchenShape
+    );
   }
 
   const watermarkTone = useMemo(
@@ -124,17 +178,14 @@ export default function EstimatorPreview({
 
   return (
     <div
-      className="relative w-full rounded-2xl overflow-hidden border border-[var(--border-muted)] bg-[var(--surface-panel)] dark:bg-[var(--surface-panel-dark)]
-                 min-h-[420px] md:min-h-[520px] lg:min-h-[600px] max-h-[80vh]"
+      className="relative max-h-[80vh] min-h-[420px] w-full overflow-hidden rounded-2xl border border-[var(--border-muted)] bg-[var(--surface-panel)] shadow-[0_28px_90px_color-mix(in_srgb,var(--text-primary)_9%,transparent)] dark:bg-[var(--surface-panel-dark)] md:min-h-[520px] lg:min-h-[600px]"
       style={{
         background: PANEL_SURFACE,
-        boxShadow:
-          "0 28px 90px color-mix(in srgb, var(--text-primary) 9%, transparent)",
       }}
     >
       {/* Aura background */}
       <div
-        className="absolute inset-0 pointer-events-none -z-10 opacity-20 dark:opacity-55"
+        className="pointer-events-none absolute inset-0 -z-10 opacity-20 dark:opacity-55"
         style={{
           background:
             "radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--aura-light) 60%, transparent), transparent 65%), radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--aura-dark) 45%, transparent), transparent 70%)",
@@ -142,7 +193,7 @@ export default function EstimatorPreview({
       />
 
       {showTitle && (
-        <div className="absolute top-3 left-3 text-xs font-semibold text-[var(--accent-tertiary)]">
+        <div className="absolute left-3 top-3 text-xs font-semibold text-[var(--accent-tertiary)]">
           {title} · {mode.toUpperCase()} Mode
         </div>
       )}
@@ -151,25 +202,20 @@ export default function EstimatorPreview({
 
       {/* VIEWPORT: exactly one branch mounted */}
       {mode === "2d" ? (
-        <PanZoomViewport
-          sceneWidth={4000}
-          sceneHeight={2000}
-          autoFitOnMount
-          autoFitOnFitKeyChange
-          fitKey={shape}
-        >
-          {() => (
-            <div className="w-full h-full flex items-center justify-center">
-              {SvgComponent ? <SvgComponent /> : null}
-            </div>
-          )}
-        </PanZoomViewport>
+        // 2D mode → we trust SvgComponent to manage its own PanZoomViewport / svg
+        <div className="absolute inset-0 pt-8 pb-6 pl-3 pr-3">
+          <div className="relative flex h-full w-full items-center justify-center">
+            {SvgComponent ? <SvgComponent /> : null}
+          </div>
+        </div>
       ) : (
-        <div className="absolute inset-0 pt-8 pb-8 px-3">
+        // 3D mode → UniversalPreview, but we pass SvgComponent so if GLB
+        // is missing/broken it falls back to 2D instead of blank.
+        <div className="absolute inset-0 px-3 pb-8 pt-8">
           <UniversalPreview
             glbUrl={glbUrl ?? undefined}
             imageUrl={undefined}
-            svgComponent={undefined}
+            svgComponent={SvgComponent}
             modelComponent={undefined}
             initialMode="3d"
             forcedViewMode="3d"
@@ -177,13 +223,14 @@ export default function EstimatorPreview({
             enableSelectionOverlay={false}
             showFullscreenToggle={false}
             fillContainer
+            showInteractionHint
           />
         </div>
       )}
 
       {/* Watermark & disclaimer */}
       <div
-        className={`pointer-events-none absolute right-3 bottom-5 text-[11px] font-medium select-none ${watermarkTone}`}
+        className={`pointer-events-none absolute right-3 bottom-5 select-none text-[11px] font-medium ${watermarkTone}`}
       >
         HomeFix Studio
       </div>

@@ -1,39 +1,13 @@
 "use client";
 
 /**
- * ============================================================================
- * UniversalPreview
- * ----------------------------------------------------------------------------
- * A single, reusable visual preview widget for HomeFix / Edith:
- *
- * - Can render:
- *   • 3D GLB (via @react-three/fiber + @react-three/drei useGLTF)
- *   • 2D raster (Next.js <Image>)
- *   • 2D SVG / React-based CAD (SvgComponent)
- *
- * - Used by:
- *   • Estimator (kitchen / wardrobe) via `glbUrl` + `svgComponent`
- *   • Store / catalog hero previews (GLB + thumbnail)
- *
- * - Architectural rules:
- *   • Exactly ONE <Canvas> when in 3D mode (no nested viewers).
- *   • GLB errors (404 / 400 / corrupt file) are contained inside this file
- *     via a local ErrorBoundary – calling screens do NOT crash.
- *   • 2D vs 3D mode is decided here via `initialMode`, `enableModeToggle`,
- *     and optional `forcedViewMode`.
- *
- * - External dependencies:
- *   • @react-three/fiber       → Canvas, useThree
- *   • @react-three/drei        → OrbitControls, useGLTF
- *   • next/image               → responsive previews
- *   • three                    → Box3, Vector3, MathUtils, core types
- *
- * Any future AI / human reading only this file should be able to reconstruct:
- *   - Where it sits in the UI stack
- *   - How 3D/2D are chosen
- *   - How GLB failures are handled
- *   - What knobs callers can use (props below)
- * ============================================================================
+ * UniversalPreview (safe legacy-compatible version)
+ * -------------------------------------------------
+ * - 2D: shows SVG or image.
+ * - 3D: renders GLB or custom R3F component.
+ * - Any GLB / WebGL error is contained in a local ErrorBoundary.
+ * - If 3D assets are missing or fail (Supabase 400/404/etc),
+ *   we fall back to 2D instead of crashing the app.
  */
 
 import { OrbitControls, useGLTF } from "@react-three/drei";
@@ -49,9 +23,7 @@ import React, {
 } from "react";
 import * as THREE from "three";
 
-/* ---------------------------------------------------------------------------
- * Types: selection metadata + public props
- * ------------------------------------------------------------------------ */
+export type ViewMode = "2d" | "3d";
 
 type SelectedInfo = {
   name: string;
@@ -59,42 +31,24 @@ type SelectedInfo = {
   material?: string;
 };
 
-export type ViewMode = "2d" | "3d";
-
 export type UniversalPreviewProps = {
-  /** Public GLB URL (Supabase CDN, etc.). If missing, 3D will be skipped. */
   glbUrl?: string | null;
-  /** Optional raster fallback / hero image URL. */
   imageUrl?: string | null;
-  /** Optional SVG / CAD React component (no props). */
   svgComponent?: React.ComponentType<Record<string, never>>;
-  /** Optional custom 3D React-three-fiber component (used instead of GLB). */
   modelComponent?: React.ComponentType<any>;
-  /** Show overlay with clicked mesh’s name / size / material. */
   enableSelectionOverlay?: boolean;
-  /** Styling modes – used by hero / mini cards. */
   mode?: "mini" | "hero-inline" | "hero-fullscreen";
-  /** Show expand / collapse button for fullscreen. */
   showFullscreenToggle?: boolean;
-  /** Controlled fullscreen state (if caller wants to own it). */
   fullscreen?: boolean;
-  /** Controlled fullscreen toggle callback. */
   onToggleFullscreen?: (next: boolean) => void;
-  /** Initial auto-mode preference. */
   initialMode?: "auto" | "2d" | "3d";
-  /** Show 2D / 3D chip toggle. */
   enableModeToggle?: boolean;
-  /** Let the wrapper stretch fully to its parent. */
   fillContainer?: boolean;
-  /** Show a transient “drag / scroll” hint. */
   showInteractionHint?: boolean;
-  /** Force view mode regardless of internal toggle. */
   forcedViewMode?: ViewMode;
 };
 
-/* ---------------------------------------------------------------------------
- * Utility: inspect a THREE.Object3D for overlay info
- * ------------------------------------------------------------------------ */
+/* ------------------------ helpers ------------------------ */
 
 function extractInfo(object: THREE.Object3D): SelectedInfo {
   const name = object.name || "Component";
@@ -104,19 +58,16 @@ function extractInfo(object: THREE.Object3D): SelectedInfo {
   box.getSize(sizeVec);
 
   let materialName: string | undefined;
-
   const mesh = object as THREE.Mesh;
   const mat = mesh.material as THREE.Material | THREE.Material[] | undefined;
 
   if (mat) {
-    if (Array.isArray(mat) && mat[0]) {
+    if (Array.isArray(mat)) {
       const m = mat[0] as any;
-      materialName =
-        m.name || m.color?.getStyle?.() || m.type || "Material (array)";
+      materialName = m?.name || m?.color?.getStyle?.() || m?.type;
     } else {
       const m = mat as any;
-      materialName =
-        m.name || m.color?.getStyle?.() || m.type || "Material (single)";
+      materialName = m?.name || m?.color?.getStyle?.() || m?.type;
     }
   }
 
@@ -127,19 +78,17 @@ function extractInfo(object: THREE.Object3D): SelectedInfo {
   };
 }
 
-/* ---------------------------------------------------------------------------
- * R3F scene content: loads GLB + attaches click handlers
- * ------------------------------------------------------------------------ */
-
-type SceneContentProps = {
+function SceneContent({
+  url,
+  onSelect,
+  onFocus,
+}: {
   url: string;
   onSelect: (obj: THREE.Object3D | null) => void;
   onFocus: (obj: THREE.Object3D) => void;
-};
-
-function SceneContent({ url, onSelect, onFocus }: SceneContentProps) {
-  // ❗ This is the only place we ever call useGLTF for this viewer.
-  //    Any loader error will bubble to the local ErrorBoundary, not the app.
+}) {
+  // This is where GLB loading happens; errors thrown here are
+  // caught by PreviewErrorBoundary.
   const gltf = useGLTF(url);
 
   const handleClick = useCallback(
@@ -163,6 +112,7 @@ function SceneContent({ url, onSelect, onFocus }: SceneContentProps) {
       <ambientLight intensity={0.85} />
       <directionalLight position={[6, 10, 6]} intensity={1.2} />
       <directionalLight position={[-4, -6, -2]} intensity={0.4} />
+
       <primitive
         object={gltf.scene}
         onPointerDown={handleClick}
@@ -172,19 +122,10 @@ function SceneContent({ url, onSelect, onFocus }: SceneContentProps) {
   );
 }
 
-/* ---------------------------------------------------------------------------
- * CameraRig: keeps an orthographic camera nicely framing the selection
- * ------------------------------------------------------------------------ */
-
-type CameraRigProps = {
-  selected: THREE.Object3D | null;
-};
-
-function CameraRig({ selected }: CameraRigProps) {
+function CameraRig({ selected }: { selected: THREE.Object3D | null }) {
   const controlsRef = useRef<any>(null);
   const { camera, size } = useThree();
 
-  // Initial camera setup on mount
   useEffect(() => {
     camera.position.set(6, 6, 10);
     (camera as any).zoom = 70;
@@ -192,7 +133,6 @@ function CameraRig({ selected }: CameraRigProps) {
     camera.updateProjectionMatrix();
   }, [camera]);
 
-  // Reframe camera when selection changes
   useEffect(() => {
     if (!selected || !controlsRef.current) return;
 
@@ -240,18 +180,16 @@ function CameraRig({ selected }: CameraRigProps) {
   );
 }
 
-/* ---------------------------------------------------------------------------
- * Local ErrorBoundary:
- *  - Contains GLTF / WebGL failures inside this viewer.
- *  - Prevents Next.js app-level error screens on bad GLBs (400/404).
- * ------------------------------------------------------------------------ */
+/* ---------------- local error boundary ------------------- */
 
 type PreviewErrorBoundaryProps = {
   children: ReactNode;
   fallback?: ReactNode;
 };
 
-type PreviewErrorBoundaryState = { hasError: boolean };
+type PreviewErrorBoundaryState = {
+  hasError: boolean;
+};
 
 class PreviewErrorBoundary extends React.Component<
   PreviewErrorBoundaryProps,
@@ -284,9 +222,7 @@ class PreviewErrorBoundary extends React.Component<
   }
 }
 
-/* ---------------------------------------------------------------------------
- * Main component: orchestrates 2D/3D, fullscreen, selection overlay
- * ------------------------------------------------------------------------ */
+/* ---------------------- main component ------------------- */
 
 export default function UniversalPreview({
   glbUrl,
@@ -307,13 +243,12 @@ export default function UniversalPreview({
   const [selectedObj, setSelectedObj] = useState<THREE.Object3D | null>(null);
   const [selectedInfo, setSelectedInfo] = useState<SelectedInfo | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
-  const [internalViewMode, setInternalViewMode] = useState<ViewMode>("2d");
+  const [viewMode, setViewMode] = useState<ViewMode>("2d");
   const [hintVisible, setHintVisible] = useState(showInteractionHint);
 
   const isHeroInline = mode === "hero-inline";
   const isExternalFullscreen = mode === "hero-fullscreen";
   const isMini = mode === "mini";
-
   const isControlled = typeof fullscreenProp === "boolean";
   const isFullscreen =
     isExternalFullscreen || (isControlled ? fullscreenProp : fullscreen);
@@ -324,16 +259,15 @@ export default function UniversalPreview({
   const has3d = hasGlb || !!ModelComponent;
   const has2d = hasImage || hasSvg;
 
-  const effectiveViewMode: ViewMode = forcedViewMode ?? internalViewMode;
+  const effectiveViewMode: ViewMode = forcedViewMode ?? viewMode;
 
-  // Auto-hide interaction hint after a small delay
   useEffect(() => {
     if (!showInteractionHint) return;
     const t = setTimeout(() => setHintVisible(false), 3000);
     return () => clearTimeout(t);
   }, [showInteractionHint]);
 
-  // Decide initial view mode based on props + asset availability
+  // Decide initial 2D/3D
   useEffect(() => {
     const pickInitial = (): ViewMode => {
       if (initialMode === "3d" && has3d) return "3d";
@@ -341,22 +275,8 @@ export default function UniversalPreview({
       if (has3d) return "3d";
       return "2d";
     };
-    setInternalViewMode(pickInitial());
+    setViewMode(pickInitial());
   }, [initialMode, has2d, has3d]);
-
-  // Dev-only: log effective state so GLB path issues are traceable
-  useEffect(() => {
-    if (process.env.NODE_ENV !== "production") {
-      // eslint-disable-next-line no-console
-      console.debug("[UniversalPreview] mode:", {
-        effectiveViewMode,
-        has3d,
-        has2d,
-        glbUrl,
-        imageUrl,
-      });
-    }
-  }, [effectiveViewMode, has3d, has2d, glbUrl, imageUrl]);
 
   const handleSelect = useCallback((obj: THREE.Object3D | null) => {
     if (!obj) {
@@ -391,28 +311,20 @@ export default function UniversalPreview({
     [fullscreen, fullscreenProp, isControlled, onToggleFullscreen]
   );
 
-  /* -----------------------------------------------------------------------
-   * Layout classes
-   * -------------------------------------------------------------------- */
-
   const wrapperBase =
     "relative rounded-[24px] border border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--surface-panel)90%,transparent)] overflow-hidden shadow-[0_18px_40px_rgba(15,23,42,0.55)]";
 
-  const sizeClass = fillContainer
+  const wrapperSize = isExternalFullscreen
     ? "w-full h-full"
-    : isExternalFullscreen
+    : fillContainer
     ? "w-full h-full"
-    : isMini
-    ? "w-full h-[180px]"
-    : isHeroInline
-    ? "w-full min-h-[260px] md:min-h-[320px] lg:min-h-[380px]"
-    : "w-full h-[260px]";
+    : isFullscreen
+    ? "fixed inset-3 z-[70]"
+    : isHeroInline || isMini
+    ? "w-full h-full"
+    : "w-full h-[180px]";
 
-  const containerClass = `${wrapperBase} ${sizeClass}`;
-
-  /* -----------------------------------------------------------------------
-   * 2D renderer (image or SVG)
-   * -------------------------------------------------------------------- */
+  /* ---------------- 2D renderer ---------------- */
 
   const render2d = useCallback(() => {
     if (hasImage && imageUrl) {
@@ -428,15 +340,13 @@ export default function UniversalPreview({
         </div>
       );
     }
-
     if (SvgComponent) {
       return (
-        <div className="absolute inset-0 flex items-center justify-center bg-[var(--surface-panel)] dark:bg-[var(--surface-panel-dark)]">
+        <div className="absolute inset-0 bg-[var(--surface-panel)] dark:bg-[var(--surface-panel-dark)]">
           <SvgComponent />
         </div>
       );
     }
-
     return (
       <div className="absolute inset-0 flex items-center justify-center text-xs text-[var(--text-muted)] bg-[var(--surface-panel)]">
         No preview
@@ -444,18 +354,16 @@ export default function UniversalPreview({
     );
   }, [SvgComponent, hasImage, imageUrl]);
 
-  /* -----------------------------------------------------------------------
-   * 3D renderer (Canvas + ErrorBoundary + optional GLB)
-   * -------------------------------------------------------------------- */
+  /* ---------------- 3D renderer ---------------- */
 
   const render3d = useCallback(() => {
     if (!has3d) {
-      // No 3D assets at all → fall back to 2D surface
+      // No 3D assets at all → gracefully fall back to 2D UI
       return render2d();
     }
 
     return (
-      <PreviewErrorBoundary>
+      <PreviewErrorBoundary fallback={render2d()}>
         <Canvas
           orthographic
           camera={{
@@ -490,26 +398,19 @@ export default function UniversalPreview({
     selectedObj,
   ]);
 
-  /* -----------------------------------------------------------------------
-   * Main content selection: choose 2D vs 3D safely
-   * -------------------------------------------------------------------- */
+  /* ---------------- choose 2D / 3D ---------------- */
 
   const content = useMemo(() => {
     if (effectiveViewMode === "3d") {
       return render3d();
     }
-
-    // If forced or selected into 2D mode:
     return render2d();
   }, [effectiveViewMode, render2d, render3d]);
 
-  /* -----------------------------------------------------------------------
-   * Render
-   * -------------------------------------------------------------------- */
+  /* ---------------- render shell ---------------- */
 
   return (
     <>
-      {/* Fullscreen dimmer for internal fullscreen mode */}
       {isFullscreen && showFullscreenToggle && !isExternalFullscreen && (
         <div
           className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
@@ -517,16 +418,15 @@ export default function UniversalPreview({
         />
       )}
 
-      <div className={containerClass}>
-        {/* 2D / 3D mode toggle chips */}
+      <div className={`${wrapperBase} ${wrapperSize}`}>
         {enableModeToggle && !forcedViewMode && (has3d || has2d) && (
-          <div className="absolute top-2 left-2 z-[85] flex items-center gap-1">
+          <div className="absolute top-2 right-2 z-[85] flex items-center gap-1">
             <button
               type="button"
-              onClick={() => has2d && setInternalViewMode("2d")}
+              onClick={() => has2d && setViewMode("2d")}
               disabled={!has2d}
               className={`px-2 py-1 rounded-full text-[11px] border border-[var(--border-soft)] ${
-                effectiveViewMode === "2d"
+                viewMode === "2d"
                   ? "bg-[color-mix(in_srgb,var(--accent-primary)20%,transparent)] text-[var(--text-primary)]"
                   : "bg-[var(--surface-card)] text-[var(--text-secondary)]"
               } ${!has2d ? "opacity-40 cursor-not-allowed" : ""}`}
@@ -535,10 +435,10 @@ export default function UniversalPreview({
             </button>
             <button
               type="button"
-              onClick={() => has3d && setInternalViewMode("3d")}
+              onClick={() => has3d && setViewMode("3d")}
               disabled={!has3d}
               className={`px-2 py-1 rounded-full text-[11px] border border-[var(--border-soft)] ${
-                effectiveViewMode === "3d"
+                viewMode === "3d"
                   ? "bg-[color-mix(in_srgb,var(--accent-secondary)20%,transparent)] text-[var(--text-primary)]"
                   : "bg-[var(--surface-card)] text-[var(--text-secondary)]"
               } ${!has3d ? "opacity-40 cursor-not-allowed" : ""}`}
@@ -548,10 +448,8 @@ export default function UniversalPreview({
           </div>
         )}
 
-        {/* Main preview content */}
         {content}
 
-        {/* Fullscreen toggle button */}
         {showFullscreenToggle && has3d && !isExternalFullscreen && (
           <button
             type="button"
@@ -562,7 +460,6 @@ export default function UniversalPreview({
           </button>
         )}
 
-        {/* Selection overlay (mesh info) */}
         {enableSelectionOverlay && selectedInfo && (
           <div className="absolute left-3 bottom-3 z-[75] max-w-[70%] rounded-2xl bg-black/60 text-[11px] text-slate-100 px-3 py-2 backdrop-blur border border-white/10">
             <div className="font-semibold truncate">
@@ -586,7 +483,6 @@ export default function UniversalPreview({
           </div>
         )}
 
-        {/* Interaction hint bubble */}
         {hintVisible && (
           <div className="absolute left-3 bottom-3 z-[70] rounded-full bg-black/55 text-[10px] text-white px-3 py-1.5 backdrop-blur border border-white/10 shadow-sm transition-opacity">
             Drag to orbit · Scroll to zoom
