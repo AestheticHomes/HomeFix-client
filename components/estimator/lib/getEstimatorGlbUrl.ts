@@ -35,9 +35,8 @@ export function getEstimatorGlbUrl(
   const shapeKey = (rawShape ?? "linear").toLowerCase() as EstimatorShape;
   const asset = shapeFolderMap[shapeKey] ?? shapeFolderMap.linear;
 
-  const url = `${HOMEFIX_CDN}/items/${asset.folder}/${encodeURIComponent(
-    asset.file
-  )}`;
+  // Estimator GLBs live at the bucket root alongside items/ (no extra prefix).
+  const url = `${HOMEFIX_CDN}/${asset.folder}/${encodeURIComponent(asset.file)}`;
 
   if (process.env.NODE_ENV !== "production") {
     // eslint-disable-next-line no-console

@@ -42,7 +42,13 @@ const nextConfig = {
       { protocol: "https", hostname: "cdn.aesthetichomes.net" },
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "plus.unsplash.com" },
-      { protocol: "https", hostname: "*.supabase.co" },
+
+      // 👇 IMPORTANT: this fixes your 400 errors
+      {
+        protocol: "https",
+        hostname: "xnubmphixlpkyqfhghup.supabase.co",
+        pathname: "/storage/v1/object/public/homefix-catalog/**",
+      },
     ],
     unoptimized: false,
     minimumCacheTTL: 3600,

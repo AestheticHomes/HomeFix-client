@@ -2,7 +2,7 @@
 /**
  * ============================================================
  * 🛒 FILE: /app/store/page.tsx
- * 🧩 MODULE: Store (HomePreview-backed) v3.0 — Offline First
+ * 🧩 MODULE: Store (HomePreview-backed) v3.2 — Offline First
  * ------------------------------------------------------------
  * DATA CONTRACT
  *   - Source of truth: JSON in Supabase bucket via CDN
@@ -14,6 +14,14 @@
  *       1) Read cache → instant UI if present
  *       2) Background refresh from CDN → update cache + UI
  *   - If offline and cache exists → still works
+ *
+ * LAYOUT CONTRACT
+ *   - RootShell owns global scroll + padding.
+ *   - This page:
+ *       - Uses a fixed category rail under the header
+ *       - Adds left margin so grid starts AFTER:
+ *           main sidebar (80/256) + category rail (96)
+ *   - No inner scroll containers for the main product grid.
  * ============================================================
  */
 
@@ -28,6 +36,7 @@ import type { CatalogItem } from "@/types/catalog";
 import { AnimatePresence, motion } from "framer-motion";
 import { PackageOpen, Search, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 
 const CATALOG_CACHE_KEY = "edith_goods_catalog_v1";
@@ -38,15 +47,39 @@ type CatalogCachePayload = {
   items: CatalogItem[];
 };
 
+/**
+ * Categories rendered in the left rail.
+ *
+ * IMPORTANT:
+ *  - Ensure these names align with `CatalogItem["category"]`
+ *    after `mapGoodsToCatalog`, or filtering will show zero results.
+ */
+const CATEGORY_DEFS: { name: string; icon: ReactNode }[] = [
+  { name: "all", icon: <Tag size={20} /> },
+  { name: "Doors", icon: <Tag size={20} /> },
+  { name: "CNC Elements", icon: <Tag size={20} /> },
+  { name: "Wooden Panels", icon: <Tag size={20} /> },
+  { name: "Paint Finishes", icon: <Tag size={20} /> },
+  { name: "Hardware", icon: <Tag size={20} /> },
+  { name: "Lighting", icon: <Tag size={20} /> },
+  { name: "Bathroom", icon: <Tag size={20} /> },
+];
+
 export default function StorePage() {
   const router = useRouter();
   const { collapsed } = useSidebar();
-  const { addItem, items, totalPrice } = useProductCartStore();
+  const { addItem, increment, decrement, items, totalPrice } =
+    useProductCartStore();
+
   const cartCount = items.length;
 
+  // Full catalog (source for search/filter)
   const [all, setAll] = useState<CatalogItem[]>([]);
+  // View after search + category filter
   const [view, setView] = useState<CatalogItem[]>([]);
+  // Initial load state
   const [loading, setLoading] = useState(true);
+
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [isDesktop, setIsDesktop] = useState(false);
@@ -54,29 +87,22 @@ export default function StorePage() {
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const [isStale, setIsStale] = useState(false);
 
-  const categories = useMemo(
-    () => [
-      { name: "all", icon: <Tag size={20} /> },
-      { name: "Doors", icon: <Tag size={20} /> },
-      { name: "CNC Elements", icon: <Tag size={20} /> },
-      { name: "Wooden Panels", icon: <Tag size={20} /> },
-      { name: "Paint Finishes", icon: <Tag size={20} /> },
-      { name: "Hardware", icon: <Tag size={20} /> },
-      { name: "Lighting", icon: <Tag size={20} /> },
-      { name: "Bathroom", icon: <Tag size={20} /> },
-    ],
-    []
-  );
+  const hasCatalog = all.length > 0;
+
+  const categories = useMemo(() => CATEGORY_DEFS, []);
 
   // ---- Helpers for cache ----
+
   const readCache = () => {
     if (typeof window === "undefined") return null;
     try {
       const raw = window.localStorage.getItem(CATALOG_CACHE_KEY);
       if (!raw) return null;
       const parsed = JSON.parse(raw) as CatalogCachePayload;
+      if (!parsed.items || !Array.isArray(parsed.items)) return null;
       return parsed;
     } catch {
+      // Corrupted JSON or other error → ignore cache
       return null;
     }
   };
@@ -101,13 +127,16 @@ export default function StorePage() {
     const cached = readCache();
     if (cached && cached.items?.length) {
       setAll(cached.items);
-      setLoading(false);
       setLastUpdatedAt(cached.updatedAt);
+      setLoading(false);
 
       const age = Date.now() - cached.updatedAt;
       if (age > CATALOG_TTL_MS) {
         setIsStale(true);
       }
+    } else {
+      // No cache → stay in loading state until network attempt completes
+      setLoading(true);
     }
   }, []);
 
@@ -117,12 +146,16 @@ export default function StorePage() {
     const controller = new AbortController();
 
     const url = process.env.NEXT_PUBLIC_GOODS_CATALOG_URL;
+
+    // If env is missing, we can still operate on cache, if any.
     if (!url) {
       console.warn(
         "[StorePage] NEXT_PUBLIC_GOODS_CATALOG_URL is not set. " +
           "Expose your goods catalog JSON via Supabase bucket/CDN."
       );
-      setLoading(false);
+      if (!hasCatalog) {
+        setLoading(false);
+      }
       return;
     }
 
@@ -150,9 +183,11 @@ export default function StorePage() {
         if (!live) return;
 
         // If we already have cache, we silently stay on it.
-        // If we had nothing, stop loading so UI can show "no products" or skeleton.
+        // If we had nothing, stop loading so UI can show empty state.
+        if (!hasCatalog) {
+          setLoading(false);
+        }
         setIsStale(true);
-        setLoading(false);
         console.warn("[StorePage] Catalog sync failed", err);
       }
     })();
@@ -161,12 +196,13 @@ export default function StorePage() {
       live = false;
       controller.abort();
     };
-  }, []);
+  }, [hasCatalog]);
 
-  // 3) Filter + search (reactive to catalog, search, category)
+  // 3) Filter + search (reactive to catalog, search, category) with a tiny debounce
   useEffect(() => {
     const t = setTimeout(() => {
       const q = search.trim().toLowerCase();
+
       const filtered = all.filter((p) => {
         const catMatch =
           category === "all" ||
@@ -174,14 +210,19 @@ export default function StorePage() {
         const qMatch = !q || p.title.toLowerCase().includes(q);
         return catMatch && qMatch;
       });
+
       setView(filtered);
     }, 120);
+
     return () => clearTimeout(t);
   }, [search, category, all]);
 
-  // 4) Responsive
+  // 4) Responsive: derive a simple desktop breakpoint
   useEffect(() => {
-    const onResize = () => setIsDesktop(window.innerWidth >= 768);
+    const onResize = () => {
+      if (typeof window === "undefined") return;
+      setIsDesktop(window.innerWidth >= 768);
+    };
     onResize();
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -192,7 +233,7 @@ export default function StorePage() {
       id="store-safe-zone"
       className="relative flex flex-col w-full mx-auto bg-[var(--surface-base)] transition-colors duration-500"
     >
-      {/* Search */}
+      {/* Search bar (centered, behaves well on mobile) */}
       <div className="relative flex w-full sm:max-w-md mx-auto mt-4 mb-1 px-4">
         <Search className="absolute left-6 top-2.5 w-4 h-4 text-[var(--text-muted)]" />
         <input
@@ -208,19 +249,19 @@ export default function StorePage() {
         />
       </div>
 
-      {/* Optional tiny stale badge under search */}
+      {/* Tiny stale badge under search */}
       {lastUpdatedAt && (
         <p className="px-6 mb-2 text-[10px] text-[var(--text-muted)]">
-          Catalog updated{" "}
+          Catalog snapshot:{" "}
           {new Date(lastUpdatedAt).toLocaleString("en-IN", {
             hour12: false,
           })}
-          {isStale ? " • may be out of date (offline cache)" : ""}
+          {isStale ? " • may be out of date (using cached copy)" : ""}
         </p>
       )}
 
       <div className="relative flex-1 flex flex-row">
-        {/* Category rail (fixed under header) */}
+        {/* Category rail (fixed under header, independent scroll) */}
         <motion.aside
           animate={{ left: isDesktop ? (collapsed ? 80 : 256) : 0 }}
           transition={{ type: "spring", stiffness: 180, damping: 22 }}
@@ -261,7 +302,7 @@ export default function StorePage() {
           </div>
         </motion.aside>
 
-        {/* Grid (RootShell owns padding/scroll) */}
+        {/* Product grid (RootShell owns outer scroll/padding) */}
         <section
           className="flex-1 px-4 sm:px-8 pt-4 transition-all duration-700 ease-in-out bg-[var(--surface-base)]"
           style={{
@@ -274,12 +315,12 @@ export default function StorePage() {
             {loading ? (
               <motion.div
                 key="loading"
-                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 px-1"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-1"
               >
                 {Array.from({ length: 10 }).map((_, i) => (
                   <div
                     key={i}
-                    className="aspect-[4/3] rounded-2xl bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)] animate-pulse"
+                    className="aspect-[4/3] rounded-3xl bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)] animate-pulse"
                   />
                 ))}
               </motion.div>
@@ -287,21 +328,32 @@ export default function StorePage() {
               <motion.div
                 key="grid"
                 layout
-                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 px-1"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-1"
               >
-                {view.map((item) => (
-                  <CatalogPreviewCard
-                    key={item.id}
-                    item={item}
-                    onAdd={() =>
-                      addItem({
-                        id: item.id,
-                        title: item.title,
-                        price: item.price,
-                      })
-                    }
-                  />
-                ))}
+                {view.map((item) => {
+                  // Support both quantity-on-item and duplicate-items cart shapes
+                  const cartItem = items.find((i: any) => i.id === item.id);
+                  const quantity =
+                    typeof cartItem?.quantity === "number"
+                      ? cartItem.quantity
+                      : items.filter((i: any) => i.id === item.id).length;
+
+                  return (
+                    <CatalogPreviewCard
+                      key={item.id}
+                      item={item}
+                      quantity={quantity}
+                      onIncrement={() =>
+                        addItem({
+                          id: item.id,
+                          title: item.title,
+                          price: item.price,
+                        })
+                      }
+                      onDecrement={() => decrement(item.id)}
+                    />
+                  );
+                })}
               </motion.div>
             ) : (
               <motion.div
@@ -311,8 +363,8 @@ export default function StorePage() {
                 <PackageOpen className="w-10 h-10 mb-2 text-[var(--text-muted)]" />
                 <p>
                   {isStale
-                    ? "No products in cache and can't reach catalog."
-                    : "No products found."}
+                    ? "No products in cache and can’t reach the live catalog."
+                    : "No products found for this filter."}
                 </p>
               </motion.div>
             )}

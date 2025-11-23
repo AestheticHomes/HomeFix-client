@@ -10,15 +10,10 @@
  * Storage layout expectation (Supabase "homefix-catalog" bucket):
  *
  *   homefix-catalog/
- *     items/
- *       Straight_Kitchen/
- *         Straight_Kitchen.glb
- *       Parallel_Kitchen/
- *         Parallel_Kitchen.glb
- *       Kitchen_L_shape/
- *         Kitchen_L_shape.glb
- *       Kitchen_U_shape/
- *         Kitchen_U_shape.glb
+ *     Straight_Kitchen/Straight_Kitchen.glb
+ *     Parallel_Kitchen/Parallel_Kitchen.glb
+ *     Kitchen_L_shape/Kitchen_L_shape.glb
+ *     Kitchen_U_shape/Kitchen_U_shape.glb
  */
 
 export type EstimatorShape = "linear" | "parallel" | "lshape" | "u";

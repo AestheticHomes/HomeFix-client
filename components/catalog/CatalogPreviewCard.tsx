@@ -2,149 +2,165 @@
 /**
  * ============================================================
  * 🖼️ FILE: /components/catalog/CatalogPreviewCard.tsx
- * 🧩 MODULE: Preview Card (PNG-first, GLB-optional) v2.0
+ * 🧩 MODULE: Store Preview Card — PNG, Buy-first
  * ------------------------------------------------------------
- * BEHAVIOR
- *   - If item.glbUrl exists → render 3D mini preview
- *   - Else → render PNG image
- *   - Expand button only appears when 3D is available
- *   - Lazy-loads once visible
+ * ROLE:
+ *   - Big, simple card:
+ *       • Large PNG image (no 3D)
+ *       • Title
+ *       • Price
+ *       • Optional badge + promo line
+ *   - Image/title click → PDP (/p/[id])
+ *   - Bottom-right: Add / + / − to drive checkout directly
+ *
+ * PROPS:
+ *   - item: CatalogItem          // product data
+ *   - quantity?: number          // current qty in cart for this item
+ *   - onIncrement?: () => void   // called on "Add" or "+"
+ *   - onDecrement?: () => void   // called on "-"
  * ============================================================
  */
 
 import type { CatalogItem } from "@/types/catalog";
 import { motion } from "framer-motion";
-import { ShoppingCart } from "lucide-react";
-import dynamic from "next/dynamic";
-import Link from "next/link";
+import { Minus, Plus, ShoppingCart } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
-
-const UniversalPreview = dynamic(
-  () => import("@/components/preview/UniversalPreview"),
-  { ssr: false }
-);
+import Link from "next/link";
 
 type Props = {
   item: CatalogItem;
-  onAdd?: (item: CatalogItem) => void;
+  quantity?: number;
+  onIncrement?: () => void;
+  onDecrement?: () => void;
 };
 
-export default function CatalogPreviewCard({ item, onAdd }: Props) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-
-  const has3d = !!item.glbUrl;
+export default function CatalogPreviewCard({
+  item,
+  quantity = 0,
+  onIncrement,
+  onDecrement,
+}: Props) {
   const hasImage = !!item.coverUrl;
+  const inCart = quantity > 0;
 
-  // Lazy mount when visible
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) setVisible(true);
-      },
-      { rootMargin: "300px 0px" }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
+  const formattedPrice =
+    typeof item.price === "number"
+      ? `₹${item.price.toLocaleString("en-IN")}`
+      : "Price on request";
+
+  const categorySlug = item.category
+    ? item.category.toLowerCase().replace(/\s+/g, "-")
+    : "item";
+
+  // Simple promo line – you can extend this based on catalog fields
+  const promoText = item.category || "";
 
   return (
-    <div
-      ref={ref}
-      className="w-full rounded-2xl border border-[var(--border-soft)]
+    <article
+      className="group relative flex flex-col rounded-3xl
+                 border border-[var(--border-soft)]
                  bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)]
-                 overflow-hidden shadow-sm hover:shadow transition-shadow"
+                 shadow-sm hover:shadow-lg hover:border-[var(--accent-primary)]
+                 transition-all duration-200 overflow-hidden min-h-[260px]"
     >
-      {/* Preview region */}
-      <div className="relative aspect-[4/3]">
-        {visible ? (
-          has3d ? (
-            <UniversalPreview
-              glbUrl={item.glbUrl}
-              imageUrl={item.coverUrl}
-              mode="mini"
-              fullscreen={expanded}
-              onToggleFullscreen={(next) => setExpanded(next)}
-              enableModeToggle={expanded ? true : false}
-              initialMode={expanded ? "auto" : "2d"}
-              showFullscreenToggle={expanded}
-            />
-          ) : hasImage ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-[var(--surface-panel)]">
-              <Image
-                src={item.coverUrl!}
-                alt={item.title}
-                fill
-                sizes="(min-width: 1024px) 240px, (min-width: 640px) 180px, 45vw"
-                className="object-contain"
-                priority={false}
-              />
-            </div>
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-xs text-[var(--text-muted)] bg-[var(--surface-panel)]">
-              No preview
-            </div>
-          )
+      {/* IMAGE AREA → PDP */}
+      <Link
+        href={`/store/${categorySlug}/${item.id}`}
+        className="relative block w-full aspect-[4/3] bg-[var(--surface-panel)]"
+      >
+        {hasImage ? (
+          <Image
+            src={item.coverUrl as string}
+            alt={item.title}
+            fill
+            sizes="(min-width: 1280px) 260px, (min-width: 768px) 220px, 50vw"
+            className="object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+          />
         ) : (
-          <div className="absolute inset-0 animate-pulse bg-[var(--surface-panel)]" />
+          <div className="absolute inset-0 flex items-center justify-center text-xs text-[var(--text-muted)]">
+            No preview
+          </div>
         )}
 
-        {/* Badge */}
-        {item.badge && (
-          <span
-            className="absolute left-3 top-3 text-[11px] px-2 py-1 rounded-full
-                       bg-[color-mix(in_srgb,var(--accent-primary)20%,transparent)]
-                       border border-[color-mix(in_srgb,var(--accent-primary)40%,transparent)]
-                       text-[var(--accent-primary)]"
-          >
-            {item.badge}
-          </span>
+        {/* Badge (e.g. bestseller / new) */}
+        {(item.badge || item.category) && (
+          <div className="absolute left-3 top-3 flex flex-row gap-2">
+            {item.badge && (
+              <span className="rounded-full bg-[var(--accent-primary)] text-white text-[10px] px-2 py-0.5 font-semibold shadow-sm">
+                {item.badge}
+              </span>
+            )}
+          </div>
         )}
+      </Link>
 
-        {/* Expand button — only when 3D exists */}
-        {has3d && (
-          <button
-            onClick={() => setExpanded(true)}
-            className="absolute right-3 top-3 text-xs px-2 py-1 rounded-lg
-                       bg-[var(--surface-card)] border border-[var(--border-subtle)]
-                       hover:bg-[var(--surface-hover)]"
-          >
-            Expand
-          </button>
-        )}
-      </div>
-
-      {/* Meta info */}
-      <div className="p-3">
-        <Link href={`/p/${item.id}`} className="block">
-          <div className="font-medium text-[var(--text-primary)] line-clamp-1">
+      {/* TEXT + PRICE + CART CONTROLS */}
+      <div className="flex flex-1 flex-col px-3.5 pt-3 pb-3.5 gap-2">
+        {/* Title + subtle category → PDP */}
+      <Link href={`/store/${categorySlug}/${item.id}`} className="block">
+          <h3 className="text-[14px] font-semibold text-[var(--text-primary)] line-clamp-2">
             {item.title}
-          </div>
-          <div className="text-[12px] text-[var(--text-secondary)]">
-            {item.category}
-          </div>
+          </h3>
+          {item.category && (
+            <p className="mt-0.5 text-[11px] text-[var(--text-secondary)]">
+              {item.category}
+            </p>
+          )}
         </Link>
 
-        <div className="mt-2 flex items-center justify-between">
-          <div className="font-semibold text-[var(--accent-success)]">
-            ₹{item.price.toLocaleString("en-IN")}
+        {/* Price + promo + controls */}
+        <div className="mt-1 flex items-end justify-between gap-2">
+          <div className="flex flex-col">
+            <span className="text-[14px] font-bold text-[var(--accent-success)]">
+              {formattedPrice}
+            </span>
+            {promoText && (
+              <span className="mt-0.5 text-[11px] text-[var(--text-secondary)] line-clamp-1">
+                {promoText}
+              </span>
+            )}
           </div>
 
-          <motion.button
-            whileTap={{ scale: 0.96 }}
-            onClick={() => onAdd?.(item)}
-            className="inline-flex items-center gap-2 text-white text-sm px-3 py-1.5 rounded-lg
-                       bg-[var(--accent-primary)] hover:brightness-110"
-          >
-            <ShoppingCart size={16} />
-            Add
-          </motion.button>
+          {/* Cart controls */}
+          {!inCart ? (
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.95 }}
+              onClick={onIncrement}
+              className="inline-flex items-center gap-1.5 rounded-2xl px-3 py-1.5
+                         bg-[var(--accent-primary)] text-white text-[11px] font-semibold
+                         shadow-sm hover:brightness-110"
+            >
+              <ShoppingCart className="w-3.5 h-3.5" />
+              <span>Add</span>
+            </motion.button>
+          ) : (
+            <div className="inline-flex items-center rounded-2xl bg-[var(--surface-panel)] px-2 py-1 gap-1.5">
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.9 }}
+                onClick={onDecrement}
+                className="flex h-6 w-6 items-center justify-center rounded-full
+                           bg-[var(--surface-card)] border border-[var(--border-subtle)]"
+              >
+                <Minus className="w-3 h-3" />
+              </motion.button>
+              <span className="min-w-[1.5rem] text-center text-[12px] font-semibold">
+                {quantity}
+              </span>
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.9 }}
+                onClick={onIncrement}
+                className="flex h-6 w-6 items-center justify-center rounded-full
+                           bg-[var(--accent-primary)] text-white"
+              >
+                <Plus className="w-3 h-3" />
+              </motion.button>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </article>
   );
 }
