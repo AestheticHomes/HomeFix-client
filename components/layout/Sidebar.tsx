@@ -10,8 +10,7 @@
 
 import { useSidebar } from "@/contexts/SidebarContext";
 import { useUser } from "@/contexts/UserContext";
-import { supabase } from "@/lib/supabaseClient";
-import { HomeFixUser } from "@/types/HomeFixUser";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { motion } from "framer-motion";
 import {
   Box,
@@ -29,7 +28,8 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const ThemeToggle = dynamic(() => import("@/components/ThemeToggle"), {
   ssr: false,
@@ -53,46 +53,31 @@ const NAV = [
 
 export default function Sidebar() {
   const { collapsed, setCollapsed } = useSidebar();
-  const { user: contextUser } = useUser();
+  const { logout } = useUser();
+  const { user, loggedIn, isLoading } = useUserProfile();
+  const router = useRouter();
 
-  const [user, setUser] = useState<HomeFixUser | null>(null);
   const [pinned, setPinned] = useState<boolean>(false);
 
   const widthPx = collapsed ? 80 : 256;
 
-  /* 🧠 Hydrate user */
-  useEffect(() => {
-    if (contextUser && contextUser.loggedIn) {
-      setUser(contextUser);
-      return;
-    }
-
-    // fallback only if no real context user
-    const cached = localStorage.getItem("user");
-    if (cached) {
-      try {
-        setUser(JSON.parse(cached));
-      } catch {
-        localStorage.removeItem("user");
-      }
-    }
-  }, [contextUser]);
-
   /* 🚪 Logout */
   const handleLogout = useCallback(async () => {
     try {
-      await supabase.auth.signOut();
-      localStorage.removeItem("user");
-      setUser(null);
-      window.dispatchEvent(new CustomEvent("profile-updated"));
-      setTimeout(() => (window.location.href = "/login"), 300);
+      await logout();
+      router.push("/login");
     } catch (err) {
       console.error("💥 [Sidebar Logout Error]:", err);
-      window.location.href = "/login";
+      router.push("/login");
     }
-  }, []);
+  }, [logout, router]);
 
-  const avatarLetter = user?.name?.[0]?.toUpperCase() || "G";
+  const displayName =
+    (loggedIn && (user?.name || user?.email)) || "Guest";
+  const statusLabel = loggedIn ? "Verified profile ✓" : "Not signed in";
+  const avatarLetter =
+    displayName?.[0]?.toUpperCase() || "G";
+  const showLogin = !isLoading && !loggedIn;
 
   return (
     <motion.aside
@@ -255,10 +240,10 @@ export default function Sidebar() {
             <div className="flex items-center justify-between flex-1 ml-3">
               <div className="flex flex-col leading-tight">
                 <span className="text-[15px] font-medium">
-                  {user?.name || "Guest"}
+                  {displayName}
                 </span>
                 <span className="text-xs text-[var(--text-muted)]">
-                  Member
+                  {statusLabel}
                 </span>
               </div>
               <ThemeToggle />
@@ -266,7 +251,7 @@ export default function Sidebar() {
           )}
         </div>
 
-        {user ? (
+        {loggedIn ? (
           <motion.button
             whileTap={{ scale: 0.96 }}
             onClick={handleLogout}
@@ -276,7 +261,7 @@ export default function Sidebar() {
             <LogOut size={16} />
             {!collapsed && <span className="text-sm">Logout</span>}
           </motion.button>
-        ) : (
+        ) : showLogin ? (
           <Link
             href="/login"
             className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-lg
@@ -285,7 +270,7 @@ export default function Sidebar() {
             <LogIn size={16} />
             {!collapsed && <span className="text-sm">Login</span>}
           </Link>
-        )}
+        ) : null}
       </div>
     </motion.aside>
   );

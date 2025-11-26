@@ -12,6 +12,8 @@
  */
 
 import { supabase } from "@/lib/supabaseClient";
+import { clearLocalUserState } from "@/lib/clearUserState";
+import { clearUserCaches } from "@/lib/clearUserCaches";
 import {
   createContext,
   ReactNode,
@@ -47,6 +49,7 @@ interface UserContextType {
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   setUser: (u: HomeFixUser | null) => void;
+  refreshProfile: () => Promise<void>;
 }
 
 /* -------------------------
@@ -369,12 +372,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
   /* Logout */
   const logout = useCallback(async () => {
     try {
+      await clearUserCaches();
+      await clearLocalUserState();
       // attempt sign out at supabase
       await supabase.auth.signOut().catch(() => {});
     } catch (err) {
       if (DEBUG) console.warn("[UserContext] supabase.signOut failed", err);
     } finally {
-      localStorage.setItem(LOGOUT_MARKER, "1");
+      try {
+        localStorage.setItem(LOGOUT_MARKER, "1");
+      } catch {}
       persistCache(null);
       setUserState(null);
       try {
@@ -384,6 +391,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
         new CustomEvent("hf:session-sync", { detail: "logged_out" })
       );
       if (DEBUG) console.log("[UserContext] logout finished");
+      try {
+        window.location.href = "/login";
+      } catch {}
     }
   }, []);
 
@@ -423,6 +433,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Alias for clarity across components
+  const refreshProfile = refreshUser;
+
   const isLoggedIn = useMemo(() => {
     if (!user) return false;
     // Consider any user with an id OR legacy flags as logged in.
@@ -440,6 +453,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         refreshUser,
+        refreshProfile,
         setUser: setUserState,
       }}
     >
@@ -463,6 +477,7 @@ export function useUser(): UserContextType {
       logout: async () => {},
       refreshUser: async () => {},
       setUser: () => {},
+      refreshProfile: async () => {},
     };
   }
   return ctx;

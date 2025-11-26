@@ -22,7 +22,7 @@ import {
   useServiceCartStore,
 } from "@/components/store/cartStore";
 import { Button } from "@/components/ui/button";
-import { useUser } from "@/contexts/UserContext";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle, Loader2, MapPin, WifiOff, Wrench } from "lucide-react";
 import { nanoid } from "nanoid";
@@ -63,7 +63,7 @@ interface CardProps {
 function CheckoutPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useUser();
+  const { user, loggedIn, isLoading: loadingProfile } = useUserProfile();
   const { addEntry } = useLedgerX();
 
   const productItems = useProductCartStore((s) => s.items);
@@ -100,7 +100,7 @@ function CheckoutPageInner() {
   const [landmark, setLandmark] = useState("");
   const [receiverName, setReceiverName] = useState("");
   const [receiverPhone, setReceiverPhone] = useState("");
-  const [sameAsUser, setSameAsUser] = useState(false);
+  const [sameAsUser, setSameAsUser] = useState(true);
   const [serviceContactName, setServiceContactName] = useState("");
   const [serviceContactPhone, setServiceContactPhone] = useState("");
   const [preferredDate, setPreferredDate] = useState("");
@@ -120,45 +120,31 @@ function CheckoutPageInner() {
   /* UID RESOLUTION */
   useEffect(() => {
     const determineUid = () => {
-      const cachedUser = localStorage.getItem("user");
-      let determinedUid: string | null = null;
-
       if (user?.id) {
-        determinedUid = user.id;
-      } else if (cachedUser) {
-        try {
-          const parsed = JSON.parse(cachedUser);
-          determinedUid = parsed?.id || null;
-        } catch {
-          determinedUid = null;
-        }
+        setUid(user.id);
+        return;
       }
 
-      if (!determinedUid) {
-        const guest =
-          localStorage.getItem("hf_guest_id") || `guest-${nanoid(10)}`;
-        localStorage.setItem("hf_guest_id", guest);
-        determinedUid = guest;
-      }
-
-      setUid(determinedUid);
+      const guest =
+        localStorage.getItem("hf_guest_id") || `guest-${nanoid(10)}`;
+      localStorage.setItem("hf_guest_id", guest);
+      setUid(guest);
     };
 
     determineUid();
-  }, [user]);
+  }, [user?.id]);
 
-  /* Autofill */
+  /* Autofill from profile when available */
   useEffect(() => {
-    const u =
-      user ||
-      JSON.parse(localStorage.getItem("user") || "null") ||
-      JSON.parse(sessionStorage.getItem("user") || "null");
-
-    if (sameAsUser && u) {
-      setReceiverName(u.name || "");
-      setReceiverPhone(u.phone || "");
+    if (loadingProfile || !loggedIn || !user) return;
+    if (sameAsUser) {
+      setReceiverName((prev) => prev || user.name || "");
+      setReceiverPhone((prev) => prev || user.phone || "");
+    } else {
+      setReceiverName((prev) => prev || user.name || "");
+      setReceiverPhone((prev) => prev || user.phone || "");
     }
-  }, [sameAsUser, user]);
+  }, [loadingProfile, loggedIn, user, sameAsUser]);
 
   useEffect(() => {
     if (user?.name && !serviceContactName) {
@@ -515,7 +501,14 @@ function CheckoutPageInner() {
                 <input
                   type="checkbox"
                   checked={sameAsUser}
-                  onChange={(e) => setSameAsUser(e.target.checked)}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setSameAsUser(checked);
+                    if (checked && user) {
+                      setReceiverName(user.name || "");
+                      setReceiverPhone(user.phone || "");
+                    }
+                  }}
                 />
                 I will receive it myself {user?.name ? `(as ${user.name})` : ""}
               </label>

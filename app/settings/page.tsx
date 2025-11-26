@@ -6,11 +6,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-// ❗ FIXED — correct supabase import
-import { supabase } from "@/lib/supabaseClient";
-
 import PWAInstallButton from "@/components/PWAInstallButton";
-import { useAuth } from "@/lib/useAuth";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useUser } from "@/contexts/UserContext";
 import {
   Briefcase,
   ChevronRight,
@@ -25,7 +23,8 @@ const ThemeToggle = dynamic(() => import("@/components/ThemeToggle"), {
 });
 
 export default function SettingsPage() {
-  const { user, setUser, loading } = useAuth();
+  const { user, loggedIn, loading } = useUserProfile();
+  const { logout } = useUser();
   const router = useRouter();
 
   const [role, setRole] = useState("user");
@@ -52,15 +51,7 @@ export default function SettingsPage() {
           return;
         }
 
-        const { data, error } = await supabase
-          .from("user_profiles")
-          .select("role")
-          .eq("id", user.id)
-          .maybeSingle();
-
-        if (error) console.warn("[SETTINGS] Role fetch error:", error.message);
-
-        setRole(data?.role || "user");
+        setRole(user.role || "user");
       } catch (err) {
         console.error("[SETTINGS] Role check failed:", err);
         setRole("user");
@@ -78,14 +69,7 @@ export default function SettingsPage() {
      🚪 Logout Handler
   ------------------------------------------------------------ */
   const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut(); // ❗ Now it works because import is correct
-    } catch (e) {
-      console.warn("Logout failed", e);
-    }
-
-    localStorage.removeItem("user");
-    setUser(null);
+    await logout();
     router.push("/login");
   };
 
@@ -105,7 +89,7 @@ export default function SettingsPage() {
         Settings
       </motion.h1>
 
-      {!user ? (
+      {!loggedIn ? (
         <Link
           href="/login"
           className="block text-center py-4 rounded-xl bg-[var(--accent-success)] hover:bg-[var(--accent-success-hover)] text-white font-medium transition"

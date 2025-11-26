@@ -23,7 +23,8 @@
 import { motion } from "framer-motion";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 
 import { ClimateBar } from "@/components/chrome/ClimateBar";
@@ -52,7 +53,6 @@ function ClimateSlot() {
 export default function UniversalHeader(): React.ReactElement {
   const headerRef = useRef<HTMLElement | null>(null);
   const pathname = usePathname() || "/";
-  const router = useRouter();
   const { theme, setTheme, systemTheme } = useTheme();
   const promo = usePromo();
 
@@ -94,7 +94,9 @@ export default function UniversalHeader(): React.ReactElement {
       {/* ── Top bar ───────────────────────────────────────────── */}
       <div className="mx-auto flex w-full max-w-[1360px] flex-wrap items-center justify-between px-4 sm:px-6 py-3.5 gap-3">
         <div className="flex items-center gap-3.5">
-          <HomeFixLogo size="md" />
+          <Link href="/" aria-label="HomeFix – Home" className="flex items-center gap-3.5">
+            <HomeFixLogo size="md" />
+          </Link>
           {mounted && (
             <motion.span
               className="hidden sm:inline text-sm text-[var(--text-secondary)] italic"

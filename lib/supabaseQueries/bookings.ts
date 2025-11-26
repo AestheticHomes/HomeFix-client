@@ -5,6 +5,8 @@
  * Project: HomeFix India v3.1
  * Supabase Project ID: xnubmphixlpkyqfhghup
  * ------------------------------------------------------------
+ * LEGACY: uses old `bookings` table for historic/admin data only.
+ * New customer flows must use bookings_ledger + booking_events.
  * ✅ Typed Supabase client (Database-aware)
  * ✅ Flattened joins using !inner
  * ✅ Safe mapping + TS-strict BookingRow interface
@@ -21,7 +23,7 @@ import type { Database } from "@/lib/database.types";
 /* ------------------------------------------------------------
    🧩 Type Definition for Dashboard Consumption
 ------------------------------------------------------------ */
-export interface BookingRow {
+export interface LegacyBookingRow {
   id: string;
   created_at: string;
   address: string | null;
@@ -38,7 +40,7 @@ export interface BookingRow {
 /* ------------------------------------------------------------
    🚀 Fetch All Bookings (Admin Dashboard)
 ------------------------------------------------------------ */
-export async function fetchAllBookings(): Promise<BookingRow[]> {
+export async function fetchAllBookings(): Promise<LegacyBookingRow[]> {
   try {
     const { data, error } = await supabase
       .from("bookings")
@@ -66,7 +68,7 @@ export async function fetchAllBookings(): Promise<BookingRow[]> {
     }
 
     // Map and flatten relational data
-    const normalized: BookingRow[] = data.map((b: any) => ({
+    const normalized: LegacyBookingRow[] = data.map((b: any) => ({
       id: b.id,
       created_at: b.created_at,
       address: b.address ?? null,

@@ -15,6 +15,7 @@ import OTPInput from "@/components/OTPInput";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import { useOtpManager } from "@/hooks/useOtpManager";
+import { refreshProfileSWR } from "@/hooks/useUserProfile";
 import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Phone } from "lucide-react";
@@ -35,7 +36,7 @@ interface HomeFixUser {
 }
 
 export default function LoginPage() {
-  const { login } = useUser();
+  const { login, refreshUser } = useUser();
   const router = useRouter();
   const {
     sendOtp,
@@ -171,10 +172,11 @@ export default function LoginPage() {
       };
 
       // ----------------------------------------------------------
-      // 🔥 3. Login through UserContext
-      //    (DO NOT write to localStorage manually)
+      // 🔥 3. Login through UserContext, then hydrate latest profile
       // ----------------------------------------------------------
       login(userData, true);
+      refreshUser().catch(() => {});
+      refreshProfileSWR();
 
       // ----------------------------------------------------------
       // 🔥 4. Set cookies
@@ -201,6 +203,7 @@ export default function LoginPage() {
     otp,
     otpVerifying,
     phoneDigits,
+    refreshUser,
     router,
     success,
     verifyOtp,

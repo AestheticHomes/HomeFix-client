@@ -2,6 +2,7 @@
 // HomeFix Profile Manager v6 — server-truth, no accidental verification
 
 import { supabaseServer } from "@/lib/supabaseServerClient";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -217,35 +218,25 @@ export async function POST(req: Request) {
 }
 
 /* ============================== GET ============================== */
-export async function GET(req: Request) {
+export async function GET() {
   const sb = supabaseServer;
   try {
-    const { searchParams } = new URL(req.url);
-    const rawPhone = searchParams.get("phone");
-    const phoneSafe = normalizePhone(rawPhone);
+    const cookieStore = cookies();
+    const userId = cookieStore.get("hf_user_id")?.value || null;
 
-    if (!phoneSafe) {
-      return NextResponse.json(
-        { success: false, message: "Missing phone number" },
-        { status: 400 }
-      );
+    if (!userId) {
+      return NextResponse.json({ success: false, user: null }, { status: 401 });
     }
 
     const { data, error } = await sb
       .from(TABLE)
       .select("*")
-      .in("phone", [
-        phoneSafe,
-        phoneSafe.replace("+", ""),
-        phoneSafe.slice(-10),
-      ])
-      .order("updated_at", { ascending: false })
-      .limit(1)
+      .eq("id", userId)
       .maybeSingle();
     if (error) throw error;
     if (!data) {
       return NextResponse.json(
-        { success: false, message: "No matching user found" },
+        { success: false, user: null, message: "No matching user found" },
         { status: 404 }
       );
     }

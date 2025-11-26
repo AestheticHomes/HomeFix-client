@@ -1,5 +1,12 @@
-// File: components/ledgerx/db.ts
-// Clean IndexedDB wrapper for LedgerX (enhanced)
+"use client";
+
+/**
+ * LedgerX client-side cache
+ * -------------------------------------------
+ * Supabase DB is the canonical source of truth.
+ * This IndexedDB cache is overwritten whenever fresh
+ * data is fetched for the current user.
+ */
 
 export interface LedgerXDBEntry {
   id: string;
@@ -36,11 +43,12 @@ const LEGACY_DB_NAMES = ["homefix-ledgerx", "ledgerx_db"];
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
-function openDB(): Promise<IDBDatabase> {
+async function openDB(): Promise<IDBDatabase> {
   if (dbPromise) return dbPromise;
 
   dbPromise = new Promise((resolve, reject) => {
-    if (typeof window === "undefined") return reject(new Error("No window"));
+    if (typeof window === "undefined")
+      return reject(new Error("No window for IndexedDB"));
 
     const req = indexedDB.open(DB_NAME, DB_VERSION);
 
@@ -59,8 +67,6 @@ function openDB(): Promise<IDBDatabase> {
 
   return dbPromise;
 }
-
-/* ---------------------- Transaction helpers ---------------------- */
 
 async function withTx<T>(
   mode: IDBTransactionMode,
@@ -82,24 +88,62 @@ async function withTx<T>(
   }
 }
 
-/* ---------------------- EXPORTED API ---------------------- */
-
-export async function getLedgerDB(): Promise<IDBDatabase> {
-  return openDB();
+export async function getOrdersForUser(
+  userId: string
+): Promise<LedgerXDBEntry[]> {
+  return withTx("readonly", async (store) => {
+    return await new Promise<LedgerXDBEntry[]>((resolve, reject) => {
+      const idx = store.index("userId");
+      const req = idx.getAll(IDBKeyRange.only(userId));
+      req.onsuccess = () => resolve(req.result as LedgerXDBEntry[]);
+      req.onerror = () => reject(req.error);
+    });
+  });
 }
 
+export async function setOrdersForUser(
+  userId: string,
+  orders: LedgerXDBEntry[]
+): Promise<void> {
+  await withTx("readwrite", async (store) => {
+    // Clear existing entries for this user then bulk put
+    const idx = store.index("userId");
+    const req = idx.getAllKeys(IDBKeyRange.only(userId));
+    const keys: IDBValidKey[] = await new Promise((resolve, reject) => {
+      req.onsuccess = () => resolve(req.result as IDBValidKey[]);
+      req.onerror = () => reject(req.error);
+    });
+    keys.forEach((key) => store.delete(key));
+    orders.forEach((entry) => store.put(entry));
+  });
+}
+
+export async function clearOrdersForUser(userId: string): Promise<void> {
+  await withTx("readwrite", async (store) => {
+    const idx = store.index("userId");
+    const req = idx.getAllKeys(IDBKeyRange.only(userId));
+    const keys: IDBValidKey[] = await new Promise((resolve, reject) => {
+      req.onsuccess = () => resolve(req.result as IDBValidKey[]);
+      req.onerror = () => reject(req.error);
+    });
+    keys.forEach((key) => store.delete(key));
+  });
+}
+
+// Generic helpers retained for legacy consumers (pure client cache only)
 export async function addLedgerEntry(entry: LedgerXDBEntry): Promise<void> {
   await withTx("readwrite", async (store) => {
     store.put(entry);
+    return entry;
   });
 }
 
 export async function getAllLedgerEntries(): Promise<LedgerXDBEntry[]> {
   return withTx("readonly", async (store) => {
     return await new Promise<LedgerXDBEntry[]>((resolve, reject) => {
-      const request = store.getAll();
-      request.onsuccess = () => resolve(request.result as LedgerXDBEntry[]);
-      request.onerror = () => reject(request.error);
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result as LedgerXDBEntry[]);
+      req.onerror = () => reject(req.error);
     });
   });
 }

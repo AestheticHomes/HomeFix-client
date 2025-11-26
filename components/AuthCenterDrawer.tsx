@@ -38,7 +38,8 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { useUser } from "@/contexts/UserContext";
+import { useUser, type HomeFixUser } from "@/contexts/UserContext";
+import { useUserProfile, refreshProfileSWR } from "@/hooks/useUserProfile";
 import { useToast } from "@/hooks/use-toast";
 import { useOtpManager } from "@/hooks/useOtpManager";
 import { AnimatePresence, motion } from "framer-motion";
@@ -84,7 +85,8 @@ export default function AuthCenterDrawer({
   initialMode?: Panel | "form";
 }) {
   const { success, error } = useToast();
-  const { user, login } = useUser();
+  const { login, refreshProfile, setUser } = useUser();
+  const { user, refresh } = useUserProfile();
 
   const {
     sendOtp,
@@ -114,12 +116,7 @@ export default function AuthCenterDrawer({
   const otpRefs = useRef<HTMLInputElement[]>([]);
 
   // Derivations
-  const cached =
-    typeof window !== "undefined"
-      ? JSON.parse(localStorage.getItem("user") || "null")
-      : null;
-
-  const cachedEmail = (cached?.email || "").trim().toLowerCase();
+  const cachedEmail = (user?.email || "").trim().toLowerCase();
   const phone10 = only10(phone);
 
   const isPhoneChanged = useMemo(() => {
@@ -136,7 +133,9 @@ export default function AuthCenterDrawer({
   useEffect(() => {
     if (!open) return;
 
-    const pre = cached || user || {};
+    const pre = user || {};
+    refreshProfile().catch(() => {});
+    refresh().catch(() => {});
     setName(pre.name || pre.full_name || "");
     setEmail(pre.email || "");
     setEmailVerified(!!pre.email_verified);
@@ -157,7 +156,7 @@ export default function AuthCenterDrawer({
     try {
       // Require verified phone for identity anchoring
       const phoneE164 =
-        normPhoneE164(cached?.phone || (phone10 ? `+91${phone10}` : "")) || "";
+        normPhoneE164(user?.phone || (phone10 ? `+91${phone10}` : "")) || "";
 
       if (!phoneE164) {
         error("Verify your phone before saving.");
@@ -188,9 +187,11 @@ export default function AuthCenterDrawer({
       const data = await res.json();
       if (!data?.success) throw new Error(data?.message || "Save failed");
 
-      const updatedUser = { ...(cached || {}), ...(data.user || {}) };
+      const updatedUser = { ...(user || {}), ...(data.user || {}) };
       localStorage.setItem("user", JSON.stringify(updatedUser));
       login(updatedUser, true);
+      refreshProfile().catch(() => {});
+      refresh().catch(() => {});
 
       window.dispatchEvent(new Event("profile-updated"));
       success("Profile updated successfully!");
@@ -240,6 +241,12 @@ export default function AuthCenterDrawer({
     const ok = await verifyOtp(otp, email, "email");
     if (ok) {
       setEmailVerified(true);
+      setUser((prev: HomeFixUser | null) =>
+        prev ? { ...prev, email_verified: true } : prev
+      );
+      refreshProfile().catch(() => {});
+      refresh().catch(() => {});
+      refreshProfileSWR();
       window.dispatchEvent(new Event("profile-updated"));
       setPanel("success");
       setTimeout(() => setPanel("form"), 900);

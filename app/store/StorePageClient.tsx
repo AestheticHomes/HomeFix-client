@@ -27,20 +27,10 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import CatalogPreviewCard from "@/components/catalog/CatalogPreviewCard";
 import { useProductCartStore } from "@/components/store/cartStore";
 import { useSidebar } from "@/contexts/SidebarContext";
-import {
-  mapGoodsToCatalog,
-  normalizeCategory,
-  type GoodsRow,
-} from "@/lib/catalog/mapGoodsToCatalog";
+import { normalizeCategory } from "@/lib/catalog/mapGoodsToCatalog";
+import { useCatalogWithCache } from "@/hooks/useCatalogWithCache";
+import { useStoreAssetPrefetch } from "@/hooks/useStoreAssetPrefetch";
 import type { CatalogItem } from "@/types/catalog";
-
-const CATALOG_CACHE_KEY = "edith_goods_catalog_v1";
-const CATALOG_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours
-
-type CatalogCachePayload = {
-  updatedAt: number;
-  items: CatalogItem[];
-};
 
 /**
  * Categories rendered in the left rail.
@@ -67,6 +57,9 @@ export default function StorePageClient() {
 
   const cartCount = items.length;
 
+  const { items: catalogItems, isLoading, isStale, lastUpdatedAt } =
+    useCatalogWithCache();
+
   // Full catalog (source for search/filter)
   const [all, setAll] = useState<CatalogItem[]>([]);
   // View after search + category filter
@@ -78,119 +71,14 @@ export default function StorePageClient() {
   const [category, setCategory] = useState("all");
   const [isDesktop, setIsDesktop] = useState(false);
 
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
-  const [isStale, setIsStale] = useState(false);
-
-  const hasCatalog = all.length > 0;
-
   const categories = useMemo(() => CATEGORY_DEFS, []);
-
-  // ---- Helpers for cache ----
-
-  const readCache = () => {
-    if (typeof window === "undefined") return null;
-    try {
-      const raw = window.localStorage.getItem(CATALOG_CACHE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as CatalogCachePayload;
-      if (!parsed.items || !Array.isArray(parsed.items)) return null;
-      return parsed;
-    } catch {
-      // Corrupted JSON or other error → ignore cache
-      return null;
-    }
-  };
-
-  const writeCache = (items: CatalogItem[]) => {
-    if (typeof window === "undefined") return;
-    try {
-      const payload: CatalogCachePayload = {
-        updatedAt: Date.now(),
-        items,
-      };
-      window.localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(payload));
-      setLastUpdatedAt(payload.updatedAt);
-      setIsStale(false);
-    } catch {
-      // Ignore quota / serialization errors
-    }
-  };
-
-  // 1) Try to hydrate from local cache immediately (offline-first)
+  // Hydrate from hook output
   useEffect(() => {
-    const cached = readCache();
-    if (cached && cached.items?.length) {
-      setAll(cached.items);
-      setLastUpdatedAt(cached.updatedAt);
+    setAll(catalogItems);
+    if (!isLoading || catalogItems.length > 0) {
       setLoading(false);
-
-      const age = Date.now() - cached.updatedAt;
-      if (age > CATALOG_TTL_MS) {
-        setIsStale(true);
-      }
-    } else {
-      // No cache → stay in loading state until network attempt completes
-      setLoading(true);
     }
-  }, []);
-
-  // 2) Background refresh from Supabase CDN JSON
-  useEffect(() => {
-    let live = true;
-    const controller = new AbortController();
-
-    const url = process.env.NEXT_PUBLIC_GOODS_CATALOG_URL;
-
-    // If env is missing, we can still operate on cache, if any.
-    if (!url) {
-      console.warn(
-        "[StorePage] NEXT_PUBLIC_GOODS_CATALOG_URL is not set. " +
-          "Expose your goods catalog JSON via Supabase bucket/CDN."
-      );
-      if (!hasCatalog) {
-        setLoading(false);
-      }
-      return;
-    }
-
-    (async () => {
-      try {
-        const res = await fetch(url, {
-          signal: controller.signal,
-          // We control staleness at app level; CDN/browser still help
-          cache: "no-cache",
-        });
-
-        if (!res.ok) {
-          throw new Error(`Catalog fetch failed: ${res.status}`);
-        }
-
-        const rows = (await res.json()) as GoodsRow[];
-        const mapped = mapGoodsToCatalog(rows || []);
-
-        if (!live) return;
-
-        setAll(mapped);
-        writeCache(mapped);
-        setLoading(false);
-      } catch (err) {
-        if (!live) return;
-
-        // If we already have cache, we silently stay on it.
-        // If we had nothing, stop loading so UI can show empty state.
-        if (!hasCatalog) {
-          setLoading(false);
-        }
-        setIsStale(true);
-        console.warn("[StorePage] Catalog sync failed", err);
-      }
-    })();
-
-    return () => {
-      live = false;
-      controller.abort();
-    };
-  }, [hasCatalog]);
+  }, [catalogItems, isLoading]);
 
   // 3) Filter + search (reactive to catalog, search, category) with a tiny debounce
   useEffect(() => {
@@ -225,6 +113,9 @@ export default function StorePageClient() {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  // Prefetch thumbnails for current view
+  useStoreAssetPrefetch(view);
 
   // --- Store-level JSON-LD (schema.org/Store) ---
   const storeJsonLd = {

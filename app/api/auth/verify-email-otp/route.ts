@@ -155,18 +155,24 @@ export async function POST(req: Request) {
         otp_created_at: null,
       })
       .eq("id", profile.id)
-      .select("id, email, email_verified")
+      .select(
+        "id, email, email_verified, phone, phone_verified, name, address, latitude, longitude, role"
+      )
       .single();
 
     if (upErr) throw upErr;
 
-    const res = NextResponse.json({
-      success: true,
-      verified: true,
-      email,
-      user_id: profile.id,
-      message: "Email verified successfully.",
-    });
+    const res = NextResponse.json(
+      {
+        success: true,
+        verified: true,
+        email,
+        user_id: profile.id,
+        user: updated,
+        message: "Email verified successfully.",
+      },
+      { status: 200 }
+    );
 
     // Refresh cookies
     res.headers.set(

@@ -3,6 +3,8 @@
  * 📘 FILE: /lib/supabaseQueries/admin.ts
  * 🔧 MODULE: HomeFix Admin Query Core v4.8 — Unified Toast Edition
  * ------------------------------------------------------------
+ * LEGACY: accesses old `bookings`/`invoices` tables for historic/admin views.
+ * Customer-facing flows must use bookings_ledger + booking_events only.
  * ✅ Uses unified useToast() hook (no direct Sonner imports)
  * ✅ Prevents duplicate toasts across Admin UI
  * ✅ Type-safe with admin.types.ts

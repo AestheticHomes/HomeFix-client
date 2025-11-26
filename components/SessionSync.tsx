@@ -1,7 +1,8 @@
-"use client";
+ "use client";
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { clearUserCaches } from "@/lib/clearUserCaches";
 
 /**
  * SessionSync v2.3 — Safe Cross-Tab Sync 🌿
@@ -15,6 +16,29 @@ export default function SessionSync() {
   const router = useRouter();
 
   useEffect(() => {
+    // Track user change via cookie → clear caches if switched
+    try {
+      const cookieUserId =
+        document.cookie
+          .split(";")
+          .map((c) => c.trim())
+          .find((c) => c.startsWith("hf_user_id="))
+          ?.split("=")[1] || null;
+      const lastKey = "hf-last-user-id";
+      const last = localStorage.getItem(lastKey);
+      if (cookieUserId && last && last !== cookieUserId) {
+        clearUserCaches().finally(() => {
+          try {
+            localStorage.setItem(lastKey, cookieUserId);
+          } catch {}
+        });
+      } else if (cookieUserId) {
+        localStorage.setItem(lastKey, cookieUserId);
+      }
+    } catch {
+      // ignore
+    }
+
     // ✅ Explicit CustomEvent<string> typing
     function onSync(e: Event) {
       const customEvent = e as CustomEvent<string>;
@@ -23,8 +47,7 @@ export default function SessionSync() {
       if (detail === "logged_out") {
         console.log("🚪 [SessionSync] Detected logout — refreshing state");
         try {
-          localStorage.removeItem("user");
-          sessionStorage.removeItem("user");
+          clearUserCaches();
         } catch {}
         globalThis.location?.assign("/login");
       }

@@ -1,9 +1,12 @@
 "use client";
 
-import { supabase } from "@/lib/supabaseClient";
 import { nanoid } from "nanoid";
 import { create } from "zustand";
-import { addLedgerEntry, getAllLedgerEntries, LedgerXDBEntry } from "./db";
+import {
+  addLedgerEntry,
+  getAllLedgerEntries,
+  LedgerXDBEntry,
+} from "@/lib/client/ledgerxClient";
 
 const DEBUG =
   (typeof window !== "undefined" &&
@@ -176,30 +179,12 @@ export const useLedgerX = create<LedgerStore>((set, get) => {
   }
 
   async function _fetchCloudOrders(uid?: string): Promise<LedgerXEntry[]> {
-    try {
-      if (!uid) return [];
-      if (!isUuidLike(uid)) {
-        DEBUG && console.log("[LedgerX] _fetchCloudOrders: guest uid -> skip");
-        return [];
-      }
-
-      const { data, error } = await supabase
-        .from("bookings_ledger")
-        .select("*")
-        .eq("user_id", uid)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.warn("[LedgerX] _fetchCloudOrders supabase error:", error);
-        return [];
-      }
-      if (!Array.isArray(data)) return [];
-
-      return data.map(normalizeCloudRow);
-    } catch (err) {
-      console.error("[LedgerX] _fetchCloudOrders failed:", err);
-      return [];
+    // Client cache only; Supabase is fetched via dedicated APIs elsewhere.
+    // Keep this stub to preserve API shape without leaking server clients here.
+    if (DEBUG) {
+      console.log("[LedgerX] _fetchCloudOrders skipped (client-cache only)");
     }
+    return [];
   }
 
   function _mergeOrders(
@@ -331,9 +316,9 @@ export const useLedgerX = create<LedgerStore>((set, get) => {
 
       try {
         const all = (await getAllLedgerEntries()) || [];
-        const pendingAll = all.filter(
-          (r) => String(r.userId) === String(uid) && r.status === "pending"
-        );
+        const pendingAll = all
+          .filter((r) => String(r.userId) === String(uid) && r.status === "pending")
+          .filter((r) => r.type !== "product-draft"); // keep product drafts local-only
 
         if (!pendingAll || pendingAll.length === 0) {
           set({ isSyncing: false, lastSyncAt: Date.now() });
@@ -448,42 +433,9 @@ export const useLedgerX = create<LedgerStore>((set, get) => {
     },
 
     hydrateFromCloud: async (uid?: string) => {
-      try {
-        if (!uid) return;
-        if (!isUuidLike(uid)) {
-          DEBUG && console.log("[LedgerX] hydrateFromCloud skipped: guest uid");
-          return;
-        }
-
-        const cloud = await _fetchCloudOrders(uid);
-        if (!cloud || cloud.length === 0) {
-          DEBUG && console.log("[LedgerX] hydrateFromCloud: no remote rows");
-          return;
-        }
-
-        for (const row of cloud) {
-          const item: LedgerXDBEntry = {
-            id: row.id,
-            userId: row.userId,
-            type: row.type,
-            payload: safeJson(row.payload),
-            status: (row.status as LedgerXStatusType) ?? "synced",
-            deviceId: row.deviceId ?? "remote",
-            checksum: row.checksum ?? nanoid(6),
-            createdAt: row.createdAt,
-            updatedAt: row.updatedAt,
-          };
-
-          try {
-            await addLedgerEntry(item);
-          } catch (err) {
-            console.warn("[LedgerX] hydrate put failed (nonfatal):", err);
-          }
-        }
-
-        await _refreshStateFromDB(uid);
-      } catch (err) {
-        console.warn("[LedgerX] hydrateFromCloud failed:", err);
+      // No-op: remote hydration is handled by Supabase-backed APIs.
+      if (uid && DEBUG) {
+        console.log("[LedgerX] hydrateFromCloud noop for uid", uid);
       }
     },
 

@@ -6,7 +6,8 @@
  */
 
 import SafeViewport from "@/components/layout/SafeViewport";
-import { useUser } from "@/contexts/UserContext";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useOrdersWithCache } from "@/hooks/useOrdersWithCache";
 import { format } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -18,7 +19,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 
 type OrderType = "store" | "service";
 
@@ -42,14 +43,11 @@ type OrderEntry = {
 };
 
 function MyBookingsPageInner() {
-  const { user, isLoaded, isLoggedIn, setUser } = useUser();
+  const { loading: profileLoading, loggedIn } = useUserProfile();
+  const { orders, loading: ordersLoading, error, refresh } = useOrdersWithCache();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
-  const [orders, setOrders] = useState<OrderEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshCount, setRefreshCount] = useState(0);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const tabParam = searchParams?.get("tab");
   const initialFilter =
@@ -60,87 +58,42 @@ function MyBookingsPageInner() {
     initialFilter
   );
 
-  const userId = user?.id;
+  const loading = profileLoading || ordersLoading;
 
-  // Hydration bridge: recover user from localStorage if context hasn't populated yet.
-  useEffect(() => {
-    if (!isLoaded || isLoggedIn || user) return;
-    try {
-      const raw =
-        typeof window === "undefined" ? localStorage.getItem("user") : null;
-      if (!raw) return;
-      const cached = JSON.parse(raw);
-      if (cached?.loggedIn) {
-        setUser(cached);
-      }
-    } catch {
-      // ignore parse errors
-    }
-  }, [user, isLoaded, isLoggedIn, setUser]);
+  const mappedOrders = useMemo(() => {
+    if (!loggedIn || !Array.isArray(orders)) return [];
+    return orders.map((o: any) => ({
+      id: String(o.id),
+      reference: o.reference || o.id,
+      invoice_id: o.invoice_id || o.id,
+      invoice_url: o.invoice_url,
+      total: o.total ?? 0,
+      created_at: o.created_at,
+      order_type: (o.order_type as OrderType) || "store",
+      visit_fee: o.visit_fee ?? null,
+      visit_fee_waived: Boolean(o.visit_fee_waived),
+      items: o.items || [],
+      address: o.address,
+      status: o.status || "pending",
+      tracking_steps: Array.isArray(o.tracking_steps) ? o.tracking_steps : [],
+      progress: o.progress ?? 0,
+      payload: o.payload,
+      raw: o.raw,
+    }));
+  }, [loggedIn, orders]);
 
-  useEffect(() => {
-    if (!isLoaded || !isLoggedIn || !userId) return;
+  const handleRefresh = () => refresh();
 
-    const controller = new AbortController();
-    let isCurrent = true;
-
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`/api/invoices/list?user_id=${userId}`, {
-          signal: controller.signal,
-        });
-        if (!res.ok) {
-          throw new Error(`Request failed with status ${res.status}`);
-        }
-        const json = await res.json();
-        if (!json?.success) {
-          throw new Error(
-            json?.message ?? "Unable to load your orders right now."
-          );
-        }
-        const invoices: OrderEntry[] = Array.isArray(json.invoices)
-          ? json.invoices
-          : [];
-        if (isCurrent) {
-          setOrders(invoices);
-          if (invoices.length === 0) setExpandedOrderId(null);
-        }
-      } catch (err) {
-        if (controller.signal.aborted || !isCurrent) return;
-        console.error("[my-bookings] Failed to load invoices:", err);
-        setOrders([]);
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Something went wrong while loading your orders."
-        );
-      } finally {
-        if (!controller.signal.aborted && isCurrent) {
-          setLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      isCurrent = false;
-      controller.abort();
-    };
-  }, [userId, isLoaded, isLoggedIn, refreshCount]);
-
-  const handleRefresh = () => setRefreshCount((prev) => prev + 1);
-
-  const showLoginPrompt = !isLoggedIn && !loading && isLoaded;
+  const showLoginPrompt = !loggedIn && !ordersLoading && !profileLoading;
 
   const sortedOrders = useMemo(
     () =>
-      orders.slice().sort((a, b) => {
+      mappedOrders.slice().sort((a, b) => {
         const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
         const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
         return bDate - aDate;
       }),
-    [orders]
+    [mappedOrders]
   );
   const filteredOrders = useMemo(() => {
     if (filterType === "all") return sortedOrders;
