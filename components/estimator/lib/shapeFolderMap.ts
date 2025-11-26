@@ -10,10 +10,10 @@
  * Storage layout expectation (Supabase "homefix-catalog" bucket):
  *
  *   homefix-catalog/
- *     Straight_Kitchen/Straight_Kitchen.glb
- *     Parallel_Kitchen/Parallel_Kitchen.glb
- *     Kitchen_L_shape/Kitchen_L_shape.glb
- *     Kitchen_U_shape/Kitchen_U_shape.glb
+ *     estimator/Straight_Kitchen/Straight_Kitchen.glb
+ *     estimator/Parallel_Kitchen/Parallel_Kitchen.glb
+ *     estimator/Kitchen_L_shape/Kitchen_L_shape.glb
+ *     estimator/Kitchen_U_shape/Kitchen_U_shape.glb
  */
 
 export type EstimatorShape = "linear" | "parallel" | "lshape" | "u";
@@ -25,19 +25,19 @@ export type ShapeAsset = {
 
 export const shapeFolderMap: Record<EstimatorShape, ShapeAsset> = {
   linear: {
-    folder: "Straight_Kitchen",
+    folder: "estimator/Straight_Kitchen",
     file: "Straight_Kitchen.glb",
   },
   parallel: {
-    folder: "Parallel_Kitchen",
+    folder: "estimator/Parallel_Kitchen",
     file: "Parallel_Kitchen.glb",
   },
   lshape: {
-    folder: "Kitchen_L_shape",
+    folder: "estimator/Kitchen_L_shape",
     file: "Kitchen_L_shape.glb",
   },
   u: {
-    folder: "Kitchen_U_shape",
+    folder: "estimator/Kitchen_U_shape",
     file: "Kitchen_U_shape.glb",
   },
 };

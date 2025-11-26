@@ -1,17 +1,19 @@
 "use client";
 
 /**
- * UniversalPreview (safe legacy-compatible version)
- * -------------------------------------------------
+ * UniversalPreview (orbit-fixed, legacy-compatible version)
+ * ---------------------------------------------------------
  * - 2D: shows SVG or image.
  * - 3D: renders GLB or custom R3F component.
+ * - GLB is recentered to origin and auto-framed in view.
+ * - Camera orbits around model (OrbitControls target at model center).
  * - Any GLB / WebGL error is contained in a local ErrorBoundary.
  * - If 3D assets are missing or fail (Supabase 400/404/etc),
  *   we fall back to 2D instead of crashing the app.
  */
 
 import { OrbitControls, useGLTF } from "@react-three/drei";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import Image from "next/image";
 import React, {
   useCallback,
@@ -46,6 +48,14 @@ export type UniversalPreviewProps = {
   fillContainer?: boolean;
   showInteractionHint?: boolean;
   forcedViewMode?: ViewMode;
+  /**
+   * Optional estimator-only hook for X-ray previews.
+   * - xrayEnabled must be true to activate any logic.
+   * - xrayOn toggles the actual fade of WALL_* meshes.
+   * Other contexts leave this undefined to remain unchanged.
+   */
+  xrayEnabled?: boolean;
+  xrayOn?: boolean;
 };
 
 /* ------------------------ helpers ------------------------ */
@@ -78,18 +88,166 @@ function extractInfo(object: THREE.Object3D): SelectedInfo {
   };
 }
 
+/**
+ * SceneContent
+ * - Loads the GLB
+ * - Recenters it so its bounding box center is at the world origin
+ * - Notifies parent via onSceneReady
+ */
 function SceneContent({
   url,
   onSelect,
   onFocus,
+  onSceneReady,
+  xrayEnabled = false,
+  xrayOn = false,
 }: {
   url: string;
   onSelect: (obj: THREE.Object3D | null) => void;
   onFocus: (obj: THREE.Object3D) => void;
+  onSceneReady?: (root: THREE.Object3D) => void;
+  xrayEnabled?: boolean;
+  xrayOn?: boolean;
 }) {
-  // This is where GLB loading happens; errors thrown here are
-  // caught by PreviewErrorBoundary.
   const gltf = useGLTF(url);
+  const { camera } = useThree();
+  const wallMeshes = useRef<THREE.Mesh[]>([]);
+  const tempBox = useRef(new THREE.Box3());
+  const tempCenter = useRef(new THREE.Vector3());
+  const tempSize = useRef(new THREE.Vector3());
+
+  // Collect hideable wall meshes (names starting with "WALL_")
+  useEffect(() => {
+    wallMeshes.current = [];
+
+    if (!xrayEnabled) return;
+
+    const root = gltf.scene;
+    if (!root) return;
+
+    const collected: THREE.Mesh[] = [];
+
+    root.traverse((obj) => {
+      if (!(obj instanceof THREE.Mesh)) return;
+      if (!obj.name?.startsWith("WALL_")) return;
+
+      const materials = Array.isArray(obj.material)
+        ? obj.material
+        : [obj.material];
+
+      materials.forEach((mat) => {
+        const m = mat as THREE.Material & {
+          opacity?: number;
+          transparent?: boolean;
+        };
+        if (typeof m.opacity === "number") {
+          m.transparent = true;
+          m.opacity = 1;
+        }
+      });
+
+      collected.push(obj);
+    });
+
+    wallMeshes.current = collected;
+
+    return () => {
+      wallMeshes.current = [];
+    };
+  }, [gltf.scene, xrayEnabled]);
+
+  // Frame-loop fade logic: estimator-only X-ray mode.
+  // Purpose: give a section view by fading WALL_* meshes when the camera
+  // sits too close to them; gated by xrayEnabled so other previews stay unchanged.
+  useFrame(() => {
+    if (!xrayEnabled) return;
+
+    const walls = wallMeshes.current;
+    if (!walls.length) return;
+
+    const smoothing = 0.25;
+
+    const restore = (mesh: THREE.Mesh) => {
+      const materials = Array.isArray(mesh.material)
+        ? mesh.material
+        : [mesh.material];
+
+      materials.forEach((mat) => {
+        const m = mat as THREE.Material & {
+          opacity?: number;
+          transparent?: boolean;
+        };
+        if (typeof m.opacity === "number") {
+          m.transparent = true;
+          m.opacity = THREE.MathUtils.lerp(m.opacity, 1, smoothing);
+        }
+      });
+
+      mesh.visible = true;
+    };
+
+    // X-ray off → gently restore walls then bail.
+    if (!xrayOn) {
+      walls.forEach(restore);
+      return;
+    }
+
+    const box = tempBox.current;
+    const center = tempCenter.current;
+    const size = tempSize.current;
+
+    walls.forEach((mesh) => {
+      box.setFromObject(mesh);
+      box.getCenter(center);
+      box.getSize(size);
+
+      const wallSpan = Math.max(size.x, size.y, size.z) || 1;
+      const dist = camera.position.distanceTo(center);
+      const shouldHide = dist < wallSpan * 1.1;
+
+      const materials = Array.isArray(mesh.material)
+        ? mesh.material
+        : [mesh.material];
+
+      materials.forEach((mat) => {
+        const m = mat as THREE.Material & {
+          opacity?: number;
+          transparent?: boolean;
+        };
+        if (typeof m.opacity !== "number") return;
+
+        const target = shouldHide ? 0 : 1;
+        m.transparent = true;
+        m.opacity = THREE.MathUtils.lerp(m.opacity, target, smoothing);
+      });
+
+      if (shouldHide) {
+        const visibleOpacity = materials.some((mat) => {
+          const m = mat as THREE.Material & { opacity?: number };
+          return typeof m.opacity === "number" ? m.opacity > 0.02 : false;
+        });
+        mesh.visible = visibleOpacity;
+      } else {
+        mesh.visible = true;
+      }
+    });
+  });
+
+  // Recenter model to origin once & notify parent
+  useEffect(() => {
+    const root = gltf.scene;
+    if (!root) return;
+
+    const box = new THREE.Box3().setFromObject(root);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+
+    // Move the whole scene so that its center is at [0,0,0]
+    root.position.sub(center);
+
+    onSceneReady?.(root);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gltf, onSceneReady]);
 
   const handleClick = useCallback(
     (e: any) => {
@@ -122,60 +280,79 @@ function SceneContent({
   );
 }
 
-function CameraRig({ selected }: { selected: THREE.Object3D | null }) {
+/**
+ * CameraRig
+ * - Always orbits around focusTarget's bounding box center
+ * - Auto-frames the model to fit canvas once per focusTarget change
+ */
+function CameraRig({ focusTarget }: { focusTarget: THREE.Object3D | null }) {
   const controlsRef = useRef<any>(null);
   const { camera, size } = useThree();
 
   useEffect(() => {
-    camera.position.set(6, 6, 10);
-    (camera as any).zoom = 70;
-    camera.lookAt(0, 0, 0);
-    camera.updateProjectionMatrix();
-  }, [camera]);
+    if (!focusTarget || !controlsRef.current) return;
 
-  useEffect(() => {
-    if (!selected || !controlsRef.current) return;
-
-    const box = new THREE.Box3().setFromObject(selected);
+    const box = new THREE.Box3().setFromObject(focusTarget);
+    const sizeVec = new THREE.Vector3();
     const center = new THREE.Vector3();
-    const boxSize = new THREE.Vector3();
 
+    box.getSize(sizeVec);
     box.getCenter(center);
-    box.getSize(boxSize);
 
-    const maxDim = Math.max(boxSize.x, boxSize.y, boxSize.z);
+    const maxDim = Math.max(sizeVec.x, sizeVec.y, sizeVec.z) || 1;
     const padding = 1.6;
-    const distance = maxDim * padding;
 
-    camera.position.set(
-      center.x + distance * 0.8,
-      center.y + distance * 0.6,
-      center.z + distance
-    );
+    // Orthographic vs perspective handling
+    const isOrtho =
+      (camera as any).isOrthographicCamera === true &&
+      camera instanceof THREE.OrthographicCamera;
 
-    const ortho = camera as THREE.OrthographicCamera;
-    const zoom = Math.min(
-      size.width / (boxSize.x * padding) || 1,
-      size.height / (boxSize.y * padding) || 1
-    );
-    ortho.zoom = THREE.MathUtils.clamp(zoom, 40, 140);
-    ortho.updateProjectionMatrix();
+    if (isOrtho) {
+      // Place camera on a gentle diagonal
+      const distance = maxDim * padding;
+      camera.position.set(
+        center.x + distance,
+        center.y + distance * 0.7,
+        center.z + distance
+      );
+
+      // Compute zoom so object fits viewport
+      const ortho = camera as THREE.OrthographicCamera;
+      const desiredHeight = maxDim * padding;
+      const zoom = size.height / desiredHeight;
+      ortho.zoom = THREE.MathUtils.clamp(zoom, 20, 200);
+      ortho.updateProjectionMatrix();
+    } else {
+      // Perspective camera: compute distance from FOV
+      const perspective = camera as THREE.PerspectiveCamera;
+      const fov = (perspective.fov * Math.PI) / 180;
+      const fitHeightDistance = maxDim / (2 * Math.tan(fov / 2));
+      const fitWidthDistance = fitHeightDistance / perspective.aspect;
+      const distance = Math.max(fitHeightDistance, fitWidthDistance) * padding;
+
+      const dir = new THREE.Vector3(1, 0.8, 1).normalize();
+      const pos = new THREE.Vector3()
+        .copy(center)
+        .add(dir.multiplyScalar(distance));
+      perspective.position.copy(pos);
+      perspective.lookAt(center);
+      perspective.updateProjectionMatrix();
+    }
 
     controlsRef.current.target.copy(center);
     controlsRef.current.update();
-  }, [selected, camera, size]);
+  }, [focusTarget, camera, size]);
 
   return (
     <OrbitControls
       ref={controlsRef}
-      enablePan={false}
       enableDamping
       dampingFactor={0.08}
-      maxPolarAngle={Math.PI / 2.2}
-      minZoom={40}
-      maxZoom={140}
-      zoomSpeed={0.6}
+      enablePan
+      zoomSpeed={0.7}
       rotateSpeed={0.8}
+      // Safety: default orbit around origin, then effect above refines target
+      target={[0, 0, 0]}
     />
   );
 }
@@ -239,9 +416,13 @@ export default function UniversalPreview({
   fillContainer = false,
   showInteractionHint = false,
   forcedViewMode,
+  xrayEnabled = false,
+  xrayOn = false,
 }: UniversalPreviewProps) {
   const [selectedObj, setSelectedObj] = useState<THREE.Object3D | null>(null);
+  const [sceneRoot, setSceneRoot] = useState<THREE.Object3D | null>(null);
   const [selectedInfo, setSelectedInfo] = useState<SelectedInfo | null>(null);
+  const [focusObj, setFocusObj] = useState<THREE.Object3D | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("2d");
   const [hintVisible, setHintVisible] = useState(showInteractionHint);
@@ -278,6 +459,12 @@ export default function UniversalPreview({
     setViewMode(pickInitial());
   }, [initialMode, has2d, has3d]);
 
+  useEffect(() => {
+    if (sceneRoot) {
+      setFocusObj(sceneRoot);
+    }
+  }, [sceneRoot]);
+
   const handleSelect = useCallback((obj: THREE.Object3D | null) => {
     if (!obj) {
       setSelectedObj(null);
@@ -291,6 +478,7 @@ export default function UniversalPreview({
   const handleFocus = useCallback((obj: THREE.Object3D) => {
     setSelectedObj(obj);
     setSelectedInfo(extractInfo(obj));
+    setFocusObj(obj);
   }, []);
 
   const toggleFullscreen = useCallback(
@@ -362,6 +550,8 @@ export default function UniversalPreview({
       return render2d();
     }
 
+    const focusTarget = focusObj || sceneRoot; // selectedObj drives overlay; focusObj drives camera framing
+
     return (
       <PreviewErrorBoundary fallback={render2d()}>
         <Canvas
@@ -381,9 +571,12 @@ export default function UniversalPreview({
               url={glbUrl}
               onSelect={handleSelect}
               onFocus={handleFocus}
+              onSceneReady={setSceneRoot}
+              xrayEnabled={xrayEnabled}
+              xrayOn={xrayOn}
             />
           ) : null}
-          <CameraRig selected={selectedObj} />
+          <CameraRig focusTarget={focusTarget} />
         </Canvas>
       </PreviewErrorBoundary>
     );
@@ -394,8 +587,11 @@ export default function UniversalPreview({
     handleSelect,
     has3d,
     isFullscreen,
+    focusObj,
+    xrayEnabled,
+    xrayOn,
     render2d,
-    selectedObj,
+    sceneRoot,
   ]);
 
   /* ---------------- choose 2D / 3D ---------------- */
@@ -420,7 +616,7 @@ export default function UniversalPreview({
 
       <div className={`${wrapperBase} ${wrapperSize}`}>
         {enableModeToggle && !forcedViewMode && (has3d || has2d) && (
-          <div className="absolute top-2 right-2 z-[85] flex items-center gap-1">
+          <div className="absolute top-2 left-2 z-[85] flex items-center gap-1">
             <button
               type="button"
               onClick={() => has2d && setViewMode("2d")}

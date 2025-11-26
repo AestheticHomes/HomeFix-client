@@ -4,13 +4,15 @@
  * Version: v4.0 — Edith Stable Build 🌗
  */
 
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import useEstimator, {
   type EstimatorStep,
 } from "@/components/estimator/store/estimatorStore";
 import KitchenRender from "@/components/estimator/KitchenRender";
 import WardrobeRender from "@/components/estimator/WardrobeRender";
+import Breadcrumbs from "@/components/navigation/Breadcrumbs";
+import Script from "next/script";
 
 const SummaryPanel = dynamic(
   () => import("@/components/estimator/SummaryPanel"),
@@ -72,6 +74,30 @@ export default function EstimatorShell(): React.ReactElement {
     step === "summary" ? "Interior Budget Summary" : "Interior Budget Estimator";
 
   const noneSelected = !hasKitchen && !hasWardrobe;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://homefix.in";
+
+  const breadcrumbJsonLd = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+        { "@type": "ListItem", position: 2, name: "Estimator", item: `${siteUrl}/estimator` },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name:
+            step === "summary"
+              ? "Summary"
+              : step === "kitchen"
+              ? "Kitchen"
+              : "Wardrobe",
+          item: `${siteUrl}/estimator`,
+        },
+      ],
+    }),
+    [siteUrl, step]
+  );
 
   const hero = (
     <header className="max-w-4xl mx-auto text-center space-y-3">
@@ -190,6 +216,11 @@ export default function EstimatorShell(): React.ReactElement {
   /* 🟦 Normal Flow (Kitchen / Wardrobe) */
   return (
     <section className="relative w-full space-y-8">
+      <Script
+        id="estimator-breadcrumb-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10 opacity-40"
@@ -199,6 +230,16 @@ export default function EstimatorShell(): React.ReactElement {
         }}
       />
       <div className="mt-6 space-y-5">
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Estimator", href: "/estimator" },
+            {
+              label: step === "kitchen" ? "Kitchen" : "Wardrobe",
+            },
+          ]}
+          className="flex justify-center"
+        />
         {hero}
         {toggleRow}
       </div>

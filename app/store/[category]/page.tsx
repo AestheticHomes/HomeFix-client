@@ -1,76 +1,58 @@
-"use client";
+/**
+ * ============================================================
+ * 📄 FILE: /app/store/[category]/page.tsx
+ * 🧩 MODULE: Category Listing Page (server entry)
+ * ------------------------------------------------------------
+ * ROUTE: /store/[categorySlug]
+ * DATA FLOW: generateMetadata + server params → CategoryPageClient (offline-first)
+ * SEO: generateMetadata in this file (App Router)
+ * ============================================================
+ */
 
-import CatalogPreviewCard from "@/components/catalog/CatalogPreviewCard";
-import { useProductCartStore } from "@/components/store/cartStore";
-import { GoodsRow, mapGoodsToCatalog } from "@/lib/catalog/mapGoodsToCatalog";
-import type { CatalogItem } from "@/types/catalog";
-import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import type { Metadata } from "next";
 
-export default function CategoryPage() {
-  const params = useParams<{ category?: string }>() || {};
-  const category = params.category ?? "";
+import CategoryPageClient from "./CategoryPageClient";
 
-  const { items, addItem, decrement } = useProductCartStore();
+const SITE_URL = "https://homefix.in";
 
-  const [loading, setLoading] = useState(true);
-  const [products, setProducts] = useState<CatalogItem[]>([]);
+const prettify = (slug: string) =>
+  slug
+    .split("-")
+    .map((s) => (s ? s[0].toUpperCase() + s.slice(1) : s))
+    .join(" ");
 
-  useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_GOODS_CATALOG_URL;
-    if (!url) {
-      console.warn("[CategoryPage] NEXT_PUBLIC_GOODS_CATALOG_URL missing");
-      setLoading(false);
-      return;
-    }
+export async function generateMetadata({
+  params,
+}: {
+  params: { category?: string };
+}): Promise<Metadata> {
+  const categorySlug = params.category ?? "";
+  const prettyName = prettify(categorySlug);
+  const title = `${prettyName} | HomeFix Store`;
+  const description = `Browse ${prettyName} from HomeFix: curated doors, panels, hardware and more with installation included.`;
+  const url = `${SITE_URL}/store/${categorySlug}`;
 
-    const load = async () => {
-      const rows = (await (await fetch(url)).json()) as GoodsRow[];
-      const mapped = mapGoodsToCatalog(rows);
-      const filtered = mapped.filter(
-        (p) =>
-          p.category.toLowerCase() === String(category).toLowerCase() ||
-          p.category.toLowerCase().replace(/\s+/g, "-") ===
-            String(category).toLowerCase()
-      );
-      setProducts(filtered);
-      setLoading(false);
-    };
-    load();
-  }, [category]);
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
+}
 
-  return (
-    <section className="p-6">
-      <h1 className="text-xl font-semibold mb-4 capitalize">
-        {String(category).replace(/-/g, " ")}
-      </h1>
-
-      {loading ? (
-        <div>Loading...</div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {products.map((item) => {
-            const cartItem = items.find((i) => i.id === item.id);
-            const quantity = cartItem?.quantity ?? 0;
-
-            return (
-              <CatalogPreviewCard
-                key={item.id}
-                item={item}
-                quantity={quantity}
-                onIncrement={() =>
-                  addItem({
-                    id: item.id,
-                    title: item.title,
-                    price: item.price,
-                  })
-                }
-                onDecrement={() => decrement(item.id)}
-              />
-            );
-          })}
-        </div>
-      )}
-    </section>
-  );
+export default function CategoryPage({
+  params,
+}: {
+  params: { category?: string };
+}) {
+  const categorySlug = String(params.category ?? "");
+  return <CategoryPageClient categorySlug={categorySlug} />;
 }

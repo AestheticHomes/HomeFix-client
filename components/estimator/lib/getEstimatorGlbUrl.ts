@@ -35,7 +35,8 @@ export function getEstimatorGlbUrl(
   const shapeKey = (rawShape ?? "linear").toLowerCase() as EstimatorShape;
   const asset = shapeFolderMap[shapeKey] ?? shapeFolderMap.linear;
 
-  // Estimator GLBs live at the bucket root alongside items/ (no extra prefix).
+  // NOTE: Estimator GLBs are stored under an `estimator/` prefix in the bucket,
+  // configured via shapeFolderMap. Store catalog assets use `products/` instead.
   const url = `${HOMEFIX_CDN}/${asset.folder}/${encodeURIComponent(asset.file)}`;
 
   if (process.env.NODE_ENV !== "production") {

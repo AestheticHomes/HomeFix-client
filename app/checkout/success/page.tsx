@@ -66,7 +66,9 @@ function CheckoutSuccessPageContent() {
     navigator.vibrate?.([25, 50]);
   }, []);
 
-  const ordersLink = isServiceFlow ? "/my-orders?tab=service" : "/my-orders";
+  const ordersLink = isServiceFlow
+    ? "/my-bookings?tab=service"
+    : "/my-bookings";
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-[var(--edith-bg)] to-[var(--edith-surface)] px-6 text-center">

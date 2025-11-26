@@ -50,7 +50,7 @@ function MockRazorpayPageContent() {
       try {
         const raw = sessionStorage.getItem("hf_checkout_payload");
         if (!raw) {
-          redirectTimer = setTimeout(() => router.push("/my-orders"), 1800);
+          redirectTimer = setTimeout(() => router.push("/my-bookings"), 1800);
           return;
         }
 

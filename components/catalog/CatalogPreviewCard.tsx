@@ -3,21 +3,6 @@
  * ============================================================
  * 🖼️ FILE: /components/catalog/CatalogPreviewCard.tsx
  * 🧩 MODULE: Store Preview Card — PNG, Buy-first
- * ------------------------------------------------------------
- * ROLE:
- *   - Big, simple card:
- *       • Large PNG image (no 3D)
- *       • Title
- *       • Price
- *       • Optional badge + promo line
- *   - Image/title click → PDP (/p/[id])
- *   - Bottom-right: Add / + / − to drive checkout directly
- *
- * PROPS:
- *   - item: CatalogItem          // product data
- *   - quantity?: number          // current qty in cart for this item
- *   - onIncrement?: () => void   // called on "Add" or "+"
- *   - onDecrement?: () => void   // called on "-"
  * ============================================================
  */
 
@@ -48,12 +33,10 @@ export default function CatalogPreviewCard({
       ? `₹${item.price.toLocaleString("en-IN")}`
       : "Price on request";
 
-  const categorySlug = item.category
-    ? item.category.toLowerCase().replace(/\s+/g, "-")
-    : "item";
+  const categorySlug = item.categorySlug || "store";
+  const slug = item.slug || String(item.id);
 
-  // Simple promo line – you can extend this based on catalog fields
-  const promoText = item.category || "";
+  const href = `/store/${categorySlug}/${slug}`;
 
   return (
     <article
@@ -61,17 +44,18 @@ export default function CatalogPreviewCard({
                  border border-[var(--border-soft)]
                  bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)]
                  shadow-sm hover:shadow-lg hover:border-[var(--accent-primary)]
-                 transition-all duration-200 overflow-hidden min-h-[260px]"
+                 transition-all duration-200 overflow-hidden min-h-[280px]"
     >
       {/* IMAGE AREA → PDP */}
       <Link
-        href={`/store/${categorySlug}/${item.id}`}
+        href={href}
         className="relative block w-full aspect-[4/3] bg-[var(--surface-panel)]"
       >
         {hasImage ? (
           <Image
             src={item.coverUrl as string}
             alt={item.title}
+            unoptimized
             fill
             sizes="(min-width: 1280px) 260px, (min-width: 768px) 220px, 50vw"
             className="object-contain transition-transform duration-300 group-hover:scale-[1.03]"
@@ -82,23 +66,19 @@ export default function CatalogPreviewCard({
           </div>
         )}
 
-        {/* Badge (e.g. bestseller / new) */}
-        {(item.badge || item.category) && (
+        {item.badge && (
           <div className="absolute left-3 top-3 flex flex-row gap-2">
-            {item.badge && (
-              <span className="rounded-full bg-[var(--accent-primary)] text-white text-[10px] px-2 py-0.5 font-semibold shadow-sm">
-                {item.badge}
-              </span>
-            )}
+            <span className="rounded-full bg-[var(--accent-primary)] text-white text-[10px] px-2 py-0.5 font-semibold shadow-sm">
+              {item.badge}
+            </span>
           </div>
         )}
       </Link>
 
       {/* TEXT + PRICE + CART CONTROLS */}
-      <div className="flex flex-1 flex-col px-3.5 pt-3 pb-3.5 gap-2">
-        {/* Title + subtle category → PDP */}
-      <Link href={`/store/${categorySlug}/${item.id}`} className="block">
-          <h3 className="text-[14px] font-semibold text-[var(--text-primary)] line-clamp-2">
+      <div className="flex flex-1 flex-col px-4 pt-3 pb-4 gap-2">
+        <Link href={href} className="block">
+          <h3 className="text-[15px] font-semibold text-[var(--text-primary)] line-clamp-2">
             {item.title}
           </h3>
           {item.category && (
@@ -108,20 +88,11 @@ export default function CatalogPreviewCard({
           )}
         </Link>
 
-        {/* Price + promo + controls */}
-        <div className="mt-1 flex items-end justify-between gap-2">
-          <div className="flex flex-col">
-            <span className="text-[14px] font-bold text-[var(--accent-success)]">
-              {formattedPrice}
-            </span>
-            {promoText && (
-              <span className="mt-0.5 text-[11px] text-[var(--text-secondary)] line-clamp-1">
-                {promoText}
-              </span>
-            )}
-          </div>
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <span className="text-[15px] font-bold text-[var(--accent-success)]">
+            {formattedPrice}
+          </span>
 
-          {/* Cart controls */}
           {!inCart ? (
             <motion.button
               type="button"

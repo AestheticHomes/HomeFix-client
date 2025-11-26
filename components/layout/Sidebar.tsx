@@ -38,7 +38,7 @@ const ThemeToggle = dynamic(() => import("@/components/ThemeToggle"), {
 const NAV = [
   { href: "/", label: "Home", Icon: Home },
   { href: "/services", label: "Services", Icon: ClipboardList },
-  { href: "/my-space", label: "Bookings", Icon: CalendarDays },
+  { href: "/my-bookings", label: "Bookings", Icon: CalendarDays },
   {
     href: "/estimator",
     label: "Online Estimator",

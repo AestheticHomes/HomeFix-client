@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
  * 🧠 HomeFix Middleware — Edith Continuum v6.0 🌗
  * ------------------------------------------------------------
  * ✅ Protects /admin, /profile, /bookings, /account
- * ✅ Whitelists checkout + my-orders + mock-razorpay
+ * ✅ Whitelists checkout + my-bookings (legacy my-orders) + mock-razorpay
  * ✅ Honors hf_skip_profile_redirect cookie
  * ✅ Works for both Supabase + App cookies
  * ✅ Edge-safe + PWA friendly
@@ -22,7 +22,8 @@ export function middleware(req: NextRequest) {
   const whitelist = [
     /^\/$/, // homepage
     /^\/checkout(\/.*)?$/,
-    /^\/my-orders(\/.*)?$/,
+    /^\/my-bookings(\/.*)?$/,
+    /^\/my-orders(\/.*)?$/, // legacy path; redirected
     /^\/mock-razorpay(\/.*)?$/, // allow mock payment page
     /^\/login(\/.*)?$/,
     /^\/signup(\/.*)?$/,
@@ -49,6 +50,7 @@ export function middleware(req: NextRequest) {
   if (
     skipRedirect &&
     (url.startsWith("/checkout") ||
+      url.startsWith("/my-bookings") ||
       url.startsWith("/my-orders") ||
       url.startsWith("/mock-razorpay"))
   ) {

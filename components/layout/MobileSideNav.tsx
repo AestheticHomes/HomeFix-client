@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { label: "Store", href: "/store" },
   { label: "Estimator", href: "/estimator" },
   { label: "Studio", href: "/studio" },
-  { label: "My bookings", href: "/my-space?view=bookings" },
+  { label: "My bookings", href: "/my-bookings" },
   { label: "Profile & account", href: "/profile" },
   { label: "Support / help", href: "/support" },
 ];

@@ -63,7 +63,7 @@
     {
       "name": "Book a Service",
       "short_name": "Book",
-      "url": "/my-space",
+      "url": "/my-bookings",
       "description": "View or schedule your bookings",
       "icons": [
         {

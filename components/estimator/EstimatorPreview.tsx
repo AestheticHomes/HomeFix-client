@@ -21,7 +21,7 @@ import { getEstimatorGlbUrl } from "@/components/estimator/lib/getEstimatorGlbUr
 import useEstimator from "@/components/estimator/store/estimatorStore";
 import UniversalPreview from "@/components/preview/UniversalPreview";
 import { motion } from "framer-motion";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 const PANEL_SURFACE =
   "color-mix(in srgb, var(--surface-panel) 95%, transparent)";
@@ -61,13 +61,19 @@ export type EstimatorPreviewProps = {
    Controls estimator.mode ("2d" | "3d") in Zustand.
    Shared between kitchen and wardrobe.
    ========================================================= */
-function EntangledDualityToggle() {
+function EntangledDualityToggle({
+  xrayOn,
+  onToggleXray,
+}: {
+  xrayOn: boolean;
+  onToggleXray: () => void;
+}) {
   const mode = useEstimator((s) => s.mode);
   const setMode = useEstimator((s) => s.setMode);
   const is3d = mode === "3d";
 
   return (
-    <div className="absolute top-3 right-3 z-20">
+    <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
       <motion.button
         whileTap={{ scale: 0.96 }}
         onClick={() => setMode(is3d ? "2d" : "3d")}
@@ -128,6 +134,20 @@ function EntangledDualityToggle() {
           />
         </motion.div>
       </motion.button>
+      {is3d && (
+        <button
+          type="button"
+          onClick={onToggleXray}
+          className={`h-8 rounded-full border border-[var(--border-soft)] px-3 text-[11px] font-semibold transition-colors ${
+            xrayOn
+              ? "bg-[color-mix(in_srgb,var(--accent-secondary)18%,transparent)] text-[var(--text-primary)]"
+              : "bg-[var(--surface-panel)] text-[var(--text-secondary)]"
+          }`}
+          aria-pressed={xrayOn}
+        >
+          {xrayOn ? "X-ray: On" : "X-ray vision"}
+        </button>
+      )}
     </div>
   );
 }
@@ -142,6 +162,7 @@ export default function EstimatorPreview({
   showTitle,
   glbUrlOverride,
 }: EstimatorPreviewProps) {
+  const [xrayOn, setXrayOn] = useState(false);
   const mode = useEstimator((s) => s.mode);
   const kitchenShape = useEstimator((s) => s.kitchen.shape);
 
@@ -198,7 +219,10 @@ export default function EstimatorPreview({
         </div>
       )}
 
-      <EntangledDualityToggle />
+      <EntangledDualityToggle
+        xrayOn={xrayOn}
+        onToggleXray={() => setXrayOn((prev) => !prev)}
+      />
 
       {/* VIEWPORT: exactly one branch mounted */}
       {mode === "2d" ? (
@@ -224,6 +248,8 @@ export default function EstimatorPreview({
             showFullscreenToggle={false}
             fillContainer
             showInteractionHint
+            xrayEnabled
+            xrayOn={xrayOn}
           />
         </div>
       )}

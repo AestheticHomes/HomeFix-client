@@ -3,18 +3,202 @@
     "id": 1001,
     "title": "Parallel Kitchen · 8 ft run",
     "category": "Kitchen Modules",
+    "category_slug": "kitchen-modules",
+    "slug": "parallel-kitchen-8ft-run",
     "price": 145000,
+    "mrp": 165000,
     "asset_key": "KITCHEN_PARALLEL_8FT",
     "has_glb": false,
-    "badge": "bestseller"
+    "badge": "bestseller",
+    "brand": "HomeFix Studio",
+    "promo_label": "Ideal for compact 2BHK kitchens",
+    "warranty_years": 5,
+    "finish_options": [
+      { "label": "Matt White PU" },
+      { "label": "Walnut Texture Laminate" }
+    ],
+    "highlights": [
+      { "label": "Length", "value": "8 ft run" },
+      { "label": "Box type", "value": "BWP plywood carcass" },
+      { "label": "Shutter", "value": "Soft-close, slab profile" }
+    ],
+    "promises": [
+      "On-site measurement included",
+      "Factory-built modules",
+      "Professional installation"
+    ]
   },
   {
     "id": 1002,
     "title": "Wardrobe · 6 ft sliding",
     "category": "Wardrobes",
+    "category_slug": "wardrobes",
+    "slug": "wardrobe-6ft-sliding",
     "price": 98000,
+    "mrp": 115000,
     "asset_key": "WARDROBE_SLIDING_6FT",
     "has_glb": true,
-    "badge": "new"
+    "badge": "new",
+    "brand": "HomeFix Studio",
+    "promo_label": "Smooth sliding shutters with soft-close",
+    "warranty_years": 5,
+    "finish_options": [
+      { "label": "Smoked Oak", "swatchUrl": "/swatches/SMOKED_OAK.png" },
+      { "label": "Frosted White Glass" }
+    ],
+    "highlights": [
+      { "label": "Width", "value": "6 ft" },
+      { "label": "Configuration", "value": "2-door sliding" },
+      { "label": "Internal", "value": "Hanging + shelves + drawers" }
+    ],
+    "promises": [
+      "Made-to-site fitment",
+      "Soft-close hardware",
+      "Dedicated service support"
+    ]
+  },
+  {
+    "id": 2001,
+    "title": "Grooved Main Door · Teak Finish",
+    "category": "Doors",
+    "category_slug": "doors",
+    "slug": "grooved-main-door-teak-finish",
+    "price": 38000,
+    "mrp": 45000,
+    "asset_key": "DOOR_GROOVED_TEAK_MAIN",
+    "has_glb": false,
+    "badge": "bestseller",
+    "brand": "AestheticHomes",
+    "promo_label": "Includes frame, architrave & hardware fitment",
+    "warranty_years": 7,
+    "highlights": [
+      { "label": "Size", "value": "3 ft × 7 ft" },
+      { "label": "Core", "value": "Solid engineered wood" },
+      { "label": "Finish", "value": "Teak veneer + PU topcoat" }
+    ],
+    "promises": [
+      "Machine-pressed door set",
+      "On-site installation",
+      "Premium hinges & lockset"
+    ]
+  },
+  {
+    "id": 2101,
+    "title": "CNC Jaali Panel · Lotus Motif",
+    "category": "CNC Elements",
+    "category_slug": "cnc-elements",
+    "slug": "cnc-jaali-panel-lotus-motif",
+    "price": 5200,
+    "mrp": 6500,
+    "asset_key": "CNC_JAALI_LOTUS_8MM",
+    "has_glb": false,
+    "badge": "promo",
+    "brand": "HomeFix CNC",
+    "promo_label": "Perfect for partitions & balcony railings",
+    "warranty_years": 3,
+    "highlights": [
+      { "label": "Size", "value": "4 ft × 8 ft" },
+      { "label": "Material", "value": "MDF 18 mm" },
+      { "label": "Finish", "value": "Primer-ready" }
+    ],
+    "promises": ["Precision CNC cutting", "Wrapped edges for safe handling"]
+  },
+  {
+    "id": 2201,
+    "title": "Fluted Wall Panel · Walnut",
+    "category": "Wooden Panels",
+    "category_slug": "wooden-panels",
+    "slug": "fluted-wall-panel-walnut",
+    "price": 1650,
+    "mrp": 2100,
+    "asset_key": "PANEL_FLUTED_WALNUT_8FT",
+    "has_glb": false,
+    "brand": "HomeFix Panels",
+    "promo_label": "Ready-to-install fluted panel for TV walls",
+    "warranty_years": 10,
+    "highlights": [
+      { "label": "Length", "value": "8 ft" },
+      { "label": "Width", "value": "6 inch" },
+      { "label": "Core", "value": "PVC + decorative film" }
+    ],
+    "promises": ["Water-resistant surface", "Concealed fastener system"]
+  },
+  {
+    "id": 2301,
+    "title": "Matt Wall Paint · Interior Emulsion (20L)",
+    "category": "Paint Finishes",
+    "category_slug": "paint-finishes",
+    "slug": "matt-wall-paint-interior-emulsion-20l",
+    "price": 5200,
+    "mrp": 5800,
+    "asset_key": "PAINT_INTERIOR_MATT_20L",
+    "has_glb": false,
+    "promo_label": "Low-VOC, soft matt finish for living rooms",
+    "brand": "HomeFix Coats",
+    "warranty_years": 3,
+    "highlights": [
+      { "label": "Finish", "value": "Smooth matt" },
+      { "label": "Coverage", "value": "Up to 140 sq.ft / L (2 coats)" }
+    ],
+    "promises": ["Odour-controlled formulation", "Free shade consultation"]
+  },
+  {
+    "id": 2401,
+    "title": "Soft-close Hinge Set · 0 Crank (2 pcs)",
+    "category": "Hardware",
+    "category_slug": "hardware",
+    "slug": "soft-close-hinge-set-0-crank",
+    "price": 260,
+    "mrp": 320,
+    "asset_key": "HARDWARE_HINGE_SOFTCLOSE_0CRANK",
+    "has_glb": false,
+    "badge": "bestseller",
+    "brand": "Blum-compatible",
+    "promo_label": "Ideal for standard kitchen & wardrobe shutters",
+    "highlights": [
+      { "label": "Opening angle", "value": "110°" },
+      { "label": "Cup diameter", "value": "35 mm" }
+    ],
+    "promises": ["Soft-close dampers", "Tested for 50,000 cycles"]
+  },
+  {
+    "id": 2501,
+    "title": "LED Profile Light · 1 m Warm White",
+    "category": "Lighting",
+    "category_slug": "lighting",
+    "slug": "led-profile-light-1m-warm-white",
+    "price": 950,
+    "mrp": 1200,
+    "asset_key": "LIGHTING_PROFILE_1M_WARM",
+    "has_glb": false,
+    "brand": "HomeFix Glow",
+    "promo_label": "Under-cabinet / wardrobe profile for soft wash",
+    "warranty_years": 2,
+    "highlights": [
+      { "label": "Length", "value": "1 m" },
+      { "label": "CCT", "value": "3000K Warm White" },
+      { "label": "Wattage", "value": "10 W" }
+    ],
+    "promises": ["Driver included", "On-site wiring support with projects"]
+  },
+  {
+    "id": 2601,
+    "title": "Wall Hung Vanity · 24 inch",
+    "category": "Bathroom",
+    "category_slug": "bathroom",
+    "slug": "wall-hung-vanity-24inch",
+    "price": 18500,
+    "mrp": 21500,
+    "asset_key": "BATHROOM_VANITY_24_WALLHUNG",
+    "has_glb": false,
+    "brand": "HomeFix Bath",
+    "promo_label": "Compact floating vanity with quartz top",
+    "warranty_years": 5,
+    "highlights": [
+      { "label": "Width", "value": "24 inch" },
+      { "label": "Top", "value": "Quartz counter" },
+      { "label": "Basin", "value": "Integrated" }
+    ],
+    "promises": ["Plumbing-ready cut-outs", "Moisture-resistant carcass"]
   }
 ]

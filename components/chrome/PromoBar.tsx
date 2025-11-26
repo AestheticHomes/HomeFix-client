@@ -4,7 +4,7 @@ import { usePromo } from "@/hooks/usePromo";
 
 export default function PromoBar() {
   const promo = usePromo();
-  const title = promo?.title?.trim();
+  const title = promo?.headline?.trim();
 
   if (!title) return null;
 

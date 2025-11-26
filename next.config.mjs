@@ -60,7 +60,6 @@ const nextConfig = {
   experimental: {
     serverActions: { bodySizeLimit: "2mb" },
     scrollRestoration: true,
-    viewTransition: true,
     typedRoutes: true,
     webVitalsAttribution: ["CLS", "LCP", "FID"],
   },
@@ -73,7 +72,31 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
   optimizeFonts: true,
-  optimizeCss: true,
+
+  async redirects() {
+    return [
+      {
+        source: "/my-orders",
+        destination: "/my-bookings",
+        permanent: true,
+      },
+      {
+        source: "/my-orders/:path*",
+        destination: "/my-bookings",
+        permanent: true,
+      },
+      {
+        source: "/my-space",
+        destination: "/my-bookings",
+        permanent: true,
+      },
+      {
+        source: "/my-space/:path*",
+        destination: "/my-bookings",
+        permanent: true,
+      },
+    ];
+  },
 
   webpack: (config) => {
     config.resolve.alias = {
@@ -105,4 +128,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withPWA(nextConfig);

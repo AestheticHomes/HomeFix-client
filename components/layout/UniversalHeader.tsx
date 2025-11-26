@@ -20,9 +20,8 @@
  * ============================================================
  */
 
-import clsx from "clsx";
 import { motion } from "framer-motion";
-import { CalendarDays, Moon, Package, Sun } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
@@ -32,6 +31,7 @@ import PromoBar from "@/components/chrome/PromoBar";
 import MobileSideNav from "@/components/layout/MobileSideNav";
 import HomeFixLogo from "@/components/ui/HomeFixLogo";
 import { useHomefixWeather } from "@/hooks/useHomefixWeather";
+import { usePromo } from "@/hooks/usePromo";
 
 // ---------- Route promo config (one line per top-level section) ----------
 // ---------- Weather only when mounted on "/" (keeps hooks safe) ----------
@@ -54,11 +54,11 @@ export default function UniversalHeader(): React.ReactElement {
   const pathname = usePathname() || "/";
   const router = useRouter();
   const { theme, setTheme, systemTheme } = useTheme();
+  const promo = usePromo();
 
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const isMySpace = pathname?.startsWith("/my-space");
   const isHomepage = pathname === "/";
 
   useEffect(() => setMounted(true), []);
@@ -138,74 +138,58 @@ export default function UniversalHeader(): React.ReactElement {
         </div>
       </div>
 
+      {promo && (
+        <div
+          className="
+            mt-1
+            w-full
+            flex items-center justify-between gap-2
+            rounded-2xl
+            border border-[var(--border-soft)]
+            bg-[color-mix(in_srgb,var(--surface-card)85%,transparent)]
+            px-3 py-1.5
+            text-[11px]
+          "
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <span className="font-medium text-[var(--text-primary)]">
+              {promo.headline}
+            </span>
+            {promo.subline && (
+              <span className="text-[var(--text-secondary)] hidden sm:inline">
+                {promo.subline}
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              // lightweight client-side navigation; do NOT import useRouter if not already present.
+              window.location.href = promo.ctaHref;
+            }}
+            className="
+              flex-shrink-0
+              inline-flex items-center
+              rounded-xl
+              px-3 py-1
+              text-[11px] font-semibold
+              bg-[var(--accent-primary)]
+              text-white
+              hover:bg-[var(--accent-primary-hover)]
+              transition-colors
+            "
+          >
+            {promo.ctaLabel}
+          </button>
+        </div>
+      )}
+
       {/* Mobile Nav Drawer */}
       <MobileSideNav open={menuOpen} onClose={() => setMenuOpen(false)} />
 
       {/* ── Secondary bar: homepage climate OR route promo ───── */}
       {isHomepage ? <ClimateSlot /> : <PromoBar />}
 
-      {/* ── My Space pill toggle ──────────────────────────────── */}
-      {isMySpace && (
-        <motion.div
-          className="flex justify-center items-center py-2 border-t border-[var(--border-soft)]
-                     bg-[var(--surface-header)]/80 backdrop-blur-xl sticky top-[calc(var(--header-h))] z-[67]
-                     shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
-        >
-          <MySpaceSwitcher currentPath={pathname || ""} />
-        </motion.div>
-      )}
     </motion.header>
-  );
-}
-
-// ---------- Extracted: keeps the header lean ----------
-function MySpaceSwitcher({ currentPath }: { currentPath: string }) {
-  const router = useRouter();
-  const tabs = [
-    { id: "bookings", label: "Bookings", icon: CalendarDays },
-    { id: "orders", label: "Orders", icon: Package },
-  ];
-  return (
-    <motion.div
-      layout
-      className="relative inline-flex items-center gap-1 p-1 rounded-full border border-[var(--border-soft)]
-                 bg-[var(--surface-card)] dark:bg-[var(--surface-card-dark)]
-                 shadow-[inset_0_0_4px_rgba(255,255,255,0.25),0_0_6px_rgba(155,92,248,0.3)]
-                 transition-all duration-300"
-      role="tablist"
-      aria-label="My Space views"
-    >
-      {tabs.map(({ id, label, icon: Icon }) => {
-        const active = currentPath.includes(id);
-        return (
-          <motion.button
-            key={id}
-            role="tab"
-            aria-selected={active}
-            onClick={() => router.replace(`/my-space?view=${id}`)}
-            whileTap={{ scale: 0.97 }}
-            className={clsx(
-              "flex items-center gap-1 px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium relative select-none focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/40 transition-all duration-300",
-              active
-                ? "text-white bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] shadow-[0_0_8px_rgba(155,92,248,0.4)]"
-                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]"
-            )}
-          >
-            <Icon size={14} />
-            {label}
-            {active && (
-              <motion.div
-                layoutId="active-glow"
-                className="absolute inset-0 rounded-full bg-gradient-to-r from-[var(--accent-primary)]/40 to-[var(--accent-secondary)]/40 blur-md -z-10"
-                transition={{ type: "spring", stiffness: 120, damping: 20 }}
-              />
-            )}
-          </motion.button>
-        );
-      })}
-    </motion.div>
   );
 }
