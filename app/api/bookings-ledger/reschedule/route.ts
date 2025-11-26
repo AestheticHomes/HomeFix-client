@@ -1,7 +1,7 @@
 // app/api/bookings-ledger/reschedule/route.ts
 export const runtime = "nodejs";
 
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseServer } from "@/lib/supabaseServerClient";
 import { NextResponse } from "next/server";
 
 interface ReschedulePayload {
@@ -12,7 +12,7 @@ interface ReschedulePayload {
 }
 
 export async function POST(req: Request) {
-  const supabase = supabaseService();
+  const supabase = supabaseServer;
 
   try {
     const body = (await req.json()) as ReschedulePayload;

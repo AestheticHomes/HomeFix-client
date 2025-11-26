@@ -1,5 +1,5 @@
 // /app/api/auth/send-email-otp/route.ts
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseServer } from "@/lib/supabaseServerClient";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -86,7 +86,7 @@ async function logHttp(
   responseBody?: Json | null
 ) {
   try {
-    const sb = supabaseService();
+    const sb = supabaseServer;
     await sb.from("http_response_log").insert([
       {
         request_url: url,
@@ -104,7 +104,7 @@ async function logHttp(
 /* ── Handler ───────────────────────────────────────────────────── */
 export async function POST(req: Request) {
   const started = Date.now();
-  const sb = supabaseService();
+  const sb = supabaseServer;
 
   try {
     const { email } = (await req.json()) as Body;

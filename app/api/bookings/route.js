@@ -7,13 +7,13 @@
  * ✅ Prepares optional invoice/layout uploads (future)
  */
 
-import { supabaseServer } from "@/lib/supabaseClient";
+import { supabaseServer } from "@/lib/supabaseServerClient";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
   try {
     console.log("🧩 [Bookings API] Incoming POST");
-    const supabase = supabaseServer();
+    const supabase = supabaseServer;
     const body = await req.json();
 
     console.log("📦 [Bookings] Raw payload:", body);

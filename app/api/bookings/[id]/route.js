@@ -1,6 +1,6 @@
 // app/api/bookings/[id]/route.js
 import { NextResponse } from "next/server";
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseServer } from "@/lib/supabaseServerClient";
 import { error, log, warn } from "@/lib/console";
 
 /**
@@ -17,7 +17,7 @@ import { error, log, warn } from "@/lib/console";
 export const dynamic = "force-dynamic";
 
 export async function PATCH(req, { params }) {
-  const supabase = supabaseService();
+  const supabase = supabaseServer;
 
   try {
     const id = params?.id;

@@ -1,7 +1,7 @@
 // /app/api/profile/route.ts
 // HomeFix Profile Manager v6 — server-truth, no accidental verification
 
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseServer } from "@/lib/supabaseServerClient";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -62,7 +62,7 @@ type PostBody = {
  * - NEVER escalates phone_verified; verification endpoints do that.
  */
 export async function POST(req: Request) {
-  const sb = supabaseService();
+  const sb = supabaseServer;
 
   try {
     const body = (await req.json()) as PostBody;
@@ -201,7 +201,7 @@ export async function POST(req: Request) {
   } catch (e: any) {
     const msg = e?.message || "Internal Server Error";
     try {
-      const sb = supabaseService();
+      const sb = supabaseServer;
       await sb.from("http_response_log").insert([
         {
           request_url: "/api/profile",
@@ -218,7 +218,7 @@ export async function POST(req: Request) {
 
 /* ============================== GET ============================== */
 export async function GET(req: Request) {
-  const sb = supabaseService();
+  const sb = supabaseServer;
   try {
     const { searchParams } = new URL(req.url);
     const rawPhone = searchParams.get("phone");

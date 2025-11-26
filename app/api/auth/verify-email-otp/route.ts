@@ -9,7 +9,7 @@
  * ✅ On success: sets email_verified = true, clears email_otp
  * ============================================================
  */
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseServer } from "@/lib/supabaseServerClient";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +24,7 @@ function getCookie(req: Request, name: string): string | null {
 }
 
 export async function POST(req: Request) {
-  const svc = supabaseService();
+  const svc = supabaseServer;
 
   try {
     const { email, otp } = (await req.json()) as {

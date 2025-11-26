@@ -1,7 +1,7 @@
 // app/api/bookings-ledger/cancel/route.ts
 export const runtime = "nodejs";
 
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseServer } from "@/lib/supabaseServerClient";
 import { NextResponse } from "next/server";
 
 interface CancelPayload {
@@ -11,7 +11,7 @@ interface CancelPayload {
 }
 
 export async function POST(req: Request) {
-  const supabase = supabaseService();
+  const supabase = supabaseServer;
 
   try {
     const body = (await req.json()) as CancelPayload;

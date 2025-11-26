@@ -2,13 +2,13 @@
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseServer } from "@/lib/supabaseServerClient";
 
 export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
-  const supabase = supabaseService();
+  const supabase = supabaseServer;
   const bookingId = params.id;
 
   if (!bookingId) {

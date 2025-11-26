@@ -1,6 +1,6 @@
 // /app/api/admin/bookings/list/route.js
 import { NextResponse } from "next/server";
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseServer } from "@/lib/supabaseServerClient";
 
 /**
  * ============================================================
@@ -17,7 +17,7 @@ import { supabaseService } from "@/lib/supabaseClient";
 export const dynamic = "force-dynamic"; // Disable static caching
 export const revalidate = 0; // Prevent ISR cache
 
-const supabase = supabaseService();
+const supabase = supabaseServer;
 
 export async function GET() {
   try {

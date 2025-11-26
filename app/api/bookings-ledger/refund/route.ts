@@ -1,7 +1,7 @@
 // app/api/bookings-ledger/refund/route.ts
 export const runtime = "nodejs";
 
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseServer } from "@/lib/supabaseServerClient";
 import { NextResponse } from "next/server";
 
 interface RefundPayload {
@@ -12,7 +12,7 @@ interface RefundPayload {
 }
 
 export async function POST(req: Request) {
-  const supabase = supabaseService();
+  const supabase = supabaseServer;
 
   try {
     const body = (await req.json()) as RefundPayload;

@@ -13,11 +13,11 @@
  */
 
 import { NextResponse } from "next/server";
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseServer } from "@/lib/supabaseServerClient";
 import { log, error } from "@/lib/console";
 
 export const dynamic = "force-dynamic"; // ✅ SSR fetch on each request
-const supabase = supabaseService();
+const supabase = supabaseServer;
 
 /* ------------------------------------------------------------
    ✅ GET — Fetch all active services

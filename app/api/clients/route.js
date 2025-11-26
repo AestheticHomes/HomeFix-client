@@ -2,18 +2,18 @@
  * File: /app/api/clients/route.js
  * Purpose: CRUD endpoint for lightweight client records (HomeFix booking or lead flow)
  * Dependencies:
- *  - Uses `supabaseService()` for safe service-role operations
+ *  - Uses `supabaseServer` for safe service-role operations
  *  - Consistent JSON structure and unified console logging
  */
 
 import { NextResponse } from "next/server";
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseServer } from "@/lib/supabaseServerClient";
 import { error, log, warn } from "@/lib/console";
 
 export const dynamic = "force-dynamic";
 
 // 🧩 Shared Supabase instance (service role bypasses RLS safely)
-const supabase = supabaseService();
+const supabase = supabaseServer;
 
 /* ------------------------------------------------------------
    ✅ GET — Fetch client by phone

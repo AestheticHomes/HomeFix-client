@@ -1,11 +1,11 @@
 // app/api/bookings-ledger/list/route.ts
 export const runtime = "nodejs";
 
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseServer } from "@/lib/supabaseServerClient";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
-  const supabase = supabaseService();
+  const supabase = supabaseServer;
   const { searchParams } = new URL(req.url);
   const user_id = searchParams.get("user_id");
 

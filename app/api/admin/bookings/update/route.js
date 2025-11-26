@@ -1,6 +1,6 @@
 // /app/api/admin/bookings/update/route.js
 import { NextResponse } from "next/server";
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseServer } from "@/lib/supabaseServerClient";
 
 /**
  * ============================================================
@@ -16,7 +16,7 @@ import { supabaseService } from "@/lib/supabaseClient";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const supabase = supabaseService();
+const supabase = supabaseServer;
 
 export async function POST(req) {
   try {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseServer } from "@/lib/supabaseServerClient";
 
 /**
  * 📘 API: /api/bookings/list
@@ -10,7 +10,7 @@ import { supabaseService } from "@/lib/supabaseClient";
  */
 
 export const dynamic = "force-dynamic";
-const supabase = supabaseService();
+const supabase = supabaseServer;
 
 export async function GET(req) {
   try {

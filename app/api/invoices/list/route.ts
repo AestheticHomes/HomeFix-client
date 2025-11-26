@@ -1,7 +1,7 @@
 // app/api/invoices/list/route.ts
 export const runtime = "nodejs";
 
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseServer } from "@/lib/supabaseServerClient";
 import { NextResponse } from "next/server";
 
 const STORE_FLOW = [
@@ -94,7 +94,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const supabase = supabaseService();
+    const supabase = supabaseServer;
 
     const { data, error } = await supabase
       .from("bookings_ledger")
