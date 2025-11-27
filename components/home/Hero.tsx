@@ -69,7 +69,9 @@ export default function Hero() {
             <p className="text-sm sm:text-base text-[var(--text-muted-soft)] max-w-xl">
               We handle everything: on-site measurement, layouts, 3D renders,
               factory-made modules and site execution. Edith keeps your entire
-              project transparent from first visit to final handover.
+              project transparent from first visit to final handover. HomeFix is
+              a digital-first interiors platform built by the team behind
+              AestheticHomes, a Chennai based home improvement brand.
             </p>
 
             <div className="flex flex-wrap gap-3">
@@ -142,7 +144,6 @@ export default function Hero() {
                     />
                   </div>
                 </div>
-
 
                 <div className="flex items-center justify-between px-5 pb-4 text-[11px]">
                   <span className="text-[var(--text-muted-soft)]">

@@ -1,92 +1,30 @@
 {
   "name": "HomeFix India",
   "short_name": "HomeFix",
-  "description": "Instant Home Repair & Interior Design Services by Aesthetic Homes — Chennai & Nellore.",
-  "id": "/",
-  "start_url": "/?utm_source=pwa",
-  "scope": "/",
+  "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
-
-  "background_color": "#0b0a1a",
-  "theme_color": "#5A5DF0",
-
-  "lang": "en",
-  "dir": "ltr",
-  "categories": ["home", "services", "interior", "repairs", "design"],
-
+  "theme_color": "#050816",
+  "background_color": "#050816",
+  "description": "Turnkey interiors, modular kitchens, wardrobes, and 2D/3D planning in Chennai.",
   "icons": [
     {
-      "src": "/icons/icon-192x192.png",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-maskable.png",
-      "sizes": "1024x1024",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icons/icon-mono.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "monochrome"
+      "type": "image/png"
     }
   ],
-
   "screenshots": [
     {
-      "src": "/images/screenshot-home.png",
+      "src": "/images/homefix-screenshot.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "HomeFix Web Dashboard"
-    },
-    {
-      "src": "/images/screenshot-mobile.png",
-      "sizes": "720x1280",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Mobile Booking Flow"
+      "label": "HomeFix India web experience"
     }
-  ],
-
-  "shortcuts": [
-    {
-      "name": "Book a Service",
-      "short_name": "Book",
-      "url": "/my-bookings",
-      "description": "View or schedule your bookings",
-      "icons": [
-        {
-          "src": "/icons/shortcut-book.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "My Profile",
-      "short_name": "Profile",
-      "url": "/profile",
-      "description": "Access your profile & settings",
-      "icons": [
-        {
-          "src": "/icons/shortcut-profile.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
-    }
-  ],
-
-  "prefer_related_applications": false
+  ]
 }

@@ -86,6 +86,66 @@
   }
 }
 
+@layer utilities {
+  .hf-aura {
+    position: relative;
+    display: inline-flex;
+    font-weight: 700;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    background-image: var(--hf-gradient);
+  }
+
+  .hf-aura::before {
+    content: "";
+    position: absolute;
+    inset: -0.35rem;
+    border-radius: 9999px;
+    filter: blur(12px);
+    opacity: 0.45;
+    z-index: -1;
+    background: linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--accent-tertiary) 55%, transparent 45%),
+      color-mix(in srgb, var(--accent-primary) 45%, transparent 55%),
+      color-mix(in srgb, var(--accent-secondary) 35%, transparent 65%)
+    );
+  }
+
+  .hf-aura::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -40%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+      120deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+    mix-blend-mode: screen;
+    animation: hfSweep 4s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes hfSweep {
+    0% {
+      opacity: 0;
+      transform: translateX(-40%);
+    }
+    50% {
+      opacity: 0.3;
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(40%);
+    }
+  }
+}
+
 /* ------------------------------------------------------------
    🎨 THEME TOKEN SYSTEM — Edith + Gemini Unified
 ------------------------------------------------------------ */
@@ -128,6 +188,12 @@
     --accent-danger: #ef4444;
     --accent-warning: #f59e0b;
     --accent-info: #3b82f6;
+    --hf-gradient: linear-gradient(
+      90deg,
+      var(--accent-tertiary),
+      var(--accent-primary),
+      var(--accent-secondary)
+    );
 
     /* DEPTH + EFFECTS */
     --shadow-elevation: 0 4px 12px rgba(0, 0, 0, 0.08);

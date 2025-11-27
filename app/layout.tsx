@@ -22,13 +22,43 @@ import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "HomeFix India",
+  metadataBase: new URL("https://homefix.co.in"),
+  title: {
+    default: "HomeFix India | Turnkey interiors, 2D/3D planning, and execution",
+    template: "%s | HomeFix India",
+  },
   description:
-    "Smart home services & interior design platform by Aesthetic Homes.",
+    "Book HomeFix for end-to-end interiors in Chennai: measurement, 2D/3D planning, curated materials, installation, and site supervision with lower waste and fewer errors.",
   manifest: "/manifest.json",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: "https://homefix.co.in/",
+    siteName: "HomeFix India",
+    title: "HomeFix India | Turnkey interiors, 2D/3D planning, and execution",
+    description:
+      "Book HomeFix for end-to-end interiors in Chennai: measurement, 2D/3D planning, curated materials, installation, and site supervision with lower waste and fewer errors.",
+    images: [
+      {
+        url: "https://homefix.co.in/images/homefix-screenshot.png",
+        width: 1280,
+        height: 720,
+        alt: "HomeFix India homepage showing turnkey interior services",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "HomeFix India | Turnkey interiors, 2D/3D planning, and execution",
+    description:
+      "Book HomeFix for end-to-end interiors in Chennai: measurement, 2D/3D planning, curated materials, installation, and site supervision with lower waste and fewer errors.",
+    images: ["https://homefix.co.in/images/homefix-screenshot.png"],
+  },
   icons: {
-    icon: "/icons/icon-192x192.png",
-    apple: "/icons/icon-512x512.png",
+    icon: "/icons/icon-192.png",
+    apple: "/icons/icon-512.png",
   },
   applicationName: "HomeFix India",
   appleWebApp: {
@@ -62,8 +92,8 @@ export default function RootLayout({
       <head>
         {/* PWA essentials */}
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/icons/icon-192x192.png" sizes="192x192" />
-        <link rel="apple-touch-icon" href="/icons/icon-512x512.png" />
+        <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
+        <link rel="apple-touch-icon" href="/icons/icon-512.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="application-name" content="HomeFix India" />
         <meta
@@ -75,13 +105,13 @@ export default function RootLayout({
       <body
         suppressHydrationWarning
         className="
-          antialiased app-shell
-          bg-[var(--surface-base)] text-[var(--text-primary)]
-          selection:bg-[var(--selection-bg)] selection:text-[var(--selection-text)]
-          dark:text-[var(--text-primary-dark)]
-          dark:selection:bg-[var(--selection-bg)] dark:selection:text-[var(--selection-text)]
-          transition-colors duration-500
-        "
+            antialiased app-shell
+            bg-[var(--surface-base)] text-[var(--text-primary)]
+            selection:bg-[var(--selection-bg)] selection:text-[var(--selection-text)]
+            dark:text-[var(--text-primary-dark)]
+            dark:selection:bg-[var(--selection-bg)] dark:selection:text-[var(--selection-text)]
+            transition-colors duration-500
+          "
       >
         <ThemeProvider
           attribute="class"

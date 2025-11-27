@@ -6,6 +6,7 @@ import UniversalHeader from "@/components/chrome/UniversalHeader";
 import NavBar from "@/components/layout/NavBar";
 import SafeViewport from "@/components/layout/SafeViewport";
 import SessionSync from "@/components/SessionSync";
+import Footer from "@/components/ui/Footer";
 import { EdithToaster } from "@/components/ui/toaster";
 import { SidebarProvider, useSidebar } from "@/contexts/SidebarContext";
 import { UserProvider } from "@/contexts/UserContext";
@@ -125,6 +126,11 @@ function RootShellInner({ children }: { children: ReactNode }) {
           }}
         >
           <SafeViewport>{children}</SafeViewport>
+          {!isAuth && (
+            <div className="mt-6">
+              <Footer />
+            </div>
+          )}
         </main>
       </div>
 

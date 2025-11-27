@@ -22,12 +22,19 @@ export default function Footer() {
                  dark:shadow-[0_-1px_12px_rgba(155,92,248,0.18)]
                  transition-all duration-700 ease-out"
     >
-      <div className="relative z-10 px-4">
-        © {new Date().getFullYear()}{" "}
-        <span className="font-semibold text-transparent bg-clip-text edith-logo-gradient">
-          HomeFix India
-        </span>{" "}
-        · Built with ❤️ in Chennai
+      <div className="relative z-10 px-4 flex flex-col items-center gap-3 sm:flex-row sm:justify-between sm:text-left text-center">
+        <div className="text-[0.95rem]">
+          Built by{" "}
+          <a
+            href="https://aesthetichomes.net"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hf-aura"
+          >
+            AestheticHomes
+          </a>{" "}
+          – Chennai interiors brand with 4.9★ rating, now powered by HomeFix.
+        </div>
       </div>
 
       {/* 🌈 Subtle Glow Bar (bottom aura) */}
