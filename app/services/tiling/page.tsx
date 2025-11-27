@@ -1,3 +1,11 @@
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Professional Tiling Services | HomeFix India",
+  description:
+    "Expert floor and wall tiling services. High-quality installation for bathrooms, kitchens, and living areas.",
+};
+
 export default function Page() {
   return (
     <div className="p-6">

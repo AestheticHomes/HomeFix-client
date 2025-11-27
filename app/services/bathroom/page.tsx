@@ -1,3 +1,11 @@
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Bathroom Renovation Services | HomeFix India",
+  description:
+    "Complete bathroom renovation services in Chennai. From plumbing to tiling, we handle everything for your dream bathroom.",
+};
+
 export default function Page() {
   return (
     <div className="p-6">

@@ -7,9 +7,9 @@
  */
 
 import {
-  mapGoodsToCatalog,
-  normalizeCategory,
-  type GoodsRow,
+    mapGoodsToCatalog,
+    normalizeCategory,
+    type GoodsRow,
 } from "@/lib/catalog/mapGoodsToCatalog";
 
 const BASE_URL = "https://homefix.in";
@@ -23,6 +23,72 @@ export default async function sitemap() {
       lastModified: new Date().toISOString(),
       changeFrequency: "weekly" as const,
       priority: 1,
+    },
+    {
+      url: `${BASE_URL}/services`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: "weekly" as const,
+      priority: 0.9,
+    },
+    {
+      url: `${BASE_URL}/login`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: "yearly" as const,
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/consultation`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/estimator`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/studio`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/services/bathroom`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/services/civil`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/services/full-home`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/services/modular-kitchens`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/services/tiling`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/services/wardrobes`,
+      lastModified: new Date().toISOString(),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
     },
   ];
 

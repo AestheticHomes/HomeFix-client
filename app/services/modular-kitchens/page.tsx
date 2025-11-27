@@ -1,3 +1,11 @@
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Modular Kitchens | HomeFix India",
+  description:
+    "Custom modular kitchen designs. Modern, functional, and stylish kitchens tailored to your needs.",
+};
+
 export default function Page() {
   return (
     <div className="p-6">

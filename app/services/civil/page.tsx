@@ -1,3 +1,11 @@
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Civil Work Services | HomeFix India",
+  description:
+    "Professional civil work services including masonry, plastering, and structural repairs in Chennai.",
+};
+
 export default function Page() {
   return (
     <div className="p-6">
