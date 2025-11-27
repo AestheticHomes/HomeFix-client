@@ -31,7 +31,7 @@ export default function MapPicker({
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const missingApiKey = !apiKey;
 
-  const autocompleteInputRef = useRef<HTMLInputElement | null>(null);
+  const autocompleteElRef = useRef<HTMLElement | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const { theme } = useTheme();
 
@@ -57,7 +57,7 @@ export default function MapPicker({
     initialLocation,
     editable,
     onLocationChange: handleHookChange,
-    inputRef: autocompleteInputRef,
+    autocompleteElRef,
   });
 
   const manualOnly = forceManualMode || missingApiKey || mapsDead;
@@ -152,9 +152,8 @@ export default function MapPicker({
     <div className="flex flex-col gap-4 w-full relative">
       {editable && (
         <div className="space-y-2">
-          <input
-            ref={autocompleteInputRef}
-            type="text"
+          <gmpx-place-autocomplete
+            ref={autocompleteElRef}
             placeholder="Search location or area…"
             className={`w-full bg-[var(--surface-card)] text-[var(--text-primary)]
               border border-[var(--edith-border)] rounded-xl px-4 py-2 text-sm
