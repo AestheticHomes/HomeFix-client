@@ -76,7 +76,7 @@ export default function Hero() {
 
             <div className="flex flex-wrap gap-3">
               <Link
-                href="/consultation"
+                href="/turnkey"
                 className="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-[var(--accent-primary)] hover:bg-[color-mix(in_srgb,var(--accent-primary)85%,black)] shadow-[0_14px_35px_rgba(15,23,42,0.45)] transition-transform hover:-translate-y-0.5"
                 onClick={() => track("start_turnkey_project")}
               >
@@ -89,26 +89,6 @@ export default function Hero() {
               >
                 Explore 2D / 3D studio (beta)
               </Link>
-            </div>
-
-            <div className="mt-6 flex flex-wrap gap-3 max-md:overflow-x-auto max-md:whitespace-nowrap">
-              {[
-                "On-site measurement",
-                "Initial layout plan",
-                "3D renders & revisions",
-                "Factory build & site execution",
-                "Final handover",
-              ].map((step) => (
-                <button
-                  key={step}
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-[11px] md:text-sm text-[var(--text-muted-soft)] backdrop-blur transition hover:border-[var(--accent-primary)]"
-                >
-                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-primary)]" />
-                  <span>{step}</span>
-                  <span>→</span>
-                </button>
-              ))}
             </div>
           </div>
 

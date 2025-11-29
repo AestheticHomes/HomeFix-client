@@ -304,8 +304,8 @@ export function useOtpManager(): UseOtpManager {
             : "/api/auth/verify-email-otp";
         const payload =
           type === "phone"
-            ? { phone: toE164India(target)!, otp }
-            : { email: target.trim(), otp };
+            ? { phone: toE164India(target)!, otp, action: "verify" }
+            : { email: target.trim(), otp, action: "verify" };
 
         const res = await fetch(endpoint, {
           method: "POST",

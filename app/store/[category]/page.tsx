@@ -13,7 +13,7 @@ import type { Metadata } from "next";
 
 import CategoryPageClient from "./CategoryPageClient";
 
-const SITE_URL = "https://homefix.in";
+const SITE_URL = "https://homefix.co.in";
 
 const prettify = (slug: string) =>
   slug

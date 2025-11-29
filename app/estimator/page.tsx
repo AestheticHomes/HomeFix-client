@@ -1,7 +1,7 @@
 import EstimatorPageClient from "@/components/estimator/EstimatorPageClient";
 import type { Metadata } from "next";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://homefix.in";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://homefix.co.in";
 
 export const metadata: Metadata = {
   title: "HomeFix Estimator | 2D/3D kitchen & wardrobe budgeting",

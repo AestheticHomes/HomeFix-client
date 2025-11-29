@@ -4,20 +4,14 @@
  */
 
 import Link from "next/link";
-import Script from "next/script";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
 import { useMemo, useState } from "react";
 
 import UniversalPreview from "@/components/preview/UniversalPreview";
 import { useProductCartStore } from "@/components/store/cartStore";
 import type { CatalogItem } from "@/types/catalog";
-import {
-  ArrowLeft,
-  MapPin,
-  Minus,
-  Plus,
-  ShoppingCart,
-} from "lucide-react";
+import { ArrowLeft, MapPin, Minus, Plus, ShoppingCart } from "lucide-react";
 
 type Props = {
   item: CatalogItem;
@@ -39,7 +33,7 @@ export default function PDPClient({ item }: Props) {
 
   const [previewOverride, setPreviewOverride] = useState<string | null>(null);
 
-  const canonical = `https://homefix.in/store/${item.categorySlug}/${item.slug}`;
+  const canonical = `https://homefix.co.in/store/${item.categorySlug}/${item.slug}`;
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -65,13 +59,13 @@ export default function PDPClient({ item }: Props) {
         "@type": "ListItem",
         position: 1,
         name: "Store",
-        item: "https://homefix.in/store",
+        item: "https://homefix.co.in/store",
       },
       {
         "@type": "ListItem",
         position: 2,
         name: item.category,
-        item: `https://homefix.in/store/${item.categorySlug}`,
+        item: `https://homefix.co.in/store/${item.categorySlug}`,
       },
       {
         "@type": "ListItem",
@@ -160,7 +154,7 @@ export default function PDPClient({ item }: Props) {
             <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] rounded-2xl overflow-hidden bg-[var(--surface-panel)]">
               <UniversalPreview
                 glbUrl={item.glbUrl || undefined}
-                imageUrl={(previewOverride || item.coverUrl) || undefined}
+                imageUrl={previewOverride || item.coverUrl || undefined}
                 enableModeToggle={!!item.glbUrl}
                 initialMode={item.glbUrl ? "auto" : "2d"}
                 fillContainer
@@ -278,7 +272,11 @@ export default function PDPClient({ item }: Props) {
           <div className="flex flex-wrap gap-2 text-[11px]">
             {(item.promises && item.promises.length > 0
               ? item.promises
-              : ["Safe & swift delivery", "Free installation", "Dedicated support"]
+              : [
+                  "Safe & swift delivery",
+                  "Free installation",
+                  "Dedicated support",
+                ]
             ).map((p, i) => (
               <span
                 key={i}

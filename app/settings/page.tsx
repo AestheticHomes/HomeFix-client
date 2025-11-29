@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import dynamic from "next/dynamic";
+import NextDynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -18,11 +18,13 @@ import {
   User,
 } from "lucide-react";
 
-const ThemeToggle = dynamic(() => import("@/components/ThemeToggle"), {
+const ThemeToggle = NextDynamic(() => import("@/components/ThemeToggle"), {
   ssr: false,
 });
 
 export default function SettingsPage() {
+  // Dynamic page to avoid prerender auth issues
+  
   const { user, loggedIn, loading } = useUserProfile();
   const { logout } = useUser();
   const router = useRouter();
@@ -204,3 +206,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";

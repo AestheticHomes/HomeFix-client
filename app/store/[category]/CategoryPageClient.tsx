@@ -4,13 +4,13 @@
  */
 
 import CatalogPreviewCard from "@/components/catalog/CatalogPreviewCard";
+import Breadcrumbs from "@/components/navigation/Breadcrumbs";
 import { useProductCartStore } from "@/components/store/cartStore";
 import {
   mapGoodsToCatalog,
   type GoodsRow,
 } from "@/lib/catalog/mapGoodsToCatalog";
 import type { CatalogItem } from "@/types/catalog";
-import Breadcrumbs from "@/components/navigation/Breadcrumbs";
 import Script from "next/script";
 import { useEffect, useMemo, useState } from "react";
 
@@ -94,7 +94,10 @@ export default function CategoryPageClient({ categorySlug }: Props) {
 
     (async () => {
       try {
-        const res = await fetch(url, { cache: "no-cache", signal: controller.signal });
+        const res = await fetch(url, {
+          cache: "no-cache",
+          signal: controller.signal,
+        });
         if (!res.ok) throw new Error(`Catalog fetch failed: ${res.status}`);
         const rows = (await res.json()) as GoodsRow[];
         const mapped = mapGoodsToCatalog(rows || []);
@@ -125,8 +128,7 @@ export default function CategoryPageClient({ categorySlug }: Props) {
     });
   }, [all, categorySlug]);
 
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || "https://homefix.in";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://homefix.co.in";
 
   const breadcrumbJsonLd = useMemo(
     () => ({

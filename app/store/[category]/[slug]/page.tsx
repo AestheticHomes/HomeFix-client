@@ -14,10 +14,13 @@ import Link from "next/link";
 
 import PDPClient from "./PDPClient";
 
-import { mapGoodsToCatalog, type GoodsRow } from "@/lib/catalog/mapGoodsToCatalog";
+import {
+  mapGoodsToCatalog,
+  type GoodsRow,
+} from "@/lib/catalog/mapGoodsToCatalog";
 import type { CatalogItem } from "@/types/catalog";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://homefix.in";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://homefix.co.in";
 
 async function getCatalogItem(
   categorySlug: string,

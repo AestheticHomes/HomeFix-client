@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const title = "HomeFix Store | Modular Kitchens, Doors, Panels & Hardware";
   const description =
     "Browse the HomeFix catalogue of modular kitchens, designer doors, wall panels, hardware, lighting and more with installation included.";
-  const url = "https://homefix.in/store";
+  const url = "https://homefix.co.in/store";
 
   return {
     title,

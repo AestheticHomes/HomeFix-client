@@ -16,6 +16,7 @@ import { createClient } from "@supabase/supabase-js";
 import { supabaseServer } from "@/lib/supabaseServerClient";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -47,7 +48,8 @@ function getTwilioClient() {
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { phone, otp, username, action = "send" } = body;
+    const { phone, otp, username, action } = body;
+    const effectiveAction = action ?? (otp ? "verify" : "send");
 
     if (!phone) {
       return NextResponse.json(
@@ -58,9 +60,9 @@ export async function POST(req) {
 
     const formattedPhone = phone.startsWith("+91") ? phone : `+91${phone}`;
     const safeUsername = username?.trim() || "guest";
-    console.log(`📩 [OTP] Action=${action} | Phone=${formattedPhone}`);
+    console.log(`📩 [OTP] Action=${effectiveAction} | Phone=${formattedPhone}`);
 
-    if (!["send", "verify"].includes(action)) {
+    if (!["send", "verify"].includes(effectiveAction)) {
       return NextResponse.json(
         { success: false, error: "Invalid action type" },
         { status: 400 },
@@ -79,7 +81,7 @@ export async function POST(req) {
         safeUsername,
       );
 
-      if (action === "send") {
+      if (effectiveAction === "send") {
         console.log("🧪 [DEBUG] OTP simulated for", formattedPhone);
         return injectJsonResponse(
           {
@@ -95,7 +97,7 @@ export async function POST(req) {
         );
       }
 
-      if (action === "verify") {
+      if (effectiveAction === "verify") {
         if (otp !== "123456") {
           console.warn("⚠️ [DEBUG] Wrong OTP:", otp);
           return NextResponse.json(
@@ -141,7 +143,7 @@ export async function POST(req) {
 
     // ---------------------------------------------------------
     // 📤 SEND OTP
-    if (action === "send") {
+    if (effectiveAction === "send") {
       console.log("📤 [TWILIO] Sending OTP →", formattedPhone);
 
       const verification = await client.verify.v2
@@ -176,7 +178,7 @@ export async function POST(req) {
 
     // ---------------------------------------------------------
     // 🔍 VERIFY OTP
-    if (action === "verify") {
+    if (effectiveAction === "verify") {
       if (!otp) {
         return NextResponse.json(
           { success: false, error: "Missing OTP code" },
@@ -208,7 +210,7 @@ export async function POST(req) {
         formattedPhone,
         safeUsername,
       );
-      await markPhoneVerified(supabase, user.id);
+        await markPhoneVerified(supabase, user.id);
 
       return injectJsonResponse(
         {
@@ -247,7 +249,7 @@ async function ensureUserProfileExists(
   try {
     const { data: existing } = await supabase
       .from("user_profiles")
-      .select("id")
+      .select("id, name")
       .eq("phone", formattedPhone)
       .maybeSingle();
 

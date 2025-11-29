@@ -1,65 +1,29 @@
 "use client";
 /**
- * ============================================================
- * 🌐 UniversalHeader v8.1 — Route-Aware Promos + Safe Weather
- * ------------------------------------------------------------
- * GOALS
- *  - Show ClimateBar only on "/" (homepage)
- *  - Show a single, route-specific promo on every other page
- *  - Keep React hooks order safe (no conditional hooks at root)
- *  - Use only design tokens (no hardcoded hex)
- *  - Preserve MySpace toggle + a11y + theme toggle
- *
- * HOW IT WORKS
- *  - <ClimateSlot/> renders (and fetches) weather ONLY on "/"
- *  - <RoutePromoBar/> renders one message chosen by pathname
- *  - Header height keeps writing --hf-header-height for layout
- *
- * EDIT PROMOS
- *  - Update ROUTE_PROMOS below to change copy/CTAs per section.
- * ============================================================
+ * UniversalHeader — Single Promo Slot
+ * - One promo per page, rendered by <PromoBar/>
+ * - Promo engine (promoEngine.ts) decides:
+ *     - homepage → "home-climate" (weather-aware ClimateBar)
+ *     - other routes → text promos
+ * - Header only owns layout; no direct weather / route logic.
  */
 
 import { motion } from "framer-motion";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 
-import { ClimateBar } from "@/components/chrome/ClimateBar";
 import PromoBar from "@/components/chrome/PromoBar";
 import MobileSideNav from "@/components/layout/MobileSideNav";
 import HomeFixLogo from "@/components/ui/HomeFixLogo";
-import { useHomefixWeather } from "@/hooks/useHomefixWeather";
-import { usePromo } from "@/hooks/usePromo";
-
-// ---------- Route promo config (one line per top-level section) ----------
-// ---------- Weather only when mounted on "/" (keeps hooks safe) ----------
-function ClimateSlot() {
-  const weather = useHomefixWeather();
-
-  return (
-    <ClimateBar
-      city={weather.cityName ?? "Chennai"}
-      tempC={weather.currentTempC ?? 27}
-      condition={weather.summary ?? "Mainly clear"}
-      highC={weather.todayHighC ?? 29}
-      lowC={weather.todayLowC ?? 23}
-    />
-  );
-}
 
 export default function UniversalHeader(): React.ReactElement {
   const headerRef = useRef<HTMLElement | null>(null);
-  const pathname = usePathname() || "/";
   const { theme, setTheme, systemTheme } = useTheme();
-  const promo = usePromo();
 
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-
-  const isHomepage = pathname === "/";
 
   useEffect(() => setMounted(true), []);
 
@@ -140,57 +104,11 @@ export default function UniversalHeader(): React.ReactElement {
         </div>
       </div>
 
-      {promo && (
-        <div
-          className="
-            mt-1
-            w-full
-            flex items-center justify-between gap-2
-            rounded-2xl
-            border border-[var(--border-soft)]
-            bg-[color-mix(in_srgb,var(--surface-card)85%,transparent)]
-            px-3 py-1.5
-            text-[11px]
-          "
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-            <span className="font-medium text-[var(--text-primary)]">
-              {promo.headline}
-            </span>
-            {promo.subline && (
-              <span className="text-[var(--text-secondary)] hidden sm:inline">
-                {promo.subline}
-              </span>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              // lightweight client-side navigation; do NOT import useRouter if not already present.
-              window.location.href = promo.ctaHref;
-            }}
-            className="
-              flex-shrink-0
-              inline-flex items-center
-              rounded-xl
-              px-3 py-1
-              text-[11px] font-semibold
-              bg-[var(--accent-primary)]
-              text-white
-              hover:bg-[var(--accent-primary-hover)]
-              transition-colors
-            "
-          >
-            {promo.ctaLabel}
-          </button>
-        </div>
-      )}
-
       {/* Mobile Nav Drawer */}
       <MobileSideNav open={menuOpen} onClose={() => setMenuOpen(false)} />
 
-      {/* ── Secondary bar: homepage climate OR route promo ───── */}
-      {isHomepage ? <ClimateSlot /> : <PromoBar />}
+      {/* ── Secondary bar: promo engine decides variant (climate / text) ───── */}
+      <PromoBar />
 
     </motion.header>
   );

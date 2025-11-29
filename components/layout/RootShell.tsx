@@ -1,8 +1,8 @@
 "use client";
 
 import AppSidebar from "@/components/chrome/AppSidebar";
-import BackgroundWaves from "@/components/chrome/BackgroundWaves";
 import UniversalHeader from "@/components/chrome/UniversalHeader";
+import GlobalParticleField from "@/components/chrome/GlobalParticleField";
 import NavBar from "@/components/layout/NavBar";
 import SafeViewport from "@/components/layout/SafeViewport";
 import SessionSync from "@/components/SessionSync";
@@ -110,22 +110,29 @@ function RootShellInner({ children }: { children: ReactNode }) {
 
       {!isAuth && <UniversalHeader />}
 
-      <div className="relative bg-[var(--surface-base)] text-[var(--text-primary)]">
-        <BackgroundWaves />
+      <div className="relative z-0 bg-[var(--surface-base)] text-[var(--text-primary)]">
+        <GlobalParticleField />
         <AppSidebar />
 
+        {/* MAIN: flex column so footer can sit at bottom of 100vh region */}
         <main
           id="app-scroll-region"
-          className="relative w-full overflow-y-auto overscroll-none"
+          className="relative flex w-full flex-col overflow-y-auto overscroll-none"
           style={{
             height: "100vh",
             paddingTop: headerPadding,
-            paddingBottom: dockPadding,
+            // paddingBottom moves into content wrapper so footer stays at true bottom
             paddingLeft: sidebarPaddingLeft,
             scrollbarGutter: "stable",
           }}
         >
-          <SafeViewport>{children}</SafeViewport>
+          {/* Content wrapper grows + respects mobile dock padding */}
+          <div className="flex-1" style={{ paddingBottom: dockPadding }}>
+            <SafeViewport>{children}</SafeViewport>
+          </div>
+
+          {/* Footer is pinned to bottom of the scroll region (screen). 
+              On mobile, bottom NavBar will overlap it, but content above is safe. */}
           {!isAuth && (
             <div className="mt-6">
               <Footer />

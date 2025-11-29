@@ -52,6 +52,7 @@ export default function ProfilePage() {
     "form" | "phone-otp" | "email-otp"
   >("form");
   const [editingAddress, setEditingAddress] = useState(false);
+  const [savingAddress, setSavingAddress] = useState(false);
 
   const [coords, setCoords] = useState({ lat: 13.0827, lng: 80.2707 });
   const [address, setAddress] = useState("");
@@ -70,19 +71,16 @@ export default function ProfilePage() {
     }
   }, [profile]);
 
-  useEffect(() => {
-    refresh().catch(() => {});
-  }, [refresh]);
-
-  async function saveLocation() {
+  async function saveLocation(next?: { loc?: { lat: number; lng: number } | null; addr?: string }) {
     if (!profile?.phone) return;
 
     try {
+      setSavingAddress(true);
       const updates = {
         phone: profile.phone,
-        address,
-        latitude: coords.lat,
-        longitude: coords.lng,
+        address: next?.addr ?? address,
+        latitude: next?.loc?.lat ?? coords.lat,
+        longitude: next?.loc?.lng ?? coords.lng,
       };
 
       const res = await fetch("/api/profile", {
@@ -98,12 +96,13 @@ export default function ProfilePage() {
       success("📍 Location saved.");
       navigator.vibrate?.(20);
 
-      setEditingAddress(false);
       window.dispatchEvent(new Event("profile-updated"));
     } catch (e: any) {
       console.error("🔴 saveLocation error:", e?.message || e);
       error("Failed to save location.");
       navigator.vibrate?.([120]);
+    } finally {
+      setSavingAddress(false);
     }
   }
 
@@ -223,16 +222,6 @@ export default function ProfilePage() {
               Edit Address
             </button>
 
-            {editingAddress && (
-              <button
-                onClick={saveLocation}
-                className="px-4 py-2 rounded-lg font-medium text-white"
-                style={{ background: "var(--accent-success)" }}
-              >
-                Save Address
-              </button>
-            )}
-
             <button
               onClick={handleLogout}
               className="px-4 py-2 rounded-lg font-medium text-white"
@@ -246,9 +235,12 @@ export default function ProfilePage() {
             <div className="mt-4 space-y-3">
               <MapPicker
                 initialLocation={coords}
-                onLocationChange={(loc, addr) => {
+                onLocationChange={async (loc, addr, confirmed) => {
                   if (loc) setCoords(loc);
                   if (addr) setAddress(addr);
+                  if (confirmed) {
+                    await saveLocation({ loc: loc ?? undefined, addr });
+                  }
                 }}
                 editable
               />
@@ -263,6 +255,11 @@ export default function ProfilePage() {
                 }}
                 placeholder="Enter address"
               />
+              {savingAddress && (
+                <p className="text-xs text-[var(--text-secondary)]">
+                  Saving address…
+                </p>
+              )}
             </div>
           )}
         </motion.div>
@@ -276,3 +273,5 @@ export default function ProfilePage() {
     </SafeViewport>
   );
 }
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";

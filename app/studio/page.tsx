@@ -3,12 +3,14 @@
 import StudioTipsStrip from "@/components/studio/StudioTipsStrip";
 import { useInitialCategory } from "@/lib/useInitialCategory";
 import { Float, Grid, OrbitControls, Stars, Text } from "@react-three/drei";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { FC, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { MathUtils } from "three";
 
 type Vec3 = [number, number, number];
 
@@ -17,45 +19,70 @@ type Cosmos = {
   fog: string;
 };
 
-/* ===========================
-   3D PRIMITIVES (no GLBs)
-   =========================== */
+// ===========================
+// Re-usable Primitives (Minimized for brevity, animations retained)
+// ===========================
 
 interface CraneProps {
   position?: Vec3;
+  isPoweredOn: boolean;
 }
 
-// Simple crane made from boxes + cylinder + animated hook
-const Crane: FC<CraneProps> = ({ position = [0, 0, 0] }) => {
+const Crane: FC<CraneProps> = ({ position = [0, 0, 0], isPoweredOn }) => {
   const boomRef = useRef<THREE.Group | null>(null);
   const hookRef = useRef<THREE.Group | null>(null);
+  const groupRef = useRef<THREE.Group | null>(null);
+  const materialRef = useRef<THREE.MeshStandardMaterial | null>(null);
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
+    const powerFactor = isPoweredOn ? 1 : 0;
 
+    // Crane & Hook animation logic
     if (boomRef.current) {
-      boomRef.current.rotation.z = Math.sin(t * 0.5) * 0.04;
+      boomRef.current.rotation.z = Math.sin(t * 0.5) * 0.04 * powerFactor;
+    }
+    if (hookRef.current) {
+      hookRef.current.position.z = Math.cos(t * 1.5) * 0.06 * powerFactor;
+      hookRef.current.position.y =
+        -0.6 - Math.sin(t * 1.2) * 0.18 * powerFactor;
     }
 
-    if (hookRef.current) {
-      hookRef.current.position.y = -0.6 - Math.sin(t * 1.2) * 0.12;
+    // Entrance: Drop in
+    if (groupRef.current) {
+      groupRef.current.position.y = MathUtils.lerp(
+        groupRef.current.position.y,
+        isPoweredOn ? 0 : -5,
+        0.05
+      );
+    }
+    // Pulse
+    if (materialRef.current) {
+      materialRef.current.emissiveIntensity =
+        0.1 + Math.sin(t * 3) * 0.1 * powerFactor;
     }
   });
 
+  // ... (Crane JSX structure remains the same)
   return (
-    <group position={position}>
+    <group ref={groupRef} position={position}>
       {/* tower */}
       <mesh position={[0, 2.5, 0]}>
         <boxGeometry args={[0.3, 5, 0.3]} />
-        <meshStandardMaterial color="#E7C66D" roughness={0.5} metalness={0.2} />
+        <meshStandardMaterial
+          ref={materialRef}
+          color="#E7C66D"
+          roughness={0.5}
+          metalness={0.2}
+          emissive="#E7C66D"
+          emissiveIntensity={0.1}
+        />
       </mesh>
-
       {/* counterweight */}
       <mesh position={[-0.8, 4.5, 0]}>
         <boxGeometry args={[0.6, 0.4, 0.6]} />
         <meshStandardMaterial color="#6b7280" roughness={0.8} />
       </mesh>
-
       {/* boom */}
       <group ref={boomRef} position={[0, 5, 0]}>
         <mesh position={[1.4, 0, 0]}>
@@ -66,13 +93,11 @@ const Crane: FC<CraneProps> = ({ position = [0, 0, 0] }) => {
             roughness={0.5}
           />
         </mesh>
-
         {/* cable */}
         <mesh position={[2.8, -0.4, 0]}>
           <cylinderGeometry args={[0.015, 0.015, 0.8, 12]} />
           <meshStandardMaterial color="#222" />
         </mesh>
-
         {/* hook */}
         <group ref={hookRef} position={[2.8, -0.8, 0]}>
           <mesh rotation={[0, 0, Math.PI / 2]}>
@@ -93,21 +118,19 @@ interface BulldozerProps {
   position?: Vec3;
   heading?: number;
 }
-
-// Simple bulldozer: body + blade + tracks with a tiny wobble
 const Bulldozer: FC<BulldozerProps> = ({
   position = [0, 0, 0],
   heading = 0,
 }) => {
   const groupRef = useRef<THREE.Group | null>(null);
-
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     if (groupRef.current) {
-      groupRef.current.rotation.z = Math.sin(t * 2) * 0.005;
+      groupRef.current.rotation.z = Math.sin(t * 2) * 0.008;
     }
   });
 
+  // ... (Bulldozer JSX structure remains the same)
   return (
     <group ref={groupRef} position={position} rotation={[0, heading, 0]}>
       {/* body */}
@@ -134,11 +157,57 @@ const Bulldozer: FC<BulldozerProps> = ({
   );
 };
 
+interface AnimatedBulldozerProps {
+  initialPosition: Vec3;
+  heading: number;
+  isPoweredOn: boolean;
+}
+
+const AnimatedBulldozer: FC<AnimatedBulldozerProps> = ({
+  initialPosition,
+  heading,
+  isPoweredOn,
+}) => {
+  const dozerRef = useRef<THREE.Group | null>(null);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const powerFactor = isPoweredOn ? 1 : 0;
+
+    if (dozerRef.current) {
+      const xOffset = -2 + Math.sin(t * 0.4) * 1.6;
+
+      // Smoother entrance animation (Y-axis drop-in)
+      const targetY = initialPosition[1];
+      const dropY = MathUtils.lerp(
+        dozerRef.current.position.y,
+        isPoweredOn ? targetY : targetY - 2,
+        0.05
+      );
+
+      dozerRef.current.position.set(
+        xOffset * powerFactor,
+        dropY,
+        initialPosition[2]
+      );
+
+      dozerRef.current.rotation.y =
+        heading + Math.sin(t * 0.4) * 0.05 * powerFactor;
+    }
+  });
+
+  return (
+    <group ref={dozerRef} position={initialPosition}>
+      <Bulldozer position={[0, 0, 0]} heading={0} />
+    </group>
+  );
+};
+
+// ... (ConstructionText, Dust, GroundPlate, ScanRing, GlowPillars remain the same)
 interface ConstructionTextProps {
   liftingIndex?: number;
 }
 
-// Animated letter group
 const ConstructionText: FC<ConstructionTextProps> = ({ liftingIndex = 5 }) => {
   const phrase = "UNDER CONSTRUCTION";
   const letters = useMemo(() => phrase.split(""), []);
@@ -186,7 +255,6 @@ const ConstructionText: FC<ConstructionTextProps> = ({ liftingIndex = 5 }) => {
   );
 };
 
-// Tiny floating dust motes
 const Dust: FC = () => (
   <Stars
     radius={30}
@@ -199,11 +267,6 @@ const Dust: FC = () => (
   />
 );
 
-/* ===========================
-   COSMIC GROUND / EFFECTS
-   =========================== */
-
-// Glowing disc under the scene
 const GroundPlate: FC = () => {
   const plateRef = useRef<THREE.Mesh | null>(null);
 
@@ -233,7 +296,6 @@ const GroundPlate: FC = () => {
   );
 };
 
-// Animated scan ring
 const ScanRing: FC = () => {
   const ringRef = useRef<THREE.Mesh | null>(null);
 
@@ -241,7 +303,7 @@ const ScanRing: FC = () => {
     const t = clock.getElapsedTime();
     if (!ringRef.current) return;
 
-    ringRef.current.rotation.z = t * 0.4;
+    ringRef.current.rotation.z = t * 0.8;
     const s = 1 + Math.sin(t * 1.4) * 0.05;
     ringRef.current.scale.set(s, 1, s);
   });
@@ -259,7 +321,6 @@ const ScanRing: FC = () => {
   );
 };
 
-// Vertical glow pillars
 const GlowPillars: FC = () => {
   const groupRef = useRef<THREE.Group | null>(null);
 
@@ -293,25 +354,48 @@ const GlowPillars: FC = () => {
     </group>
   );
 };
+// ...
+
+// ===========================
+// NEW: Camera Orbit Component
+// ===========================
+
+interface CameraOrbitProps {
+  // Speed in radians per frame (e.g., 0.005 for a slow orbit)
+  speed: number;
+}
+
+/**
+ * Automatically rotates the OrbitControls around the scene.
+ * If the user interacts (drags), the auto-rotation is temporarily stopped.
+ */
+const CameraOrbit: FC<CameraOrbitProps> = ({ speed }) => {
+  useFrame((state, delta) => {
+    const controls = state.controls as OrbitControlsImpl | undefined;
+    if (!controls) return;
+
+    controls.object.rotation.y += speed * delta * 60;
+    controls.update?.();
+  });
+
+  return null;
+};
 
 /* ===========================
-   MAIN SCENE
-   =========================== */
+    MAIN SCENE
+    =========================== */
 
 interface SiteSceneProps {
   cosmos: Cosmos;
 }
 
 const SiteScene: FC<SiteSceneProps> = ({ cosmos }) => {
-  const dozerRef = useRef<THREE.Group | null>(null);
+  const [isSceneReady, setIsSceneReady] = useState(false);
 
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    if (dozerRef.current) {
-      const x = -2 + Math.sin(t * 0.4) * 1.6;
-      dozerRef.current.position.x = x;
-    }
-  });
+  useEffect(() => {
+    const timer = setTimeout(() => setIsSceneReady(true), 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <>
@@ -349,11 +433,13 @@ const SiteScene: FC<SiteSceneProps> = ({ cosmos }) => {
         infiniteGrid
       />
 
-      {/* actors */}
-      <Crane position={[1.6, 0, 0]} />
-      <group ref={dozerRef}>
-        <Bulldozer position={[-2, 0, 0.6]} heading={Math.PI / 2} />
-      </group>
+      {/* actors with sequenced animation */}
+      <Crane position={[1.6, 0, 0]} isPoweredOn={isSceneReady} />
+      <AnimatedBulldozer
+        initialPosition={[-2, 0, 0.6]}
+        heading={Math.PI / 2}
+        isPoweredOn={isSceneReady}
+      />
       <ConstructionText liftingIndex={6} />
 
       {/* ambience */}
@@ -362,10 +448,7 @@ const SiteScene: FC<SiteSceneProps> = ({ cosmos }) => {
   );
 };
 
-/* ===========================
-   COSMOS HOOK
-   =========================== */
-
+// ... (useCosmosTheme remains the same)
 const useCosmosTheme = (): Cosmos => {
   const { resolvedTheme } = useTheme();
   const [cosmos, setCosmos] = useState<Cosmos>({
@@ -399,10 +482,22 @@ const useCosmosTheme = (): Cosmos => {
 
   return cosmos;
 };
-
 /* ===========================
-   PAGE
-   =========================== */
+    PAGE
+    =========================== */
+
+const uiVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: 1.5,
+      duration: 0.8,
+      ease: "easeOut",
+    },
+  },
+};
 
 const StudioPageContent: FC = () => {
   useInitialCategory();
@@ -427,23 +522,30 @@ const StudioPageContent: FC = () => {
         <color attach="background" args={[cosmos.space]} />
         <fog attach="fog" args={[cosmos.fog, 12, 30]} />
         <SiteScene cosmos={cosmos} />
+
+        {/* The OrbitControls component must be rendered to control the camera */}
         <OrbitControls
           enablePan
           enableZoom
           enableRotate
+          makeDefault
           minPolarAngle={Math.PI / 6}
           maxPolarAngle={(5 * Math.PI) / 6}
           maxDistance={14}
           minDistance={3.5}
+          // The control reference is needed by CameraOrbit
         />
+
+        {/* NEW: Component to automatically rotate the camera */}
+        <CameraOrbit speed={0.0005} />
       </Canvas>
 
-      {/* Overlay UI */}
+      {/* Overlay UI with Framer Motion */}
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-end p-4 sm:p-6">
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          initial="hidden"
+          animate="visible"
+          variants={uiVariants}
           className="pointer-events-auto w-full max-w-xl"
         >
           <div className="flex flex-col sm:flex-row gap-3 items-center justify-between rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-panel)] dark:bg-[var(--surface-panel-dark)] backdrop-blur-md px-4 py-3 shadow-[0_20px_40px_rgba(0,0,0,0.15)]">

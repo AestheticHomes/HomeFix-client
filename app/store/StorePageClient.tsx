@@ -27,9 +27,9 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import CatalogPreviewCard from "@/components/catalog/CatalogPreviewCard";
 import { useProductCartStore } from "@/components/store/cartStore";
 import { useSidebar } from "@/contexts/SidebarContext";
-import { normalizeCategory } from "@/lib/catalog/mapGoodsToCatalog";
 import { useCatalogWithCache } from "@/hooks/useCatalogWithCache";
 import { useStoreAssetPrefetch } from "@/hooks/useStoreAssetPrefetch";
+import { normalizeCategory } from "@/lib/catalog/mapGoodsToCatalog";
 import type { CatalogItem } from "@/types/catalog";
 
 /**
@@ -57,8 +57,12 @@ export default function StorePageClient() {
 
   const cartCount = items.length;
 
-  const { items: catalogItems, isLoading, isStale, lastUpdatedAt } =
-    useCatalogWithCache();
+  const {
+    items: catalogItems,
+    isLoading,
+    isStale,
+    lastUpdatedAt,
+  } = useCatalogWithCache();
 
   // Full catalog (source for search/filter)
   const [all, setAll] = useState<CatalogItem[]>([]);
@@ -122,7 +126,7 @@ export default function StorePageClient() {
     "@context": "https://schema.org",
     "@type": "Store",
     name: "HomeFix India",
-    url: "https://homefix.in/store",
+    url: "https://homefix.co.in/store",
     description:
       "Premium modular kitchens, doors, panels, and hardware with installation included.",
   };

@@ -4,15 +4,15 @@
  * Version: v4.0 — Edith Stable Build 🌗
  */
 
-import React, { useCallback, useEffect, useMemo } from "react";
-import dynamic from "next/dynamic";
+import KitchenRender from "@/components/estimator/KitchenRender";
 import useEstimator, {
   type EstimatorStep,
 } from "@/components/estimator/store/estimatorStore";
-import KitchenRender from "@/components/estimator/KitchenRender";
 import WardrobeRender from "@/components/estimator/WardrobeRender";
 import Breadcrumbs from "@/components/navigation/Breadcrumbs";
+import dynamic from "next/dynamic";
 import Script from "next/script";
+import React, { useCallback, useEffect, useMemo } from "react";
 
 const SummaryPanel = dynamic(
   () => import("@/components/estimator/SummaryPanel"),
@@ -71,10 +71,12 @@ export default function EstimatorShell(): React.ReactElement {
       : "STEP 3 · SUMMARY";
 
   const heroTitle =
-    step === "summary" ? "Interior Budget Summary" : "Interior Budget Estimator";
+    step === "summary"
+      ? "Interior Budget Summary"
+      : "Interior Budget Estimator";
 
   const noneSelected = !hasKitchen && !hasWardrobe;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://homefix.in";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://homefix.co.in";
 
   const breadcrumbJsonLd = useMemo(
     () => ({
@@ -82,7 +84,12 @@ export default function EstimatorShell(): React.ReactElement {
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
-        { "@type": "ListItem", position: 2, name: "Estimator", item: `${siteUrl}/estimator` },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Estimator",
+          item: `${siteUrl}/estimator`,
+        },
         {
           "@type": "ListItem",
           position: 3,
@@ -129,7 +136,11 @@ export default function EstimatorShell(): React.ReactElement {
               active
                 ? "bg-[var(--accent-primary)] text-white border-[var(--accent-primary)]"
                 : "bg-[var(--surface-panel)] border-[var(--border-soft)] text-[var(--text-primary)]"
-            } ${disabled ? "opacity-50 cursor-not-allowed" : "hover:border-[var(--accent-primary)]"}`}
+            } ${
+              disabled
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:border-[var(--accent-primary)]"
+            }`}
           >
             {s === "kitchen"
               ? "Kitchen"
@@ -201,7 +212,13 @@ export default function EstimatorShell(): React.ReactElement {
         <div className="flex justify-end gap-3 max-w-5xl mx-auto">
           <button
             onClick={() =>
-              setStep(includeWardrobe ? "wardrobe" : includeKitchen ? "kitchen" : "summary")
+              setStep(
+                includeWardrobe
+                  ? "wardrobe"
+                  : includeKitchen
+                  ? "kitchen"
+                  : "summary"
+              )
             }
             className="px-4 py-2 rounded-xl border border-[var(--border-soft)] text-sm font-medium text-[var(--accent-primary)] hover:bg-[var(--surface-hover)] transition"
             disabled={!includeWardrobe && !includeKitchen}
@@ -252,7 +269,8 @@ export default function EstimatorShell(): React.ReactElement {
         </Panel>
         {step === "kitchen" && (
           <p className="text-[11px] text-pink-300/80 max-w-3xl mx-auto px-2">
-            Wall lengths assume a continuous counter with 2 ft depth. Adjust each span to mirror your kitchen layout.
+            Wall lengths assume a continuous counter with 2 ft depth. Adjust
+            each span to mirror your kitchen layout.
           </p>
         )}
 

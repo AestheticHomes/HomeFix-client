@@ -13,22 +13,38 @@
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
+import ServiceCheckoutPanel from "@/components/booking/ServiceCheckoutPanel";
 import SafeViewport from "@/components/layout/SafeViewport";
 import { useLedgerX } from "@/components/ledgerx/useLedgerX";
 import type { Coordinates } from "@/components/MapPicker";
+import { resolveCartConflict } from "@/components/store/cartGuards";
 import {
   type CartItem,
   useProductCartStore,
   useServiceCartStore,
 } from "@/components/store/cartStore";
 import { Button } from "@/components/ui/button";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { useOtpManager } from "@/hooks/useOtpManager";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle, Loader2, MapPin, WifiOff, Wrench } from "lucide-react";
 import { nanoid } from "nanoid";
 import NextDynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChangeEventHandler, Suspense, useEffect, useMemo, useState } from "react";
+import {
+  ChangeEventHandler,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 type Item = CartItem;
 
 const MapPicker = NextDynamic(() => import("@/components/MapPicker"), {
@@ -56,23 +72,60 @@ interface CardProps {
   children: React.ReactNode;
 }
 
+const slugToId = (slug: string) => {
+  let hash = 0;
+  for (let i = 0; i < slug.length; i += 1) {
+    hash = (hash << 5) - hash + slug.charCodeAt(i);
+    hash |= 0; // keep in 32-bit range
+  }
+  const normalized = Math.abs(hash);
+  return normalized === 0 ? 1 : normalized;
+};
+
+const slugToTitle = (slug: string) =>
+  slug
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ")
+    .trim();
+
 /* =================================================================== */
 /* MAIN CHECKOUT PAGE */
 /* =================================================================== */
 
 function CheckoutPageInner() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const search = useSearchParams();
   const { user, loggedIn, isLoading: loadingProfile } = useUserProfile();
   const { addEntry } = useLedgerX();
+
+  const isAuthenticated = !!user?.id;
+
+  const isService = search?.get("type") === "service";
+  const serviceSlugParam = search?.get("service") ?? undefined;
+  const bookingTypeParam =
+    (search?.get("bookingType") as "consultation" | "site-visit" | null) ??
+    null;
+  const sku = search?.get("sku") ?? "turnkey";
+  const isFreeParam = search?.get("free") === "1";
+  const bookingFeeMrp = isService ? 500 : 0;
+  const waived = isService && (isFreeParam || bookingFeeMrp === 0);
+  const amountDue = waived ? 0 : bookingFeeMrp;
 
   const productItems = useProductCartStore((s) => s.items);
   const productTotalPrice = useProductCartStore((s) => s.totalPrice);
 
   const serviceItems = useServiceCartStore((s) => s.items);
+  const addServiceItem = useServiceCartStore((s) => s.addItem);
   const serviceTotalPrice = useServiceCartStore((s) => s.totalPrice);
+  const {
+    sendOtp,
+    verifyOtp,
+    loading: otpSending,
+    verifying: otpVerifying,
+  } = useOtpManager();
 
-  const forcedServiceMode = searchParams?.get("type") === "service";
+  const forcedServiceMode = isService;
   const checkoutMode: "product" | "service" =
     forcedServiceMode || (serviceItems.length && !productItems.length)
       ? "service"
@@ -83,11 +136,47 @@ function CheckoutPageInner() {
     checkoutMode === "service" ? serviceTotalPrice : productTotalPrice;
   const hasProducts = checkoutMode === "product";
   const hasServices = checkoutMode === "service";
-  const total = hasServices ? 0 : cartTotalPrice;
-  const payableLabel = hasProducts
-    ? "Total (Delivery)"
-    : "Booking (no upfront charge)";
-  const buttonLabel = hasProducts ? "Confirm & Pay" : "Confirm Visit";
+  const total = hasServices ? amountDue : cartTotalPrice;
+  const totalPayable = total ?? 0;
+  const payableLabel = hasProducts ? "Total (Delivery)" : "Booking fee";
+  const buttonLabel = hasProducts
+    ? "Confirm & Pay"
+    : amountDue === 0
+    ? "Book free visit"
+    : "Confirm Visit";
+
+  const normalizePhone = (raw: string | null | undefined) =>
+    (raw || "").replace(/\D/g, "").slice(-10);
+
+  const tomorrowDate = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  };
+
+  // Lock the form until the on-site phone is verified via OTP (services only)
+  const [isPhoneVerified, setIsPhoneVerified] = useState<boolean>(
+    !!user?.phone_verified
+  );
+  const [otpOpen, setOtpOpen] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const isCheckoutLocked = hasServices && !isPhoneVerified;
+
+  const serviceFromParams = useMemo(() => {
+    if (!serviceSlugParam) return null;
+    const unit =
+      bookingTypeParam === "consultation" ? "Consultation" : "Site visit";
+
+    return {
+      id: slugToId(serviceSlugParam),
+      title: slugToTitle(serviceSlugParam) || "Service visit",
+      price: 0,
+      unit,
+      slug: serviceSlugParam,
+    };
+  }, [serviceSlugParam, bookingTypeParam]);
+
+  const autoAddRef = useRef(false);
 
   /* STATE */
   const [coords, setCoords] = useState<Coordinates>({
@@ -153,7 +242,44 @@ function CheckoutPageInner() {
     if (user?.phone && !serviceContactPhone) {
       setServiceContactPhone(user.phone);
     }
-  }, [user?.name, user?.phone, serviceContactName, serviceContactPhone]);
+    if (!preferredDate) {
+      setPreferredDate(tomorrowDate());
+    }
+  }, [
+    user?.name,
+    user?.phone,
+    serviceContactName,
+    serviceContactPhone,
+    preferredDate,
+  ]);
+
+  useEffect(() => {
+    const userDigits = normalizePhone(user?.phone);
+    const contactDigits = normalizePhone(serviceContactPhone);
+    if (
+      user?.phone_verified &&
+      (!contactDigits || contactDigits === userDigits)
+    ) {
+      setIsPhoneVerified(true);
+    } else if (contactDigits && userDigits && contactDigits !== userDigits) {
+      setIsPhoneVerified(false);
+    }
+  }, [user?.phone_verified, user?.phone, serviceContactPhone]);
+
+  useEffect(() => {
+    if (!isService) return;
+    if (!serviceFromParams) return;
+    if (serviceItems.length > 0) return;
+    if (autoAddRef.current) return;
+    if (!resolveCartConflict("service")) return;
+
+    addServiceItem({
+      ...serviceFromParams,
+      quantity: 1,
+      type: "service",
+    });
+    autoAddRef.current = true;
+  }, [isService, serviceFromParams, serviceItems.length, addServiceItem]);
 
   /* ONLINE WATCHER */
   useEffect(() => {
@@ -175,7 +301,8 @@ function CheckoutPageInner() {
     if (hasProducts && !receiverPhone) return false;
     if (hasServices && (!serviceContactPhone || !preferredDate)) return false;
 
-    return items.length > 0;
+    const hasCartItems = hasProducts ? items.length > 0 : true;
+    return hasCartItems;
   }, [
     confirmedAddress,
     liveAddress,
@@ -190,6 +317,15 @@ function CheckoutPageInner() {
 
   /* HANDLE CHECKOUT */
   async function handleCheckout() {
+    if (!isAuthenticated) {
+      return createToast("Please log in to continue to checkout.", "error");
+    }
+
+    if (hasServices && !isPhoneVerified) {
+      setOtpOpen(true);
+      return createToast("Verify the on-site phone to continue.", "error");
+    }
+
     if (!canSubmit) {
       return createToast(
         !online
@@ -201,16 +337,87 @@ function CheckoutPageInner() {
 
     setLoading(true);
     createToast(
-      hasServices ? "Booking your service visit..." : "Redirecting to payment...",
+      amountDue === 0 && hasServices
+        ? "Booking your free visit..."
+        : hasServices
+        ? "Booking your service visit..."
+        : "Redirecting to payment...",
       "info"
     );
 
+    const contactName =
+      (hasProducts ? receiverName : serviceContactName) ||
+      user?.name ||
+      "Guest";
+    const contactPhone =
+      (hasProducts ? receiverPhone : serviceContactPhone) || user?.phone || "";
+    const address = confirmedAddress || liveAddress;
+
+    if (amountDue === 0 && hasServices) {
+      try {
+        const res = await fetch("/api/checkout/finalize", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            isFree: true,
+            kind: "service",
+            sku,
+            contact: {
+              name: contactName,
+              phone: contactPhone,
+              email: (user as any)?.email ?? null,
+            },
+            address: {
+              line1: address || null,
+              line2: landmark || null,
+              city: null,
+              pincode: null,
+              latitude: coords.lat ?? null,
+              longitude: coords.lng ?? null,
+              landmark: landmark || null,
+            },
+            cart: serviceItems,
+            notes: `Free booking via services/${sku}`,
+            channel: "web",
+            source: "FREE",
+            userId: uid ?? (user as any)?.id ?? null,
+            deviceId:
+              typeof navigator !== "undefined"
+                ? navigator.userAgent || "web"
+                : "web",
+          }),
+        });
+
+        if (!res.ok) {
+          const msg = await res.text().catch(() => "");
+          console.error("Finalize (FREE) failed:", msg);
+          createToast("Could not create booking. Try again.", "error");
+          setLoading(false);
+          return;
+        }
+
+        sessionStorage.setItem("checkoutInitiated", "true");
+        createToast(
+          "Booked! We’ll call to schedule your free site visit.",
+          "success"
+        );
+        setLoading(false);
+        router.push("/my-orders?state=booked");
+        return;
+      } catch (err) {
+        console.error(err);
+        createToast("Something went wrong.", "error");
+        setLoading(false);
+        return;
+      }
+    }
+
     const basePayload: Record<string, any> = {
-      user_id: uid,
+      user_id: uid ?? "guest",
       type: checkoutMode,
       items,
-      total,
-      address: confirmedAddress || liveAddress,
+      total: totalPayable,
+      address,
       landmark,
       latitude: coords.lat,
       longitude: coords.lng,
@@ -225,8 +432,8 @@ function CheckoutPageInner() {
         preferred_date: preferredDate ?? null,
       },
       financials: {
-        subtotal: total,
-        visit_fee: hasServices ? 200 : 0,
+        subtotal: totalPayable,
+        visit_fee: hasServices ? amountDue : 0,
         cod_allowed: false,
       },
       metadata: {
@@ -243,7 +450,7 @@ function CheckoutPageInner() {
         receiver_name: receiverName,
         receiver_phone: receiverPhone,
         same_as_user: sameAsUser,
-        address: confirmedAddress || liveAddress,
+        address,
         landmark,
       };
       basePayload.payment = {
@@ -254,8 +461,8 @@ function CheckoutPageInner() {
     } else {
       basePayload.receiver_name = serviceContactName;
       basePayload.receiver_phone = serviceContactPhone;
-      basePayload.visit_fee = 200;
-      basePayload.visit_fee_waived = false;
+      basePayload.visit_fee = amountDue;
+      basePayload.visit_fee_waived = waived;
       basePayload.service_preferences = {
         contact_name: serviceContactName,
         contact_phone: serviceContactPhone,
@@ -264,7 +471,7 @@ function CheckoutPageInner() {
         notes: projectNotes,
       };
       basePayload.payment = {
-        mode: "visit_fee",
+        mode: "booking_fee",
         gateway: "BookNowPayLater",
         status: "pending",
       };
@@ -296,6 +503,9 @@ function CheckoutPageInner() {
       localStorage.setItem("hf_pending_order_id", bookingId);
     } catch (err) {
       console.error("❌ Checkout ledger error:", err);
+      createToast("Failed to create booking", "error");
+      setLoading(false);
+      return;
     }
 
     await new Promise((r) => setTimeout(r, 900));
@@ -305,16 +515,14 @@ function CheckoutPageInner() {
   }
 
   /* EMPTY CART */
-  if (!items.length)
+  if (!items.length && !isService)
     return (
       <SafeViewport>
         <div className="flex flex-col items-center justify-center h-[70vh] text-[var(--text-secondary)]">
           <Wrench className="w-8 h-8 mb-3 opacity-60" />
           <p>Your cart is empty. Add items to continue.</p>
           <Button
-            onClick={() =>
-              router.push(hasProducts ? "/store" : "/services")
-            }
+            onClick={() => router.push(hasProducts ? "/store" : "/services")}
             className="mt-4"
           >
             {hasProducts ? "Shop Now" : "Browse Services"}
@@ -357,22 +565,41 @@ function CheckoutPageInner() {
                 <div className="flex flex-col">
                   <span className="font-semibold">{i.title}</span>
                   <span className="text-xs text-[var(--text-secondary)]">
-                    {i.quantity} slot{i.quantity > 1 ? "s" : ""} · {i.unit || i.category || "On-site"}
+                    {i.quantity} slot{i.quantity > 1 ? "s" : ""} ·{" "}
+                    {i.unit || i.category || "On-site"}
                   </span>
                 </div>
-                <span className="font-medium text-[var(--accent-success)] text-right">
-                  {i.price
-                    ? `Est. ?${(i.price * i.quantity).toLocaleString()}`
-                    : "To be quoted"}
-                </span>
+                {i.price ? (
+                  <span className="font-medium text-[var(--accent-success)] text-right">
+                    {`Est. ₹${(i.price * i.quantity).toLocaleString()}`}
+                  </span>
+                ) : (
+                  <div className="flex flex-col items-end text-sm">
+                    <span className="line-through text-[var(--text-secondary)]">
+                      ₹500
+                    </span>
+                    <span className="font-semibold text-emerald-500">Free</span>
+                  </div>
+                )}
               </div>
             ))}
-            <p className="text-xs text-amber-600 font-medium mt-3">
-              Visit Charge: ?200 — Free if you confirm the service. You only pay when you decline the job.
-            </p>
-            <p className="text-xs text-[var(--text-secondary)] mt-1">
-              Service visits are scheduled after we confirm your preferred slot.
-              Billing happens only after you approve the quotation.
+            {!serviceItems.length && isService && serviceFromParams && (
+              <ServiceCheckoutPanel
+                service={serviceFromParams}
+                bookingType={bookingTypeParam ?? undefined}
+              />
+            )}
+            {!serviceItems.length && isService && !serviceFromParams && (
+              <div className="flex justify-between items-center py-2 text-sm text-[var(--text-secondary)]">
+                <span className="font-semibold text-[var(--text-primary)]">
+                  Turnkey interiors booking
+                </span>
+                <span>Site visit · Chennai</span>
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground mt-3">
+              Service visits are free. We confirm your preferred slot and share
+              the plan before any advance.
             </p>
           </Card>
         )}
@@ -388,11 +615,11 @@ function CheckoutPageInner() {
                   <div className="flex flex-col">
                     <span className="font-semibold">{i.title}</span>
                     <span className="text-xs text-[var(--text-secondary)]">
-                      {i.quantity} x ?{(i.price || 0).toLocaleString()}
+                      {i.quantity} x ₹{(i.price || 0).toLocaleString()}
                     </span>
                   </div>
                   <span className="font-medium text-[var(--accent-success)]">
-                    ?{lineTotal.toLocaleString()}
+                    ₹{lineTotal.toLocaleString()}
                   </span>
                 </div>
               );
@@ -402,12 +629,6 @@ function CheckoutPageInner() {
         )}
         {/* LOCATION PICKER */}
         <Card title={hasProducts ? "Delivery Details" : "Service Location"}>
-          {hasServices && (
-            <div className="mb-3 rounded-xl border border-amber-400/50 bg-amber-50 text-amber-700 text-xs px-4 py-3">
-              Visit Charge: ?200 — Free if you confirm the service. Charged only
-              if you cancel after the site visit or decline the quotation.
-            </div>
-          )}
           <div className="relative h-[340px] mb-6 overflow-hidden rounded-xl border border-[var(--edith-border)]">
             <MapPicker
               initialLocation={coords}
@@ -520,56 +741,121 @@ function CheckoutPageInner() {
               <p className="text-sm font-semibold text-[var(--text-primary)]">
                 Visit Preferences
               </p>
-              <Input
-                label="On-site Contact Name"
-                value={serviceContactName}
-                onChange={setServiceContactName}
-              />
-              <Input
-                label="On-site Contact Phone"
-                value={serviceContactPhone}
-                onChange={setServiceContactPhone}
-                type="tel"
-              />
-
-              <div>
-                <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">
-                  Preferred Visit Date
+              {isCheckoutLocked && (
+                <p className="text-xs text-[var(--text-secondary)]">
+                  Verify the on-site contact phone number to continue with your
+                  booking.
+                </p>
+              )}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-[var(--text-secondary)]">
+                  On-site Contact Phone
                 </label>
-                <input
-                  type="date"
-                  value={preferredDate}
-                  onChange={(e) => setPreferredDate(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-[var(--edith-border)] bg-[var(--edith-surface)] text-sm focus:ring-2 focus:ring-[var(--edith-primary)]"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="tel"
+                    value={serviceContactPhone}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setServiceContactPhone(next);
+                      const userDigits = normalizePhone(user?.phone);
+                      const nextDigits = normalizePhone(next);
+                      if (
+                        user?.phone_verified &&
+                        userDigits &&
+                        nextDigits &&
+                        nextDigits !== userDigits
+                      ) {
+                        setIsPhoneVerified(false);
+                      }
+                    }}
+                    className="flex-1 rounded-lg border border-[var(--edith-border)] bg-[var(--edith-surface)] px-3 py-2 text-sm focus:ring-2 focus:ring-[var(--edith-primary)]"
+                    placeholder="Enter phone number"
+                  />
+                  {isPhoneVerified ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                      <CheckCircle className="h-3 w-3" /> Verified
+                    </span>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const digits = serviceContactPhone.replace(/\D/g, "");
+                        if (digits.length !== 10) {
+                          return createToast(
+                            "Enter a valid 10-digit phone number first.",
+                            "error"
+                          );
+                        }
+                        setOtpCode("");
+                        setOtpOpen(true);
+                      }}
+                    >
+                      Verify
+                    </Button>
+                  )}
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">
-                  Preferred Time Slot
-                </label>
-                <select
-                  value={preferredSlot}
-                  onChange={(e) => setPreferredSlot(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-[var(--edith-border)] bg-[var(--edith-surface)] text-sm focus:ring-2 focus:ring-[var(--edith-primary)]"
-                >
-                  <option value="09:00 - 12:00">Morning (9am - 12pm)</option>
-                  <option value="12:00 - 15:00">Midday (12pm - 3pm)</option>
-                  <option value="15:00 - 18:00">Evening (3pm - 6pm)</option>
-                </select>
-              </div>
+              <div className="relative">
+                {isCheckoutLocked && (
+                  <div
+                    className="pointer-events-none absolute inset-0 rounded-2xl bg-white/60 backdrop-blur-[1px]"
+                    aria-hidden="true"
+                  />
+                )}
 
-              <div>
-                <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">
-                  Project Notes / Access Info
-                </label>
-                <textarea
-                  value={projectNotes}
-                  onChange={(e) => setProjectNotes(e.target.value)}
-                  rows={3}
-                  placeholder="Share requirements, parking info, or gate access details"
-                  className="w-full p-3 rounded-lg border border-[var(--edith-border)] bg-[var(--edith-surface)] text-sm focus:ring-2 focus:ring-[var(--edith-primary)] resize-none"
-                />
+                <fieldset disabled={isCheckoutLocked} className="space-y-4">
+                  <Input
+                    label="On-site Contact Name"
+                    value={serviceContactName}
+                    onChange={setServiceContactName}
+                  />
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">
+                      Preferred Visit Date
+                    </label>
+                    <input
+                      type="date"
+                      value={preferredDate || tomorrowDate()}
+                      min={tomorrowDate()}
+                      onChange={(e) => setPreferredDate(e.target.value)}
+                      className="w-full p-2 rounded-lg border border-[var(--edith-border)] bg-[var(--edith-surface)] text-sm focus:ring-2 focus:ring-[var(--edith-primary)]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">
+                      Preferred Time Slot
+                    </label>
+                    <select
+                      value={preferredSlot}
+                      onChange={(e) => setPreferredSlot(e.target.value)}
+                      className="w-full p-2 rounded-lg border border-[var(--edith-border)] bg-[var(--edith-surface)] text-sm focus:ring-2 focus:ring-[var(--edith-primary)]"
+                    >
+                      <option value="09:00 - 12:00">
+                        Morning (9am - 12pm)
+                      </option>
+                      <option value="12:00 - 15:00">Midday (12pm - 3pm)</option>
+                      <option value="15:00 - 18:00">Evening (3pm - 6pm)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[var(--text-secondary)]">
+                      Project Notes / Access Info
+                    </label>
+                    <textarea
+                      value={projectNotes}
+                      onChange={(e) => setProjectNotes(e.target.value)}
+                      rows={3}
+                      placeholder="Share requirements, parking info, or gate access details"
+                      className="w-full p-3 rounded-lg border border-[var(--edith-border)] bg-[var(--edith-surface)] text-sm focus:ring-2 focus:ring-[var(--edith-primary)] resize-none"
+                    />
+                  </div>
+                </fieldset>
               </div>
             </div>
           )}
@@ -577,13 +863,32 @@ function CheckoutPageInner() {
 
         {/* FOOTER */}
         <footer className="fixed bottom-0 left-0 right-0 z-50 flex justify-between items-center px-5 py-4 w-full sm:max-w-2xl mx-auto rounded-t-2xl bg-[var(--edith-surface)] border-t border-[var(--edith-border)] backdrop-blur-md">
-          <div>
+          <div className="flex-1 pr-4">
             <p className="text-sm text-[var(--text-secondary)]">
               {payableLabel}
             </p>
-            <p className="text-lg font-semibold text-[var(--accent-success)]">
-              ?{(hasProducts ? total : 0).toLocaleString()}
-            </p>
+            {hasServices && (
+              <div className="flex items-center justify-between text-sm">
+                <span>Booking fee</span>
+                {amountDue === 0 ? (
+                  <span>
+                    <s>₹{bookingFeeMrp}</s>&nbsp;<b>Free</b>
+                  </span>
+                ) : (
+                  <span>₹{amountDue}</span>
+                )}
+              </div>
+            )}
+            <div className="flex items-center justify-between mt-2">
+              <span className="font-medium text-[var(--text-primary)]">
+                Total payable
+              </span>
+              <span className="font-semibold">
+                {totalPayable === 0
+                  ? "₹0"
+                  : `₹${totalPayable.toLocaleString()}`}
+              </span>
+            </div>
             {hasServices && (
               <p className="text-[11px] text-[var(--text-secondary)] mt-1">
                 Services move ahead once you approve the quotation.
@@ -593,7 +898,9 @@ function CheckoutPageInner() {
 
           <Button
             onClick={handleCheckout}
-            disabled={loading || !canSubmit}
+            disabled={
+              loading || !canSubmit || !isAuthenticated || isCheckoutLocked
+            }
             className="font-semibold px-5 sm:px-6 py-2 rounded-xl"
           >
             {loading ? (
@@ -630,6 +937,81 @@ function CheckoutPageInner() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* Inline phone OTP drawer for checkout verification */}
+      <Drawer open={otpOpen} onOpenChange={setOtpOpen}>
+        <DrawerContent className="p-4 space-y-3">
+          <DrawerHeader>
+            <DrawerTitle>Verify on-site contact phone</DrawerTitle>
+          </DrawerHeader>
+          <p className="text-sm text-[var(--text-secondary)]">
+            Enter the 6-digit OTP sent to +91{" "}
+            {serviceContactPhone.replace(/\D/g, "").slice(-10)} to unlock
+            checkout.
+          </p>
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={6}
+            value={otpCode}
+            onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+            className="w-full rounded-lg border border-[var(--edith-border)] bg-[var(--edith-surface)] px-3 py-2 text-center tracking-widest text-lg"
+            placeholder="••••••"
+          />
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              disabled={otpSending}
+              onClick={async () => {
+                const digits = serviceContactPhone.replace(/\D/g, "");
+                if (digits.length !== 10) {
+                  return createToast(
+                    "Enter a valid 10-digit phone number first.",
+                    "error"
+                  );
+                }
+                const ok = await sendOtp(digits, "phone");
+                if (ok) {
+                  createToast(`OTP sent to +91 ${digits}`, "success");
+                }
+              }}
+            >
+              {otpSending ? "Sending..." : "Resend OTP"}
+            </Button>
+            <Button
+              type="button"
+              className="flex-1"
+              disabled={otpVerifying || otpCode.length !== 6}
+              onClick={async () => {
+                const digits = serviceContactPhone.replace(/\D/g, "");
+                if (digits.length !== 10) {
+                  return createToast(
+                    "Enter a valid 10-digit phone number first.",
+                    "error"
+                  );
+                }
+                const ok = await verifyOtp(otpCode, digits, "phone");
+                if (ok) {
+                  const normalized = `+91${digits}`;
+                  setServiceContactPhone(normalized);
+                  setIsPhoneVerified(true);
+                  setOtpOpen(false);
+                  createToast("Phone verified. You can continue.", "success");
+                } else {
+                  createToast(
+                    "Verification failed. Check the code and try again.",
+                    "error"
+                  );
+                }
+              }}
+            >
+              {otpVerifying ? "Verifying..." : "Verify"}
+            </Button>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </SafeViewport>
   );
 }
@@ -705,7 +1087,3 @@ export default function CheckoutPage() {
     </Suspense>
   );
 }
-
-
-
-

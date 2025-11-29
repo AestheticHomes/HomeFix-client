@@ -337,7 +337,7 @@ export const useLedgerX = create<LedgerStore>((set, get) => {
             status: p.status || "pending",
             device_id: p.deviceId ?? "unknown",
             checksum: p.checksum ?? "none",
-            created_at: new Date(p.createdAt).toISOString(),
+            created_at: new Date(p.createdAt || Date.now()).toISOString(),
             updated_at: new Date(p.updatedAt || Date.now()).toISOString(),
           }));
 

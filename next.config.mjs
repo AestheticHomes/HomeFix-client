@@ -8,6 +8,7 @@
  * ============================================================
  */
 
+import bundleAnalyzer from "@next/bundle-analyzer";
 import nextPWA from "next-pwa";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -26,10 +27,13 @@ const withPWA = nextPWA({
   buildExcludes: [/middleware-manifest\.json$/],
 });
 
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: process.env.NODE_ENV !== "production",
-  output: "standalone", // ✅ this enables API routes!
+  // output: "standalone", // Disabled to avoid Windows trace copy issues
   productionBrowserSourceMaps: false,
 
   images: {
@@ -47,7 +51,7 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "xnubmphixlpkyqfhghup.supabase.co",
-        pathname: "/storage/v1/object/public/homefix-catalog/**",
+        pathname: "/storage/v1/object/public/**",
       },
     ],
     unoptimized: false,
@@ -74,28 +78,7 @@ const nextConfig = {
   optimizeFonts: true,
 
   async redirects() {
-    return [
-      {
-        source: "/my-orders",
-        destination: "/my-bookings",
-        permanent: true,
-      },
-      {
-        source: "/my-orders/:path*",
-        destination: "/my-bookings",
-        permanent: true,
-      },
-      {
-        source: "/my-space",
-        destination: "/my-bookings",
-        permanent: true,
-      },
-      {
-        source: "/my-space/:path*",
-        destination: "/my-bookings",
-        permanent: true,
-      },
-    ];
+    return [];
   },
 
   webpack: (config) => {
@@ -128,4 +111,4 @@ const nextConfig = {
   },
 };
 
-export default withPWA(nextConfig);
+export default withBundleAnalyzer(withPWA(nextConfig));

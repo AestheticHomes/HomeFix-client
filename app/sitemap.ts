@@ -7,12 +7,12 @@
  */
 
 import {
-    mapGoodsToCatalog,
-    normalizeCategory,
-    type GoodsRow,
+  mapGoodsToCatalog,
+  normalizeCategory,
+  type GoodsRow,
 } from "@/lib/catalog/mapGoodsToCatalog";
 
-const BASE_URL = "https://homefix.in";
+const BASE_URL = "https://homefix.co.in";
 
 export default async function sitemap() {
   const catalogUrl = process.env.NEXT_PUBLIC_GOODS_CATALOG_URL;

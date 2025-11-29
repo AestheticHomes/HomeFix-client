@@ -20,6 +20,17 @@ function makeBasePromo(): PromoPayload {
   };
 }
 
+function makeClimatePromo(): PromoPayload {
+  const base = makeBasePromo();
+
+  // Same text, but a different id so the UI can treat it
+  // as a "climate-style" promo when needed.
+  return {
+    ...base,
+    id: "home-climate",
+  };
+}
+
 function makeStorePromo(): PromoPayload {
   return {
     id: "store-browse",
@@ -63,7 +74,10 @@ function makeCheckoutPromo(): PromoPayload {
 export function getPromoForPath(
   pathname: string | null | undefined
 ): PromoPayload | null {
-  if (!pathname) return makeBasePromo();
+  // For the homepage (or missing pathname), we use a climate-aware promo.
+  if (!pathname || pathname === "/") {
+    return makeClimatePromo();
+  }
 
   if (pathname.startsWith("/estimator")) {
     return makeEstimatorPromo();

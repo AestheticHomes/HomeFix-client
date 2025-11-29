@@ -7,7 +7,7 @@ import { useEffect } from "react";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/" },
-  { label: "Start turnkey project", href: "/services/start-turnkey" },
+  { label: "Start turnkey project", href: "/turnkey" },
   { label: "Services", href: "/services" },
   { label: "Store", href: "/store" },
   { label: "Estimator", href: "/estimator" },

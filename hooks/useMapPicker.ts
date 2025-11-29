@@ -249,6 +249,7 @@ export function useMapPicker({
   /* ------------------------------------------------------------------ */
 
   const locateMe = useCallback(() => {
+    if (locating) return; // prevent duplicate requests while locating
     if (!navigator.geolocation || !mapRef.current) return;
 
     setLocating(true);
@@ -279,7 +280,7 @@ export function useMapPicker({
       },
       { enableHighAccuracy: true, timeout: 8000 }
     );
-  }, [onLocationChange, safeReverseGeocode]);
+  }, [locating, onLocationChange, safeReverseGeocode]);
 
   const confirmLocation = useCallback(async () => {
     if (!markerRef.current) return;

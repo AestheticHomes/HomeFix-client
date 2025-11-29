@@ -1,19 +1,20 @@
 "use client";
 
 /**
- * UserContext v10 — Modern Profile-Hydrated Auth Core
- * - Supabase session wins
- * - Profile hydration from user_profiles
- * - Single hydration path (no early returns)
+ * UserContext v11 — Twilio session + /api/profile
+ * - /api/profile is the single source of truth
+ * - Optional cache hydration when no logout marker
  * - Cross-tab sync (BroadcastChannel + CustomEvent)
  * - isLoaded resolves exactly once
  *
  * Usage: wrap app with <UserProvider> and call useUser()
  */
 
-import { supabase } from "@/lib/supabaseClient";
-import { clearLocalUserState } from "@/lib/clearUserState";
 import { clearUserCaches } from "@/lib/clearUserCaches";
+import {
+  useProductCartStore,
+  useServiceCartStore,
+} from "@/components/store/cartStore";
 import {
   createContext,
   ReactNode,
@@ -56,7 +57,8 @@ interface UserContextType {
    Constants & channel
    ------------------------- */
 const STORAGE_KEY = "user";
-const LOGOUT_MARKER = "hf_logged_out";
+// Marker used to signal that a logout occurred; cleared on login success.
+const LOGOUT_MARKER = "edith_logout_marker";
 const channel =
   typeof window !== "undefined" && "BroadcastChannel" in window
     ? new BroadcastChannel("hf_auth")
@@ -120,70 +122,31 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<HomeFixUser | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  /* Single path hydration: Supabase session -> hydrate profile -> fallback to cache -> isLoaded true */
+  /* Single path hydration: /api/profile -> fallback to cache -> isLoaded true */
   useEffect(() => {
     let mounted = true;
     (async () => {
-      // Attempt to read supabase session and hydrate profile
+      // Try server profile first
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const sUser = sessionData?.session?.user ?? null;
-        if (sUser) {
-          // fetch profile from user_profiles (may return null)
-          try {
-            const profileRes = await supabase
-              .from("user_profiles")
-              .select("name, phone, role, phone_verified, email_verified")
-              .eq("id", sUser.id)
-              .maybeSingle();
-
-            const profile = profileRes?.data ?? null;
-
-            const merged: HomeFixUser = {
-              id: sUser.id,
-              email: sUser.email ?? null,
-              phone: profile?.phone ?? null,
-              name: profile?.name ?? null,
-              role: profile?.role ?? null,
-              phone_verified: !!profile?.phone_verified,
-              email_verified: !!profile?.email_verified,
-              loggedIn: true,
-            };
-
+        const res = await fetch("/api/profile", { credentials: "include" });
+        if (res.ok) {
+          const data = await res.json();
+          const profile = (data?.profile || data) as HomeFixUser | null;
+          if (profile) {
+            const merged: HomeFixUser = { ...profile, loggedIn: true };
             if (mounted) {
               setUserState(merged);
               persistCache(merged, true);
-              if (DEBUG)
-                console.log(
-                  "[UserContext] Hydrated from Supabase session",
-                  merged.id
-                );
-            }
-            setIsLoaded(true);
-            return;
-          } catch (err) {
-            if (DEBUG)
-              console.warn("[UserContext] profile hydration failed", err);
-            // If profile fetch fails, still set minimal session user
-            const minimal: HomeFixUser = {
-              id: sUser.id,
-              email: sUser.email ?? null,
-              loggedIn: true,
-            };
-            if (mounted) {
-              setUserState(minimal);
-              persistCache(minimal, true);
             }
             setIsLoaded(true);
             return;
           }
         }
       } catch (err) {
-        if (DEBUG)
-          console.warn("[UserContext] supabase.getSession failed", err);
+        if (DEBUG) console.warn("[UserContext] /api/profile failed", err);
       }
 
-      // Fallback to cache only when no supabase session or supabase unreachable
+      // Fallback to cache only if no logout marker present
       try {
         const cached = readCache();
         if (mounted) {
@@ -214,96 +177,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* Supabase auth listener — keep state in sync */
-  useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        try {
-          if (event === "SIGNED_OUT") {
-            // sign-out: clear local state & persist logout marker
-            await (async () => {
-              try {
-                localStorage.setItem(LOGOUT_MARKER, "1");
-                persistCache(null);
-                setUserState(null);
-                channel?.postMessage("logout");
-                window.dispatchEvent(
-                  new CustomEvent("hf:session-sync", { detail: "logged_out" })
-                );
-                if (DEBUG) console.log("[UserContext] SIGNED_OUT processed");
-              } catch (e) {
-                if (DEBUG)
-                  console.warn("[UserContext] SIGNED_OUT handler error", e);
-              }
-            })();
-            return;
-          }
-
-          if (event === "SIGNED_IN" && session?.user) {
-            const sUser = session.user;
-            // hydrate full profile
-            try {
-              const profileRes = await supabase
-                .from("user_profiles")
-                .select("name, phone, role, phone_verified, email_verified")
-                .eq("id", sUser.id)
-                .maybeSingle();
-              const profile = profileRes?.data ?? null;
-              const merged: HomeFixUser = {
-                id: sUser.id,
-                email: sUser.email ?? null,
-                phone: profile?.phone ?? null,
-                name: profile?.name ?? null,
-                role: profile?.role ?? null,
-                phone_verified: !!profile?.phone_verified,
-                email_verified: !!profile?.email_verified,
-                loggedIn: true,
-              };
-              setUserState(merged);
-              persistCache(merged, true);
-              try {
-                channel?.postMessage({ type: "login", user: merged });
-              } catch {}
-              window.dispatchEvent(
-                new CustomEvent("hf:session-sync", { detail: "logged_in" })
-              );
-              if (DEBUG)
-                console.log("[UserContext] SIGNED_IN processed", merged.id);
-            } catch (err) {
-              // fallback minimal
-              const minimal: HomeFixUser = {
-                id: sUser.id,
-                email: sUser.email ?? null,
-                loggedIn: true,
-              };
-              setUserState(minimal);
-              persistCache(minimal, true);
-              try {
-                channel?.postMessage({ type: "login", user: minimal });
-              } catch {}
-              window.dispatchEvent(
-                new CustomEvent("hf:session-sync", { detail: "logged_in" })
-              );
-              if (DEBUG)
-                console.log(
-                  "[UserContext] SIGNED_IN fallback processed",
-                  minimal.id
-                );
-            }
-          }
-        } catch (err) {
-          if (DEBUG)
-            console.warn("[UserContext] onAuthStateChange handler error", err);
-        }
-      }
-    );
-
-    return () => {
-      try {
-        sub?.subscription?.unsubscribe();
-      } catch {}
-    };
-  }, []);
+  // Supabase auth listeners removed — Twilio OTP + /api/profile are the source of truth.
 
   /* Cross-tab sync */
   useEffect(() => {
@@ -354,6 +228,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const login = useCallback((u: Partial<HomeFixUser>, remember = true) => {
     const payload: HomeFixUser = { ...u, loggedIn: true };
 
+    // Clear any logout marker so cache hydration works after fresh login
+    try {
+      localStorage.removeItem(LOGOUT_MARKER);
+    } catch {}
+
     setUserState(payload);
     persistCache(payload, remember);
 
@@ -369,63 +248,67 @@ export function UserProvider({ children }: { children: ReactNode }) {
       console.log("[UserContext] login called", payload?.id ?? "(no id)");
   }, []);
 
-  /* Logout */
+  /* Logout: Twilio-based, clear local state + server cookie, then redirect */
   const logout = useCallback(async () => {
     try {
-      await clearUserCaches();
-      await clearLocalUserState();
-      // attempt sign out at supabase
-      await supabase.auth.signOut().catch(() => {});
-    } catch (err) {
-      if (DEBUG) console.warn("[UserContext] supabase.signOut failed", err);
-    } finally {
       try {
-        localStorage.setItem(LOGOUT_MARKER, "1");
+        localStorage.setItem(
+          LOGOUT_MARKER,
+          JSON.stringify({ at: Date.now() })
+        );
       } catch {}
-      persistCache(null);
-      setUserState(null);
+
+      try {
+        useProductCartStore.getState().reset?.();
+        useServiceCartStore.getState().reset?.();
+      } catch {}
+
+      try {
+        await clearUserCaches();
+      } catch {}
+
+      try {
+        await fetch("/api/logout", { method: "POST" });
+      } catch (err) {
+        if (DEBUG) console.warn("[UserContext] /api/logout failed", err);
+      }
+
+      try {
+        persistCache(null);
+        setUserState(null);
+      } catch {}
+
       try {
         channel?.postMessage("logout");
       } catch {}
       window.dispatchEvent(
         new CustomEvent("hf:session-sync", { detail: "logged_out" })
       );
-      if (DEBUG) console.log("[UserContext] logout finished");
-      try {
-        window.location.href = "/login";
-      } catch {}
+    } catch (err) {
+      if (DEBUG) console.error("[UserContext] logout error", err);
+    } finally {
+      // Redirect regardless of upstream errors to leave no session behind
+      window.location.assign("/login");
     }
   }, []);
 
-  /* Manual refresh: re-fetch supabase session & profile */
+  /* Manual refresh: re-fetch profile from /api/profile */
   const refreshUser = useCallback(async () => {
     try {
-      const { data } = await supabase.auth.getUser();
-      const sUser = data?.user ?? null;
-      if (!sUser) {
-        // no session
+      const res = await fetch("/api/profile", { credentials: "include" });
+      if (!res.ok) {
         persistCache(null);
         setUserState(null);
         return;
       }
-
-      const profileRes = await supabase
-        .from("user_profiles")
-        .select("name, phone, role, phone_verified, email_verified")
-        .eq("id", sUser.id)
-        .maybeSingle();
-
-      const profile = profileRes?.data ?? null;
-      const merged: HomeFixUser = {
-        id: sUser.id,
-        email: sUser.email ?? null,
-        phone: profile?.phone ?? null,
-        name: profile?.name ?? null,
-        role: profile?.role ?? null,
-        phone_verified: !!profile?.phone_verified,
-        email_verified: !!profile?.email_verified,
-        loggedIn: true,
-      };
+      const data = await res.json();
+      const profile = (data?.profile || data) as HomeFixUser | null;
+      if (!profile) {
+        persistCache(null);
+        setUserState(null);
+        return;
+      }
+      const merged: HomeFixUser = { ...profile, loggedIn: true };
       setUserState(merged);
       persistCache(merged, true);
     } catch (err) {

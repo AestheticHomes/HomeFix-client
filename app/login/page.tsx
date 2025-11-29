@@ -16,7 +16,6 @@ import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import { useOtpManager } from "@/hooks/useOtpManager";
 import { refreshProfileSWR } from "@/hooks/useUserProfile";
-import { supabase } from "@/lib/supabaseClient";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Phone } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -35,8 +34,14 @@ interface HomeFixUser {
   longitude?: number;
 }
 
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+
 export default function LoginPage() {
-  const { login, refreshUser } = useUser();
+  // Login should always be dynamic to avoid prerender auth issues
+  // (Twilio OTP + cookies handled client-side)
+  
+  const { user, login, refreshUser } = useUser();
   const router = useRouter();
   const {
     sendOtp,
@@ -63,16 +68,10 @@ export default function LoginPage() {
      🚀 Redirect if already logged in
   ------------------------------------------------------------ */
   useEffect(() => {
-    (async () => {
-      const cached = JSON.parse(localStorage.getItem("user") || "null");
-      if (cached?.loggedIn || cached?.phone_verified) {
-        router.replace("/profile");
-        return;
-      }
-      const { data } = await supabase.auth.getUser();
-      if (data?.user) router.replace("/profile");
-    })();
-  }, [router]);
+    if (user?.loggedIn || user?.phone_verified) {
+      router.replace("/profile");
+    }
+  }, [user, router]);
 
   /* ------------------------------------------------------------
      📩 Send OTP
@@ -146,16 +145,6 @@ export default function LoginPage() {
 
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
-
-      // ----------------------------------------------------------
-      // 🔥 1. Set REAL Supabase session (Fixes UID + LedgerX)
-      // ----------------------------------------------------------
-      if (data.access_token && data.refresh_token) {
-        await supabase.auth.setSession({
-          access_token: data.access_token,
-          refresh_token: data.refresh_token,
-        });
-      }
 
       // ----------------------------------------------------------
       // 🔥 2. Build user object

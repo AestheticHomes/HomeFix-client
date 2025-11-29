@@ -21,26 +21,69 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 
-type OrderType = "store" | "service";
+type BookingKind = "store" | "service";
 
-type OrderEntry = {
+type BookingCardModel = {
   id: string;
   reference: string;
-  invoice_id: string;
-  invoice_url?: string | null;
-  total?: number;
-  created_at?: string;
-  order_type: OrderType;
-  visit_fee?: number | null;
-  visit_fee_waived?: boolean;
-  items: any[];
+  createdAt?: string;
+  kind: BookingKind;
+  summary: string;
+  statusLabel: string;
   address?: string | null;
-  status?: string;
-  tracking_steps: string[];
-  progress: number;
-  payload?: any;
-  raw?: any;
+  total?: number | null;
+  items?: any[];
+  invoiceUrl?: string | null;
 };
+
+function deriveKind(order: any): BookingKind {
+  const fulfillment = order?.payload?.ledgerx_v3?.fulfillment?.type;
+  const type = String(order?.type ?? "").toLowerCase();
+  const source = String(order?.source ?? "").toLowerCase();
+
+  if (fulfillment === "delivery") return "store";
+  if (fulfillment === "service") return "service";
+  if (type.includes("product")) return "store";
+  if (source.includes("store")) return "store";
+  return "service";
+}
+
+function latestEvent(order: any) {
+  const evs = Array.isArray(order?.events) ? order.events : [];
+  return evs[evs.length - 1] || order?.last_event || null;
+}
+
+function formatStatusLabel(status?: string | null) {
+  if (!status) return "In progress";
+  const safe = status.toString().replace(/[_-]/g, " ").trim();
+  return safe.charAt(0).toUpperCase() + safe.slice(1);
+}
+
+function summarizeOrder(order: any, kind: BookingKind) {
+  const items = Array.isArray(order?.items) ? order.items : [];
+  if (kind === "store") {
+    if (!items.length) return "Store order";
+    const names = items
+      .map((i: any) => i?.title || i?.name)
+      .filter(Boolean)
+      .slice(0, 3);
+    const count = items.length;
+    return `${count} item${count > 1 ? "s" : ""}${
+      names.length ? ` · ${names.join(", ")}` : ""
+    }`;
+  }
+
+  if (items.length) {
+    const first = items[0];
+    const name = first?.title || first?.name || "Service booking";
+    const slot =
+      order?.payload?.service_preferences?.preferred_slot ||
+      order?.payload?.ledgerx_v3?.fulfillment?.slot;
+    return slot ? `${name} · ${slot}` : name;
+  }
+
+  return "Service booking";
+}
 
 function MyBookingsPageInner() {
   const { loading: profileLoading, loggedIn } = useUserProfile();
@@ -50,36 +93,41 @@ function MyBookingsPageInner() {
   const router = useRouter();
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const tabParam = searchParams?.get("tab");
-  const initialFilter =
-    tabParam === "service" || tabParam === "store"
-      ? (tabParam as OrderType)
-      : "all";
-  const [filterType, setFilterType] = useState<OrderType | "all">(
-    initialFilter
-  );
+  const initialFilter: BookingKind =
+    tabParam === "store" ? "store" : "service";
+  const [filterType, setFilterType] = useState<BookingKind>(initialFilter);
 
   const loading = profileLoading || ordersLoading;
 
-  const mappedOrders = useMemo(() => {
+  const mappedOrders = useMemo<BookingCardModel[]>(() => {
     if (!loggedIn || !Array.isArray(orders)) return [];
-    return orders.map((o: any) => ({
-      id: String(o.id),
-      reference: o.reference || o.id,
-      invoice_id: o.invoice_id || o.id,
-      invoice_url: o.invoice_url,
-      total: o.total ?? 0,
-      created_at: o.created_at,
-      order_type: (o.order_type as OrderType) || "store",
-      visit_fee: o.visit_fee ?? null,
-      visit_fee_waived: Boolean(o.visit_fee_waived),
-      items: o.items || [],
-      address: o.address,
-      status: o.status || "pending",
-      tracking_steps: Array.isArray(o.tracking_steps) ? o.tracking_steps : [],
-      progress: o.progress ?? 0,
-      payload: o.payload,
-      raw: o.raw,
-    }));
+    return orders.map((o: any) => {
+      const kind = deriveKind(o);
+      const last = latestEvent(o);
+      const total =
+        typeof o?.total === "number"
+          ? o.total
+          : o?.payload?.ledgerx_v3?.financials?.subtotal ?? null;
+      const address =
+        o?.address ||
+        o?.payload?.address ||
+        o?.payload?.store_fulfillment?.address ||
+        o?.payload?.service_preferences?.address ||
+        null;
+
+      return {
+        id: String(o.id),
+        reference: o.reference || o.id,
+        createdAt: o.created_at,
+        kind,
+        summary: summarizeOrder(o, kind),
+        statusLabel: formatStatusLabel(last?.status || last?.event || o.status),
+        address,
+        total,
+        items: o.items || [],
+        invoiceUrl: o.invoice_url ?? null,
+      };
+    });
   }, [loggedIn, orders]);
 
   const handleRefresh = () => refresh();
@@ -89,16 +137,16 @@ function MyBookingsPageInner() {
   const sortedOrders = useMemo(
     () =>
       mappedOrders.slice().sort((a, b) => {
-        const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
+        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return bDate - aDate;
       }),
     [mappedOrders]
   );
-  const filteredOrders = useMemo(() => {
-    if (filterType === "all") return sortedOrders;
-    return sortedOrders.filter((o) => o.order_type === filterType);
-  }, [sortedOrders, filterType]);
+  const filteredOrders = useMemo(
+    () => sortedOrders.filter((o) => o.kind === filterType),
+    [sortedOrders, filterType]
+  );
 
   return (
     <SafeViewport>
@@ -121,8 +169,7 @@ function MyBookingsPageInner() {
                 const params = new URLSearchParams(
                   Array.from(searchParams?.entries() ?? [])
                 );
-                if (next === "all") params.delete("tab");
-                else params.set("tab", next);
+                params.set("tab", next);
                 const qs = params.toString();
                 router.replace(`${pathname}${qs ? `?${qs}` : ""}`, {
                   scroll: false,
@@ -208,13 +255,12 @@ function FilterTabs({
   filterType,
   onChange,
 }: {
-  filterType: OrderType | "all";
-  onChange: (next: OrderType | "all") => void;
+  filterType: BookingKind;
+  onChange: (next: BookingKind) => void;
 }) {
-  const tabs: { id: OrderType | "all"; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "store", label: "Store orders" },
+  const tabs: { id: BookingKind; label: string }[] = [
     { id: "service", label: "Service bookings" },
+    { id: "store", label: "Store orders" },
   ];
 
   return (
@@ -245,14 +291,15 @@ function OrderCard({
   expanded,
   onToggle,
 }: {
-  order: OrderEntry;
+  order: BookingCardModel;
   expanded: boolean;
   onToggle: () => void;
 }) {
-  const createdAt = order.created_at
-    ? format(new Date(order.created_at), "dd MMM yyyy")
+  const createdAt = order.createdAt
+    ? format(new Date(order.createdAt), "dd MMM yyyy")
     : "Date unavailable";
-  const isService = order.order_type === "service";
+  const isService = order.kind === "service";
+  const label = isService ? "Service booking" : "Store order";
 
   return (
     <motion.div
@@ -280,16 +327,23 @@ function OrderCard({
           </div>
           <div>
             <p className="text-sm font-semibold text-[var(--text-primary)]">
-              {isService ? "Service booking" : "Store order"} ·{" "}
-              {order.reference || order.id}
+              {label} · {order.reference || order.id}
             </p>
+            <p className="text-[12px] text-[var(--text-secondary)]">
+              {order.summary}
+            </p>
+            {typeof order.total === "number" ? (
+              <p className="text-[12px] text-[var(--text-secondary)]">
+                Total: ₹{Number(order.total).toLocaleString("en-IN")}
+              </p>
+            ) : null}
             <p className="text-[12px] text-[var(--text-muted)]">
               {createdAt}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 text-[12px] text-[var(--text-secondary)]">
-          <span>{order.status || "In progress"}</span>
+          <span>{order.statusLabel || "In progress"}</span>
           <ArrowUpRight className="w-4 h-4" />
         </div>
       </button>
@@ -310,9 +364,9 @@ function OrderCard({
               </div>
             )}
 
-            {order.invoice_url && (
+            {order.invoiceUrl && (
               <a
-                href={order.invoice_url}
+                href={order.invoiceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-[12px] text-[var(--accent-primary)] font-semibold hover:underline"
@@ -325,11 +379,16 @@ function OrderCard({
             {order.items?.length ? (
               <div className="mt-3 border-t border-[var(--border-soft)] pt-2 space-y-2">
                 {order.items.map((item, idx) => (
-                  <div key={idx} className="text-[12px] text-[var(--text-primary)]">
-                    <span className="font-semibold">{item.title || "Item"}</span>
+                  <div
+                    key={idx}
+                    className="text-[12px] text-[var(--text-primary)] flex justify-between gap-2"
+                  >
+                    <span className="font-semibold">
+                      {item.title || item.name || "Item"}
+                    </span>
                     {item.price ? (
                       <span className="text-[var(--text-muted)] ml-1">
-                        — ₹{Number(item.price).toLocaleString("en-IN")}
+                        ₹{Number(item.price).toLocaleString("en-IN")}
                       </span>
                     ) : null}
                   </div>
@@ -390,3 +449,5 @@ function LoginPrompt() {
     </div>
   );
 }
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";

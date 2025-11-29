@@ -12,12 +12,14 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
+
+// Auth Center only: create/update profile; login flows must not call this
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(req) {
   try {
@@ -25,7 +27,8 @@ export async function POST(req) {
     const {
       phone,
       email,
-      name = "guest",
+      name,
+      full_name,
       verified = true,
       role = "client",
     } = body;
@@ -38,11 +41,12 @@ export async function POST(req) {
     }
 
     const matchKey = phone ? { phone } : { email };
+    const incomingName = (full_name || name || "").trim();
 
     // 🔍 Step 1 — Find existing record
     const { data: existing, error: fetchErr } = await supabase
       .from("user_profiles")
-      .select("id, email_verified, phone_verified")
+      .select("id, name, email_verified, phone_verified")
       .match(matchKey)
       .maybeSingle();
 
@@ -52,8 +56,13 @@ export async function POST(req) {
 
     // 🧩 Step 2 — If user exists, update only if needed
     if (existing) {
+      const safeName =
+        incomingName && !(incomingName === "Guest" && existing.name?.trim())
+          ? incomingName
+          : existing.name || undefined;
+
       const updates = {
-        ...(name && { name }),
+        ...(safeName && { name: safeName }),
         ...(phone && { phone }),
         ...(email && { email }),
         // ✅ Preserve existing verified flags (never downgrade)
@@ -79,13 +88,14 @@ export async function POST(req) {
       );
     } else {
       // 🆕 Step 3 — Create new user safely
+      const safeName = incomingName || "Guest";
       const { data: inserted, error: insertErr } = await supabase
         .from("user_profiles")
         .insert([
           {
             phone,
             email,
-            name,
+            name: safeName,
             phone_verified: verified && !!phone,
             email_verified: verified && !!email,
             created_at: new Date().toISOString(),

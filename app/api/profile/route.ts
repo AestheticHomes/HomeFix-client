@@ -220,12 +220,16 @@ export async function POST(req: Request) {
 /* ============================== GET ============================== */
 export async function GET() {
   const sb = supabaseServer;
+  const noStore = { "Cache-Control": "no-store" };
   try {
     const cookieStore = cookies();
     const userId = cookieStore.get("hf_user_id")?.value || null;
 
     if (!userId) {
-      return NextResponse.json({ success: false, user: null }, { status: 401 });
+      return NextResponse.json(
+        { success: false, user: null, message: "Unauthorized" },
+        { status: 401, headers: noStore }
+      );
     }
 
     const { data, error } = await sb
@@ -248,15 +252,24 @@ export async function GET() {
       phone_verified: !!row.phone_verified,
     };
 
-    return NextResponse.json({
-      success: true,
-      user: clean,
-      message: "Profile fetched successfully",
-    });
+    return new NextResponse(
+      JSON.stringify({
+        success: true,
+        user: clean,
+        message: "Profile fetched successfully",
+      }),
+      {
+        status: 200,
+        headers: {
+          ...noStore,
+          "Content-Type": "application/json",
+        },
+      }
+    );
   } catch (e: any) {
     return NextResponse.json(
       { success: false, message: e?.message || "Internal Server Error" },
-      { status: 500 }
+      { status: 500, headers: noStore }
     );
   }
 }

@@ -60,6 +60,18 @@ export type UniversalPreviewProps = {
 
 /* ------------------------ helpers ------------------------ */
 
+function WebGLCleanup() {
+  const { gl } = useThree();
+  useEffect(
+    () => () => {
+      gl?.forceContextLoss?.();
+      gl?.dispose?.();
+    },
+    [gl]
+  );
+  return null;
+}
+
 function extractInfo(object: THREE.Object3D): SelectedInfo {
   const name = object.name || "Component";
 
@@ -564,6 +576,7 @@ export default function UniversalPreview({
           }}
           className="w-full h-full"
         >
+          <WebGLCleanup />
           {ModelComponent ? (
             <ModelComponent />
           ) : glbUrl ? (

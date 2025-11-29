@@ -42,6 +42,49 @@
     box-sizing: border-box;
   }
 
+  .hf-pill {
+    background: var(--hf-pill-bg);
+    border: 1px solid var(--hf-pill-border);
+    box-shadow: 0 0 14px rgba(15, 23, 42, 0.35);
+  }
+
+  .hf-pill-dot {
+    background: var(--hf-pill-dot);
+    box-shadow: 0 0 8px var(--hf-pill-dot-glow);
+  }
+
+  .hf-pill-label {
+    color: var(--hf-pill-label);
+  }
+
+  .hf-kicker {
+    color: var(--hf-accent-soft);
+  }
+
+  .hf-section-heading {
+    color: var(--hf-text-primary);
+  }
+
+  .hf-section-body {
+    color: var(--hf-text-muted);
+  }
+
+  .hf-section-accent {
+    color: var(--hf-accent);
+  }
+
+  .hf-step-kicker {
+    color: var(--hf-text-soft);
+  }
+
+  .hf-step-title {
+    color: var(--hf-text-primary);
+  }
+
+  .hf-step-muted {
+    color: var(--hf-text-muted);
+  }
+
   .full-bleed,
   [data-full-bleed="true"] {
     max-width: 100vw;
@@ -219,6 +262,25 @@
     --sidebar-surface: rgba(255, 255, 255, 0.92);
     --sidebar-text: var(--text-primary);
 
+    /* Particle field tokens – can be tweaked centrally */
+    --hf-particle-color: rgba(56, 189, 248, 0.65);
+    --hf-particle-color-alt: rgba(129, 140, 248, 0.5);
+    --hf-particle-trail-opacity: 0.4;
+
+    /* Turnkey / reassurance pill tokens */
+    --hf-pill-bg: color-mix(in srgb, var(--surface-elevated, #ffffff) 80%, transparent);
+    --hf-pill-border: color-mix(in srgb, var(--border-subtle, #e2e8f0) 80%, transparent);
+    --hf-pill-label: var(--text-primary, #0f172a);
+    --hf-pill-dot: #0ea5e9;
+    --hf-pill-dot-glow: rgba(56, 189, 248, 0.7);
+
+    /* === Edith text tokens === */
+    --hf-text-primary: #0f172a;
+    --hf-text-muted: #64748b;
+    --hf-text-soft: #94a3b8;
+    --hf-accent: #4f46e5;
+    --hf-accent-soft: #0ea5e9;
+
     /* z-index ladder */
     --z-header: 90;
     --z-navbar: 80;
@@ -251,6 +313,40 @@
     --cosmos-fog-light: #dce3f5;
 
     font-size: 15px;
+  }
+
+  [data-theme="light"],
+  html:not(.dark) {
+    --hf-particle-color: rgba(37, 99, 235, 0.35);
+    --hf-particle-color-alt: rgba(56, 189, 248, 0.35);
+    --hf-particle-trail-opacity: 0.25;
+    --hf-pill-bg: color-mix(in srgb, var(--surface-elevated, #ffffff) 80%, transparent);
+    --hf-pill-border: color-mix(in srgb, var(--border-subtle, #e2e8f0) 80%, transparent);
+    --hf-pill-label: var(--text-primary, #0f172a);
+    --hf-pill-dot: #0ea5e9;
+    --hf-pill-dot-glow: rgba(56, 189, 248, 0.7);
+    --hf-text-primary: #0f172a;
+    --hf-text-muted: #64748b;
+    --hf-text-soft: #94a3b8;
+    --hf-accent: #4f46e5;
+    --hf-accent-soft: #0ea5e9;
+  }
+
+  [data-theme="dark"],
+  html.dark {
+    --hf-particle-color: rgba(96, 165, 250, 0.9);
+    --hf-particle-color-alt: rgba(196, 181, 253, 0.85);
+    --hf-particle-trail-opacity: 0.5;
+    --hf-pill-bg: color-mix(in srgb, #020617 40%, transparent);
+    --hf-pill-border: color-mix(in srgb, #1e293b 80%, transparent);
+    --hf-pill-label: var(--text-primary, #e5e7eb);
+    --hf-pill-dot: #38bdf8;
+    --hf-pill-dot-glow: rgba(56, 189, 248, 0.9);
+    --hf-text-primary: #e5e7eb;
+    --hf-text-muted: #9ca3af;
+    --hf-text-soft: #64748b;
+    --hf-accent: #a855f7;
+    --hf-accent-soft: #38bdf8;
   }
 
   html.dark {
@@ -299,6 +395,9 @@
     --accent-danger: #f87171;
     --accent-warning: #fbbf24;
     --accent-info: #60a5fa;
+    --hf-particle-color: rgba(96, 165, 250, 0.9);
+    --hf-particle-color-alt: rgba(196, 181, 253, 0.85);
+    --hf-particle-trail-opacity: 0.5;
 
     --shadow-elevation: 0 4px 16px rgba(0, 0, 0, 0.6);
     --selection-bg: rgba(236, 110, 207, 0.3);
@@ -602,62 +701,4 @@ main,
 #checkout-log,
 #checkout-log * {
   pointer-events: none !important;
-}
-
-/* ======================================================================================
-   Wave / Particle Global Background  (Dark + Light theme aware)
-   Applied to <body class="app-shell"> from layout.tsx
-====================================================================================== */
-
-.app-shell {
-  position: relative;
-  min-height: 100vh;
-  background: var(--surface-body, var(--surface-base));
-  overflow-x: hidden;
-}
-
-/* Static waves */
-.app-shell::before {
-  content: "";
-  pointer-events: none;
-  position: fixed;
-  inset: -20vh -10vw;
-  z-index: -1;
-
-  background:
-    radial-gradient(circle at 10% 80%, rgba(129, 140, 248, 0.18) 0, transparent 60%),
-    radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.18) 0, transparent 55%),
-    radial-gradient(circle at 50% 100%, rgba(244, 114, 182, 0.18) 0, transparent 60%),
-    radial-gradient(circle at 30% 0%, rgba(16, 185, 129, 0.16) 0, transparent 60%),
-    radial-gradient(circle at 0 0, rgba(15, 23, 42, 1) 0, rgba(15, 23, 42, 1) 45%, transparent 70%);
-}
-
-/* Light mode variant */
-html[data-theme="light"] .app-shell::before,
-html.light .app-shell::before,
-html:not(.dark) .app-shell::before {
-  background:
-    radial-gradient(circle at 10% 80%, rgba(79, 70, 229, 0.12) 0, transparent 60%),
-    radial-gradient(circle at 80% 20%, rgba(14, 165, 233, 0.12) 0, transparent 55%),
-    radial-gradient(circle at 50% 100%, rgba(236, 72, 153, 0.12) 0, transparent 60%),
-    radial-gradient(circle at 30% 0%, rgba(5, 150, 105, 0.10) 0, transparent 60%),
-    radial-gradient(circle at 0 0, rgba(248, 250, 252, 1) 0, rgba(241, 245, 249, 1) 45%, transparent 70%);
-}
-
-/* Optional scroll-motion effect */
-@media (prefers-reduced-motion: no-preference) {
-  .app-shell {
-    perspective: 200px;
-  }
-
-  .app-shell::before {
-    animation: waveDrift 18s ease-in-out infinite alternate;
-    transform: translateZ(-40px);
-    will-change: transform;
-  }
-
-  @keyframes waveDrift {
-    from { transform: translateY(-2vh) translateX(-1vw) scale(1.02); }
-    to   { transform: translateY(2vh) translateX(1vw) scale(1); }
-  }
 }

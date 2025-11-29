@@ -1,6 +1,8 @@
-import { redirect } from "next/navigation";
+"use client";
 
-// Legacy route: permanently redirected to /my-bookings
-export default function MyOrdersRedirect() {
-  redirect("/my-bookings");
+import MyBookingsPage from "../my-bookings/page";
+
+// Legacy route now renders the bookings experience directly (no redirect)
+export default function MyOrdersPage() {
+  return <MyBookingsPage />;
 }

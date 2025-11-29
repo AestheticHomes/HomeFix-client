@@ -23,7 +23,7 @@ export function middleware(req: NextRequest) {
     /^\/$/, // homepage
     /^\/checkout(\/.*)?$/,
     /^\/my-bookings(\/.*)?$/,
-    /^\/my-orders(\/.*)?$/, // legacy path; redirected
+    /^\/my-orders(\/.*)?$/, // legacy path; now renders bookings UI directly
     /^\/mock-razorpay(\/.*)?$/, // allow mock payment page
     /^\/login(\/.*)?$/,
     /^\/signup(\/.*)?$/,

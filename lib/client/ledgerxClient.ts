@@ -10,14 +10,23 @@
 
 export interface LedgerXDBEntry {
   id: string;
-  userId: string;
-  type: string;
-  payload: any;
-  status: string;
+  userId?: string;
+  type?: string;
+  source?: string | null;
+  payload?: any;
+  status?: string | null;
   deviceId?: string | null;
   checksum?: string | null;
-  createdAt: number;
-  updatedAt: number;
+  createdAt?: number;
+  updatedAt?: number;
+  created_at?: string;
+  total?: number | null;
+  items?: any[];
+  events?: any[];
+  last_event?: any;
+  address?: string | null;
+  reference?: string | null;
+  invoice_url?: string | null;
 }
 
 const DB_NAME = "ledgerx-db";
@@ -114,7 +123,7 @@ export async function setOrdersForUser(
       req.onerror = () => reject(req.error);
     });
     keys.forEach((key) => store.delete(key));
-    orders.forEach((entry) => store.put(entry));
+    orders.forEach((entry) => store.put({ ...entry, userId }));
   });
 }
 

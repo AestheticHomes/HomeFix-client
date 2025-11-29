@@ -155,13 +155,13 @@ function createCartStore(storageKey: string, defaultType: CartItemType) {
         version: 1,
         storage: createJSONStorage(() => safeStorage),
         skipHydration: false,
+        partialize: (state) => ({
+          items: state.items,
+        }),
         onRehydrateStorage: () => (state) => {
           if (state) {
             requestAnimationFrame(() => {
               state.recalcTotals?.();
-              console.log(
-                `🛒 [CartStore:${storageKey}] Rehydrated from storage`
-              );
             });
           }
         },

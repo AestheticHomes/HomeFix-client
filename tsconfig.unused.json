@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "lib/**/*",
+    "hooks/**/*",
+    "edith/**/*",
+    "components/studio/**/*"
+  ],
+  "exclude": [
+    "app/**/*",
+    "components/ui/**/*",
+    "components/chrome/**/*",
+    "components/home/**/*",
+    "components/layout/**/*",
+    "components/estimator/**/*",
+    "components/services/**/*",
+    "components/turnkey/**/*",
+    "contexts/**/*",
+    "middleware.ts",
+    "pages/_document.tsx",
+    "next.config.*",
+    "tailwind.config.*",
+    "postcss.config.*"
+  ]
+}

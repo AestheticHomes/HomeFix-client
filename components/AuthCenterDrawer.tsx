@@ -78,11 +78,19 @@ export default function AuthCenterDrawer({
   onClose,
   standalone = false,
   initialMode = "form",
+  redirectOnSuccess = true,
+  onLoginSuccess,
 }: {
   open: boolean;
   onClose?: () => void;
   standalone?: boolean;
   initialMode?: Panel | "form";
+  /**
+   * When false, login stays inline (no redirect) and optionally calls onLoginSuccess.
+   * Used for checkout so the user remains on the page after logging in.
+   */
+  redirectOnSuccess?: boolean;
+  onLoginSuccess?: (user: HomeFixUser) => void;
 }) {
   const { success, error } = useToast();
   const { login, refreshProfile, setUser } = useUser();
@@ -134,8 +142,6 @@ export default function AuthCenterDrawer({
     if (!open) return;
 
     const pre = user || {};
-    refreshProfile().catch(() => {});
-    refresh().catch(() => {});
     setName(pre.name || pre.full_name || "");
     setEmail(pre.email || "");
     setEmailVerified(!!pre.email_verified);
@@ -222,9 +228,35 @@ export default function AuthCenterDrawer({
     resetError();
     const ok = await verifyOtp(otp, phone10, "phone");
     if (ok) {
+      const phoneE164 = `+91${phone10}`;
       setPhoneVerified(true);
-      setOrigPhoneE164(`+91${phone10}`);
+      setOrigPhoneE164(phoneE164);
+
+      // Treat phone verify as login success: refresh profile and update context
+      const latestUser: HomeFixUser = {
+        ...(user || {}),
+        phone: phoneE164,
+        phone_verified: true,
+        email_verified: user?.email_verified ? true : undefined,
+        loggedIn: true,
+      };
+
+      setUser(latestUser);
+      refreshProfile().catch(() => {});
+      refresh().catch(() => {});
+
       window.dispatchEvent(new Event("profile-updated"));
+
+      if (!redirectOnSuccess) {
+        onLoginSuccess?.(latestUser);
+        setPanel("success");
+        setTimeout(() => {
+          setPanel("form");
+          onClose?.();
+        }, 800);
+        return;
+      }
+
       setPanel("success");
       setTimeout(() => setPanel("form"), 900);
     }

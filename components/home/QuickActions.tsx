@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { fetchServicesConfig, type ServiceDefinition } from "@/lib/servicesConfig";
 
 type Action = {
   id: string;
@@ -8,33 +10,32 @@ type Action = {
   href: string;
 };
 
-const ACTIONS: Action[] = [
-  {
-    id: "turnkey",
-    label: "Start turnkey project",
-    href: "/services/start-turnkey",
-  },
-  {
-    id: "full-home",
-    label: "Full home interiors",
-    href: "/services/full-home",
-  },
-  {
-    id: "kitchens",
-    label: "Modular kitchens",
-    href: "/services/modular-kitchens",
-  },
-  {
-    id: "wardrobes",
-    label: "Wardrobes & storage",
-    href: "/services/wardrobes",
-  },
-  { id: "bathrooms", label: "Bathroom renovation", href: "/services/bathroom" },
-  { id: "tiling", label: "Tiling & flooring", href: "/services/tiling" },
-] as const;
-
 export default function QuickActions() {
   const router = useRouter();
+  const [actions, setActions] = useState<Action[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchServicesConfig()
+      .then((services) => {
+        if (cancelled) return;
+        const turnkey = services.filter((s) => s.category === "turnkey");
+        const mapped: Action[] = turnkey.map((svc) => ({
+          id: svc.slug,
+          label: svc.name,
+          href: `/services/${svc.slug}`,
+        }));
+        setActions(mapped);
+      })
+      .catch(() => {
+        if (cancelled) setActions([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!actions.length) return null;
 
   return (
     <section className="px-3 sm:px-4 lg:px-8 xl:px-12 py-3 border-t border-b border-[var(--border-muted)] bg-[var(--surface-base)]/90">
@@ -46,7 +47,7 @@ export default function QuickActions() {
           pb-1
         "
       >
-        {ACTIONS.map((action) => (
+        {actions.map((action) => (
           <button
             key={action.id}
             onClick={() => router.push(action.href)}
