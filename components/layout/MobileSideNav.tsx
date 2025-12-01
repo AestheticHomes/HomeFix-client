@@ -7,11 +7,11 @@ import { useEffect } from "react";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/" },
-  { label: "Start turnkey project", href: "/turnkey" },
+  { label: "Start turnkey project", href: "/full-home-packages" },
   { label: "Services", href: "/services" },
   { label: "Store", href: "/store" },
-  { label: "Estimator", href: "/estimator" },
-  { label: "Studio", href: "/studio" },
+  { label: "Estimator", href: "/instant-quote" },
+  { label: "Studio", href: "/design-lab" },
   { label: "My bookings", href: "/my-bookings" },
   { label: "Profile & account", href: "/profile" },
   { label: "Support / help", href: "/support" },
@@ -44,7 +44,7 @@ export default function MobileSideNav({ open, onClose }: MobileSideNavProps) {
         {open && (
           <>
             <motion.div
-              className="fixed inset-0 bg-black/40 z-[120]"
+              className="fixed inset-0 bg-[var(--overlay-cta)] z-[120]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}

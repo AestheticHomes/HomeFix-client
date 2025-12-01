@@ -7,7 +7,7 @@ export default function ConsultationRedirectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/turnkey");
+    router.replace("/full-home-packages");
   }, [router]);
 
   return null;

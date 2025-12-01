@@ -1,4 +1,4 @@
-// components/estimator/blueprintSchema/interpreter.js
+// components/instant-quote/blueprintSchema/interpreter.js
 // ============================================================================
 //  Edith CAD Core – Expression Evaluator + Blueprint Expander  (v3.6 final)
 //  Search keys: [edith-cad][interpreter][eval][expand]

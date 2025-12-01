@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     title: "Design Studio | HomeFix India",
     description:
       "Visual inspiration for your home. Browse our gallery of stunning interior designs.",
-    url: "https://homefix.co.in/studio",
+    url: "https://homefix.co.in/design-lab",
   },
 };
 

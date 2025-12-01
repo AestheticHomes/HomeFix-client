@@ -85,12 +85,20 @@
     color: var(--hf-text-muted);
   }
 
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE/Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+
   .full-bleed,
   [data-full-bleed="true"] {
     max-width: 100vw;
     overflow-x: clip;
   }
-  html.dark {
+  html.dark, html[data-theme="dark"] {
     color-scheme: dark;
   }
 
@@ -193,7 +201,7 @@
    🎨 THEME TOKEN SYSTEM — Edith + Gemini Unified
 ------------------------------------------------------------ */
 @layer base {
-  :root {
+  [data-theme="warm"], html:not([data-theme="dark"]) {
     /* SURFACES — Light (dusty cosmic daylight) */
     --surface-base: #f5f3ff;
     --surface-card: linear-gradient(180deg, #fdfbff 0%, #f5f3ff 100%);
@@ -333,7 +341,8 @@
   }
 
   [data-theme="dark"],
-  html.dark {
+  html.dark,
+  html[data-theme="dark"] {
     --hf-particle-color: rgba(96, 165, 250, 0.9);
     --hf-particle-color-alt: rgba(196, 181, 253, 0.85);
     --hf-particle-trail-opacity: 0.5;
@@ -349,7 +358,7 @@
     --hf-accent-soft: #38bdf8;
   }
 
-  html.dark {
+  html.dark, html[data-theme="dark"] {
     /* SURFACES — Deep Space */
     --surface-base: #020617;
     --surface-card: radial-gradient(

@@ -85,7 +85,7 @@ export default async function ServicesPage() {
           <div className="inline-flex items-center gap-2 text-sm">
             <span className="text-[var(--text-secondary)]">Looking for full projects?</span>
             <Link
-              href="/turnkey"
+              href="/full-home-packages"
               className="font-semibold text-[var(--accent-primary)] hover:underline"
             >
               Explore turnkey services →

@@ -26,7 +26,7 @@ export function TurnkeyProcessSection() {
     <section
       ref={ref}
       aria-label="HomeFix turnkey interiors process"
-      className="relative overflow-hidden py-10 md:py-16"
+      className="relative overflow-hidden py-12 md:py-16 bg-background"
     >
       <TurnkeyCosmicBackground />
 
@@ -46,9 +46,8 @@ export function TurnkeyProcessSection() {
           </p>
         </header>
 
-        {/* Desktop beam line */}
         <motion.div
-          className="relative mx-auto mt-4 mb-10 hidden h-px max-w-4xl bg-gradient-to-r from-indigo-400 via-sky-400 to-fuchsia-400 md:block"
+          className="relative mx-auto mt-4 mb-10 h-px max-w-4xl bg-[var(--hf-gradient)]"
           initial={{ scaleX: 0, opacity: 0 }}
           animate={
             inView ? { scaleX: 1, opacity: 1 } : { scaleX: 0, opacity: 0 }
@@ -57,10 +56,8 @@ export function TurnkeyProcessSection() {
           style={{ transformOrigin: "left center" }}
         />
 
-        {/* Desktop nodes / Mobile timeline */}
         <div className="relative mx-auto max-w-5xl">
-          {/* mobile vertical line */}
-          <div className="absolute left-4 top-1 bottom-0 w-px bg-slate-200 md:hidden" />
+          <div className="absolute left-4 top-1 bottom-0 w-px bg-border" />
           <div className="relative flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
             {steps.map((step, index) => (
               <TurnkeyStepNode

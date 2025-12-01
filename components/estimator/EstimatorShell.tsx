@@ -1,6 +1,6 @@
 "use client";
 /**
- * File: components/estimator/EstimatorShell.tsx
+ * File: components/instant-quote/EstimatorShell.tsx
  * Version: v4.0 — Edith Stable Build 🌗
  */
 
@@ -88,7 +88,7 @@ export default function EstimatorShell(): React.ReactElement {
           "@type": "ListItem",
           position: 2,
           name: "Estimator",
-          item: `${siteUrl}/estimator`,
+          item: `${siteUrl}/instant-quote`,
         },
         {
           "@type": "ListItem",
@@ -99,7 +99,7 @@ export default function EstimatorShell(): React.ReactElement {
               : step === "kitchen"
               ? "Kitchen"
               : "Wardrobe",
-          item: `${siteUrl}/estimator`,
+          item: `${siteUrl}/instant-quote`,
         },
       ],
     }),
@@ -250,7 +250,7 @@ export default function EstimatorShell(): React.ReactElement {
         <Breadcrumbs
           items={[
             { label: "Home", href: "/" },
-            { label: "Estimator", href: "/estimator" },
+            { label: "Estimator", href: "/instant-quote" },
             {
               label: step === "kitchen" ? "Kitchen" : "Wardrobe",
             },

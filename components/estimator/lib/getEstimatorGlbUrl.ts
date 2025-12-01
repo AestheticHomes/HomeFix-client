@@ -1,4 +1,4 @@
-// components/estimator/lib/getEstimatorGlbUrl.ts
+// components/instant-quote/lib/getEstimatorGlbUrl.ts
 
 /**
  * getEstimatorGlbUrl

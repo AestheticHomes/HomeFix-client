@@ -13,11 +13,11 @@ export default function Footer() {
   return (
     <footer
       className="relative w-full py-8 text-center text-sm backdrop-blur-xl
-                 border-t border-gray-200/30 dark:border-slate-700/50
-                 bg-[color-mix(in srgb, var(--surface-light) 85%, #f5f0ff 15%)]
-                 dark:bg-[color-mix(in srgb, var(--surface-dark) 85%, #1a1845 15%)]
-                 text-[color-mix(in srgb, var(--text-primary-light) 90%, #2a2a66 10%)]
-                 dark:text-[color-mix(in srgb, var(--text-primary-dark) 90%, #e0d6ff 10%)]
+                 border-t border-border
+                 bg-card
+                 
+                 text-muted
+                 
                  shadow-[0_-1px_8px_rgba(155,92,248,0.08)]
                  dark:shadow-[0_-1px_12px_rgba(155,92,248,0.18)]
                  transition-all duration-700 ease-out"

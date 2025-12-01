@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     title: "Interior Cost Estimator | HomeFix India",
     description:
       "Get an instant estimate for your home interiors. Transparent pricing for all your renovation needs.",
-    url: "https://homefix.co.in/estimator",
+    url: "https://homefix.co.in/instant-quote",
   },
 };
 

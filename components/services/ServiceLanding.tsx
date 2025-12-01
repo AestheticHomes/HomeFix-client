@@ -21,10 +21,10 @@ export default function ServiceLanding({ service }: { service: ServiceDefinition
     <main className="px-4 py-8 sm:px-6 lg:px-8 pb-16">
       <div className="mx-auto max-w-5xl space-y-12">
         {/* HERO */}
-        <section className="relative overflow-hidden rounded-3xl border border-[var(--border-soft)] bg-[var(--surface-card)] px-6 py-10 sm:px-10 shadow-[0_18px_45px_rgba(0,0,0,0.35)]">
+        <section className="relative overflow-hidden rounded-3xl border border-border bg-card px-6 py-10 sm:px-10 shadow-[0_18px_45px_rgba(0,0,0,0.2)]">
           <div className="space-y-6">
             {(service.highlightBadge || service.category) && (
-              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-soft)] bg-black/30 px-3 py-1 text-xs font-medium text-[var(--text-secondary)]">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-chip px-3 py-1 text-xs font-medium text-muted">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--accent-primary)]" />
                 {service.highlightBadge || service.category}
               </div>
@@ -34,12 +34,12 @@ export default function ServiceLanding({ service }: { service: ServiceDefinition
               <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[var(--text-primary)]">
                 {service.heroTitle || service.tagline}
               </h1>
-              <p className="text-sm sm:text-base text-[var(--text-secondary)] max-w-xl">
+              <p className="text-sm sm:text-base text-muted max-w-xl">
                 {service.heroSubtitle || service.tagline}
               </p>
             </div>
 
-            <ul className="grid gap-2 text-sm text-[var(--text-secondary)] sm:grid-cols-2">
+            <ul className="grid gap-2 text-sm text-muted sm:grid-cols-2">
               {service.bulletsLeft.map((b) => (
                 <li key={b} className="flex items-start gap-2">
                   <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[var(--accent-primary)]" />
@@ -57,13 +57,13 @@ export default function ServiceLanding({ service }: { service: ServiceDefinition
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Link
                 href={checkoutPath}
-                className="inline-flex items-center justify-center rounded-2xl bg-[var(--accent-primary)] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-black/40 hover:bg-[color-mix(in_srgb,var(--accent-primary)90%,white)] transition-colors"
+                className="inline-flex items-center justify-center rounded-2xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-semibold shadow-lg shadow-black/25 hover:brightness-110 transition-colors"
               >
                 {service.ctaLabel || "Book free site visit"}
               </Link>
               <a
                 href={`tel:${process.env.NEXT_PUBLIC_SALES_PHONE ?? "+919000000000"}`}
-                className="inline-flex items-center justify-center rounded-2xl border border-[var(--border-soft)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] hover:bg-white/5"
+                className="inline-flex items-center justify-center rounded-2xl border border-primary text-primary bg-transparent px-4 py-2 text-sm font-semibold hover:bg-[var(--surface-hover)]"
               >
                 Call now
               </a>
@@ -77,7 +77,7 @@ export default function ServiceLanding({ service }: { service: ServiceDefinition
             <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)]">
               See our recent work
             </h2>
-            <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-2xl">
+            <p className="text-xs sm:text-sm text-muted max-w-2xl">
               Photos and walkthroughs from projects in this service category.
             </p>
           </div>
@@ -91,7 +91,7 @@ export default function ServiceLanding({ service }: { service: ServiceDefinition
               <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)]">
                 Recent projects in this service
               </h2>
-              <p className="text-xs sm:text-sm text-[var(--text-secondary)] max-w-2xl">
+              <p className="text-xs sm:text-sm text-muted max-w-2xl">
                 These are actual projects executed by AestheticHomes in Chennai.
                 You can book a similar scope for your home.
               </p>
@@ -101,7 +101,7 @@ export default function ServiceLanding({ service }: { service: ServiceDefinition
               {service.projects.map((p) => (
                 <article
                   key={p.id}
-                  className="group rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-card)] overflow-hidden flex flex-col"
+                  className="group rounded-2xl border border-border bg-card overflow-hidden flex flex-col"
                 >
                   {p.media[0] && (
                     <div className="relative aspect-[16/9] overflow-hidden">
@@ -128,7 +128,7 @@ export default function ServiceLanding({ service }: { service: ServiceDefinition
                         {p.title}
                       </h3>
                       {(p.location || p.scopeLine) && (
-                        <p className="text-xs text-[var(--text-secondary)]">
+                        <p className="text-xs text-muted">
                           {p.location}
                           {p.location && p.scopeLine && " • "}
                           {p.scopeLine}
@@ -141,7 +141,7 @@ export default function ServiceLanding({ service }: { service: ServiceDefinition
                         {p.tags.map((t) => (
                           <span
                             key={t}
-                            className="rounded-full border border-[var(--border-soft)] bg-black/30 px-2 py-0.5 text-[10px] uppercase tracking-wide text-[var(--text-muted)]"
+                            className="rounded-full border border-border bg-chip px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted"
                           >
                             {t}
                           </span>
@@ -150,7 +150,7 @@ export default function ServiceLanding({ service }: { service: ServiceDefinition
                     )}
 
                     {p.highlights && p.highlights.length > 0 && (
-                      <ul className="space-y-1 text-[11px] text-[var(--text-secondary)]">
+                      <ul className="space-y-1 text-[11px] text-muted">
                         {p.highlights.map((h) => (
                           <li key={h} className="flex gap-2">
                             <span className="mt-[6px] h-1 w-1 rounded-full bg-[var(--accent-primary)]" />
@@ -171,7 +171,7 @@ export default function ServiceLanding({ service }: { service: ServiceDefinition
                         href={`/services/${service.slug}?project_ref=${encodeURIComponent(
                           p.id
                         )}`}
-                        className="inline-flex items-center justify-center rounded-xl border border-[var(--border-soft)] px-3 py-2 text-[11px] text-[var(--text-secondary)] hover:bg-white/5"
+                        className="inline-flex items-center justify-center rounded-xl border border-border px-3 py-2 text-[11px] text-muted hover:bg-[var(--surface-hover)]"
                       >
                         View details
                       </Link>

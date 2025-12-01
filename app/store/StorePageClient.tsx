@@ -156,6 +156,36 @@ export default function StorePageClient() {
           />
         </div>
 
+        {/* Mobile category pills */}
+        <div className="md:hidden px-4 pb-2">
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 md:overflow-visible md:flex-wrap">
+            {categories.map((cat) => {
+              const active = cat.name === category;
+              const categorySlug = normalizeCategory(cat.name);
+              return (
+                <button
+                  key={cat.name}
+                  onClick={() => {
+                    setCategory(cat.name);
+                    if (categorySlug === "all") {
+                      router.push("/store");
+                    } else {
+                      router.push(`/store/${categorySlug}`);
+                    }
+                  }}
+                  className={`rounded-full border px-4 py-2 text-sm font-medium whitespace-nowrap transition ${
+                    active
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-card text-foreground border-[var(--border-soft)]"
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Tiny stale badge under search */}
         {lastUpdatedAt && (
           <p className="px-6 mb-2 text-[10px] text-[var(--text-muted)]">

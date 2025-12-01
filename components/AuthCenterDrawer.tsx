@@ -306,8 +306,8 @@ export default function AuthCenterDrawer({
       className="ml-2 text-xs px-2 py-0.5 rounded-full transition"
       style={{
         background:
-          "color-mix(in srgb, var(--accent-danger, #ef4444) 16%, transparent)",
-        color: "var(--accent-danger, #ef4444)",
+          "color-mix(in srgb, var(--accent-danger) 16%, transparent)",
+        color: "var(--accent-danger)",
       }}
       aria-label="Verify email"
     >
@@ -322,8 +322,8 @@ export default function AuthCenterDrawer({
       className="ml-2 text-xs px-2 py-0.5 rounded-full transition"
       style={{
         background:
-          "color-mix(in srgb, var(--accent-warning, #f59e0b) 16%, transparent)",
-        color: "var(--accent-warning, #b45309)",
+          "color-mix(in srgb, var(--accent-warning) 16%, transparent)",
+        color: "var(--accent-warning)",
       }}
       aria-label="Verify new phone number"
     >
@@ -348,8 +348,8 @@ export default function AuthCenterDrawer({
       className="ml-2 text-xs px-2 py-0.5 rounded-full transition"
       style={{
         background:
-          "color-mix(in srgb, var(--accent-danger, #ef4444) 16%, transparent)",
-        color: "var(--accent-danger, #ef4444)",
+          "color-mix(in srgb, var(--accent-danger) 16%, transparent)",
+        color: "var(--accent-danger)",
       }}
       aria-label="Verify phone"
     >
@@ -366,10 +366,10 @@ export default function AuthCenterDrawer({
         className="mt-2 flex items-start gap-2 rounded-lg px-3 py-2 text-sm"
         style={{
           background:
-            "color-mix(in srgb, var(--accent-danger, #ef4444) 10%, transparent)",
+            "color-mix(in srgb, var(--accent-danger) 10%, transparent)",
           color: "var(--text-primary)",
           border:
-            "1px solid color-mix(in srgb, var(--accent-danger, #ef4444) 25%, transparent)",
+            "1px solid color-mix(in srgb, var(--accent-danger) 25%, transparent)",
         }}
         role="alert"
         aria-live="polite"
@@ -400,13 +400,13 @@ export default function AuthCenterDrawer({
           className="inline-flex items-center gap-1 text-xs font-medium rounded-md px-2 py-1 transition"
           style={{
             background: canResend
-              ? "color-mix(in srgb, var(--accent-primary, #6366f1) 14%, transparent)"
+              ? "color-mix(in srgb, var(--accent-primary) 14%, transparent)"
               : "transparent",
             color: canResend
-              ? "var(--accent-primary, #6366f1)"
+              ? "var(--accent-primary)"
               : "var(--text-muted)",
             border:
-              "1px solid color-mix(in srgb, var(--accent-primary, #6366f1) 25%, transparent)",
+              "1px solid color-mix(in srgb, var(--accent-primary) 25%, transparent)",
           }}
           aria-label={`Resend ${channel} OTP`}
         >
@@ -534,9 +534,9 @@ export default function AuthCenterDrawer({
               className="mt-2 text-xs rounded-md px-3 py-2 flex gap-2 items-start"
               style={{
                 background:
-                  "color-mix(in srgb, var(--accent-warning, #f59e0b) 10%, transparent)",
+                  "color-mix(in srgb, var(--accent-warning) 10%, transparent)",
                 border:
-                  "1px solid color-mix(in srgb, var(--accent-warning, #f59e0b) 22%, transparent)",
+                  "1px solid color-mix(in srgb, var(--accent-warning) 22%, transparent)",
                 color: "var(--text-primary)",
               }}
             >
@@ -575,7 +575,7 @@ export default function AuthCenterDrawer({
             disabled={verifying || otp.length !== 6}
             className="w-full mt-3 py-3 rounded-xl font-semibold transition"
             style={{
-              background: "var(--accent-primary, #6366f1)",
+              background: "var(--accent-primary)",
               color: "white",
               opacity: verifying || otp.length !== 6 ? 0.7 : 1,
             }}
@@ -614,7 +614,7 @@ export default function AuthCenterDrawer({
             disabled={verifying || otp.length !== 6}
             className="w-full mt-3 py-3 rounded-xl font-semibold transition"
             style={{
-              background: "var(--accent-primary, #6366f1)",
+              background: "var(--accent-primary)",
               color: "white",
               opacity: verifying || otp.length !== 6 ? 0.7 : 1,
             }}

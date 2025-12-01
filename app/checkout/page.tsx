@@ -801,7 +801,7 @@ function CheckoutPageInner() {
               <div className="relative">
                 {isCheckoutLocked && (
                   <div
-                    className="pointer-events-none absolute inset-0 rounded-2xl bg-white/60 backdrop-blur-[1px]"
+                    className="pointer-events-none absolute inset-0 rounded-2xl bg-[color-mix(in_srgb,var(--surface-card)80%,transparent)] backdrop-blur-[1px]"
                     aria-hidden="true"
                   />
                 )}

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     title: "HomeFix Estimator | 2D/3D budgeting for interiors",
     description:
       "Estimate kitchens and wardrobes with live spans, finishes, and 3D previews before execution. Reduce waste and avoid labour mistakes.",
-    url: `${SITE_URL}/estimator`,
+    url: `${SITE_URL}/instant-quote`,
     siteName: "HomeFix India",
   },
   twitter: {

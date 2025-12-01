@@ -43,13 +43,13 @@ export default async function sitemap() {
       priority: 0.8,
     },
     {
-      url: `${BASE_URL}/estimator`,
+      url: `${BASE_URL}/instant-quote`,
       lastModified: new Date().toISOString(),
       changeFrequency: "monthly" as const,
       priority: 0.8,
     },
     {
-      url: `${BASE_URL}/studio`,
+      url: `${BASE_URL}/design-lab`,
       lastModified: new Date().toISOString(),
       changeFrequency: "monthly" as const,
       priority: 0.8,

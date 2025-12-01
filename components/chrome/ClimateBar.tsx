@@ -17,7 +17,7 @@ export function ClimateBar(props: ClimateBarProps) {
         <div className="flex items-center justify-between px-4 md:px-6 text-xs md:text-sm">
           <div className="flex items-center gap-2">
             <span className="font-medium">{city}</span>
-            <span className="rounded-full px-2 py-0.5 text-[0.7rem] md:text-xs bg-white/10 backdrop-blur">
+            <span className="rounded-full px-2 py-0.5 text-[0.7rem] md:text-xs bg-chip backdrop-blur">
               {Math.round(tempC)}°C · {condition}
             </span>
             {highC != null && lowC != null && (
@@ -34,7 +34,7 @@ export function ClimateBar(props: ClimateBarProps) {
             </span>
             <button
               type="button"
-              className="rounded-full border border-white/20 px-3 py-1 text-[0.7rem] md:text-xs hover:bg-white/10"
+              className="rounded-full border border-border px-3 py-1 text-[0.7rem] md:text-xs hover:bg-chip"
             >
               Book waterproofing visit →
             </button>

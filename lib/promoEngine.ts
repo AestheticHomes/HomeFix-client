@@ -79,7 +79,7 @@ export function getPromoForPath(
     return makeClimatePromo();
   }
 
-  if (pathname.startsWith("/estimator")) {
+  if (pathname.startsWith("/instant-quote")) {
     return makeEstimatorPromo();
   }
 

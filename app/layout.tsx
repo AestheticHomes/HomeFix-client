@@ -17,15 +17,20 @@
 
 import RouteAnnouncer from "@/components/a11y/RouteAnnouncer";
 import { RootShell } from "@/components/layout";
+import ThemeProviderClient from "@/components/theme/ThemeProviderClient";
 import type { Metadata, Viewport } from "next";
-import { ThemeProvider } from "next-themes";
+import { Inter, JetBrains_Mono, Montserrat } from "next/font/google";
 import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-body", display: "swap" });
+const mont = Montserrat({ subsets: ["latin"], variable: "--font-heading", display: "swap" });
+const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://homefix.co.in"),
   title: {
-    default: "HomeFix India | Turnkey interiors, 2D/3D planning, and execution",
-    template: "%s | HomeFix India",
+    default: "HomeFix | Full home interiors, 2D/3D planning, and execution",
+    template: "%s | HomeFix",
   },
   description:
     "Book HomeFix for end-to-end interiors in Chennai: measurement, 2D/3D planning, curated materials, installation, and site supervision with lower waste and fewer errors.",
@@ -36,8 +41,8 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: "https://homefix.co.in/",
-    siteName: "HomeFix India",
-    title: "HomeFix India | Turnkey interiors, 2D/3D planning, and execution",
+    siteName: "HomeFix",
+    title: "HomeFix | Full home interiors, 2D/3D planning, and execution",
     description:
       "Book HomeFix for end-to-end interiors in Chennai: measurement, 2D/3D planning, curated materials, installation, and site supervision with lower waste and fewer errors.",
     images: [
@@ -45,13 +50,13 @@ export const metadata: Metadata = {
         url: "https://homefix.co.in/images/homefix-screenshot.png",
         width: 1280,
         height: 720,
-        alt: "HomeFix India homepage showing turnkey interior services",
+        alt: "HomeFix homepage showing interior services",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "HomeFix India | Turnkey interiors, 2D/3D planning, and execution",
+    title: "HomeFix | Full home interiors, 2D/3D planning, and execution",
     description:
       "Book HomeFix for end-to-end interiors in Chennai: measurement, 2D/3D planning, curated materials, installation, and site supervision with lower waste and fewer errors.",
     images: ["https://homefix.co.in/images/homefix-screenshot.png"],
@@ -73,8 +78,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#5A5DF0" },
-    { media: "(prefers-color-scheme: dark)", color: "#EC6ECF" },
+    { media: "(prefers-color-scheme: light)", color: "#1E3A8A" },
+    { media: "(prefers-color-scheme: dark)", color: "#818CF8" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -88,7 +93,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className="dark">
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${inter.variable} ${mont.variable} ${mono.variable}`}
+    >
       <head>
         {/* PWA essentials */}
         <link rel="manifest" href="/manifest.json" />
@@ -100,6 +109,23 @@ export default function RootLayout({
           name="apple-mobile-web-app-status-bar-style"
           content="black-translucent"
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "HomeFix",
+              url: "https://homefix.co.in",
+              logo: "https://homefix.co.in/icons/icon-512.png",
+              parentOrganization: {
+                "@type": "Organization",
+                name: "AestheticHomes",
+                url: "https://aesthetichomes.net",
+              },
+            }),
+          }}
+        />
       </head>
 
       <body
@@ -108,20 +134,13 @@ export default function RootLayout({
             antialiased app-shell
             bg-[var(--surface-base)] text-[var(--text-primary)]
             selection:bg-[var(--selection-bg)] selection:text-[var(--selection-text)]
-            dark:text-[var(--text-primary-dark)]
-            dark:selection:bg-[var(--selection-bg)] dark:selection:text-[var(--selection-text)]
             transition-colors duration-500
           "
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <ThemeProviderClient>
           {/* RootShell owns header/sidebar/nav/scroll/toasts */}
           <RootShell>{children}</RootShell>
-        </ThemeProvider>
+        </ThemeProviderClient>
 
         {/* SR-only, polite live region for route changes */}
         <RouteAnnouncer />

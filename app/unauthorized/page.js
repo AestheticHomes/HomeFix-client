@@ -9,10 +9,10 @@
  */
 export default function UnauthorizedPage() {
   return (
-    <main className="min-h-screen flex items-center justify-center text-center">
+    <main className="min-h-screen flex items-center justify-center text-center bg-background text-foreground">
       <div>
-        <h1 className="text-3xl font-bold text-red-600">Access Denied</h1>
-        <p className="text-gray-600 mt-2">
+        <h1 className="text-3xl font-bold text-primary">Access Denied</h1>
+        <p className="text-muted mt-2">
           You don’t have permission to access this page.
         </p>
       </div>

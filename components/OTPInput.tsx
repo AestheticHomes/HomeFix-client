@@ -85,9 +85,9 @@ export default function OTPInput({
           value={otp[i] || ""}
           onChange={(e) => handleChange(e, i)}
           onKeyDown={(e) => handleKeyDown(e, i)}
-          className="w-10 h-12 text-center text-lg font-semibold border rounded-xl border-gray-300 dark:border-slate-600 
-                     focus:ring-2 focus:ring-orange-300 outline-none transition bg-white dark:bg-slate-700 
-                     text-gray-800 dark:text-gray-100"
+          className="w-10 h-12 text-center text-lg font-semibold border rounded-xl border-border 
+                     focus:ring-2 focus:ring-[var(--accent-primary)] outline-none transition bg-[var(--surface-input)] 
+                     text-[var(--text-primary)]"
         />
       ))}
     </div>

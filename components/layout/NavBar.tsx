@@ -61,7 +61,7 @@ export default function NavBar() {
       role="navigation"
       aria-label="Primary"
       className="fixed bottom-0 left-0 right-0 md:hidden
-                 border-t border-gray-200 dark:border-slate-800
+                 border-t border-border
                  backdrop-blur-2xl transition-all duration-500"
       style={{
         zIndex: "var(--z-navbar)",
@@ -87,7 +87,7 @@ export default function NavBar() {
                 {active && (
                   <motion.span
                     layoutId="nav-active-glow"
-                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#5A5DF0]/25 to-[#EC6ECF]/25 blur-md"
+                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-[color-mix(in_srgb,var(--accent-primary)30%,transparent)] to-[color-mix(in_srgb,var(--accent-secondary)30%,transparent)] blur-md"
                     transition={{ type: "spring", stiffness: 240, damping: 20 }}
                   />
                 )}
@@ -119,7 +119,7 @@ export default function NavBar() {
                 className={
                   active
                     ? "text-emerald-500 text-[11px] font-medium"
-                    : "text-gray-600 dark:text-gray-400 text-[11px] font-medium"
+                    : "text-muted text-[11px] font-medium"
                 }
               >
                 {name}

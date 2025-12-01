@@ -62,7 +62,7 @@ export default function StoreShowcase() {
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-4">
           <div>
             <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)]">
-              Interactive modular store
+              Interactive modular store – kitchens, wardrobes and storage
             </h2>
             <p className="text-xs sm:text-sm text-[var(--text-muted-soft)]">
               Browse ready-made modules for kitchens, wardrobes and storage — then view them in 2D / 3D in Edith Studio and Online Estimator.
@@ -80,14 +80,14 @@ export default function StoreShowcase() {
           {CATEGORIES.map((cat) => (
             <div
               key={cat.id}
-              className="rounded-3xl border border-[var(--border-muted)]
-                         bg-[color-mix(in_srgb,var(--surface-panel)90%,black_5%)]
-                         hover:bg-[color-mix(in_srgb,var(--surface-panel)96%,white_4%)]
-                         transition-colors shadow-[0_18px_45px_rgba(15,23,42,0.5)]
+              className="rounded-3xl border border-[var(--border-subtle)]
+                         bg-[var(--surface-card)]
+                         hover:bg-[color-mix(in_srgb,var(--surface-card)96%,white_4%)]
+                         transition-colors shadow-[0_20px_55px_rgba(15,23,42,0.12)]
                          flex flex-col md:flex-row items-stretch gap-4 px-4 sm:px-6 py-4 sm:py-5"
             >
               <div className="flex-1 flex flex-col gap-2">
-                <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">
+                <h3 className="text-sm sm:text-base font-semibold text-[var(--text-primary)]">
                   {cat.title}
                 </h3>
                 <p className="text-[13px] text-[var(--text-muted-soft)]">
@@ -104,7 +104,7 @@ export default function StoreShowcase() {
                     View modules →
                   </Link>
                   <Link
-                    href={`/studio?category=${cat.slug}`}
+                    href={`/design-lab?category=${cat.slug}`}
                     onClick={() =>
                       track("view_modules", { category: cat.slug, target: "studio" })
                     }

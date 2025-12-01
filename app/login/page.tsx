@@ -217,20 +217,18 @@ export default function LoginPage() {
   ------------------------------------------------------------ */
 
   const FormPanel = (
-    <div className="p-6 sm:p-8 relative">
+    <div className="p-6 sm:p-8 relative bg-card text-foreground border border-border rounded-3xl">
       <motion.div
-        className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 via-lime-400 to-green-600 rounded-t-3xl"
+        className="absolute inset-x-0 top-0 h-1 rounded-t-3xl bg-[var(--hf-gradient)]"
         layoutId="glow"
       />
-      <h2 className="text-xl font-semibold text-emerald-700 dark:text-emerald-400 mb-4">
+      <h2 className="text-xl font-semibold text-primary mb-4">
         Welcome to HomeFix
       </h2>
 
-      <label className="text-sm text-gray-600 dark:text-gray-300">
-        Mobile Number
-      </label>
-      <div className="flex items-center gap-2 border rounded-xl px-3 py-2 mb-3 bg-white dark:bg-slate-800 dark:border-slate-600">
-        <Phone size={18} className="text-emerald-600 dark:text-emerald-400" />
+      <label className="text-sm text-muted">Mobile Number</label>
+      <div className="flex items-center gap-2 border border-border rounded-xl px-3 py-2 mb-3 bg-card">
+        <Phone size={18} className="text-primary" />
         <input
           type="tel"
           inputMode="numeric"
@@ -239,16 +237,16 @@ export default function LoginPage() {
           onChange={(e) =>
             setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
           }
-          className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-gray-100"
+          className="flex-1 bg-transparent outline-none text-sm text-foreground"
         />
       </div>
 
-      <label className="flex items-center gap-2 mb-5 text-sm text-gray-600 dark:text-gray-300">
+      <label className="flex items-center gap-2 mb-5 text-sm text-muted">
         <input
           type="checkbox"
           checked
           readOnly
-          className="accent-emerald-600"
+          className="accent-primary"
         />
         <span>Remember me</span>
       </label>
@@ -256,7 +254,7 @@ export default function LoginPage() {
       <button
         onClick={handleSendOtp}
         disabled={loading || otpLoading || isProcessing}
-        className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition active:scale-[0.97]"
+        className="w-full py-3 rounded-xl bg-primary text-primary-foreground hover:brightness-110 font-semibold transition active:scale-[0.97]"
       >
         {loading || otpLoading ? "Sending..." : "Send OTP"}
       </button>
@@ -265,17 +263,17 @@ export default function LoginPage() {
 
   const OtpPanel = (
     <div className="p-6 sm:p-8 text-center">
-      <h2 className="text-lg font-semibold text-emerald-700 dark:text-emerald-400 mb-2">
+      <h2 className="text-lg font-semibold text-primary mb-2">
         Verify OTP
       </h2>
-      <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+      <p className="text-sm text-muted mb-2">
         Enter OTP sent to +91 {phoneDigits}
       </p>
       <OTPInput otp={otp} setOtp={setOtp} refs={otpRefs} />
       <button
         onClick={handleVerifyOtp}
         disabled={otpVerifying || isProcessing}
-        className="w-full mt-4 py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold transition active:scale-[0.97]"
+        className="w-full mt-4 py-3 rounded-xl bg-primary text-primary-foreground hover:brightness-110 font-semibold transition active:scale-[0.97]"
       >
         {otpVerifying ? "Verifying..." : "Verify OTP"}
       </button>
@@ -304,7 +302,7 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl relative z-[10000]"
+        className="w-full max-w-md bg-card text-foreground border border-border rounded-t-3xl sm:rounded-3xl shadow-2xl relative z-[10000]"
       >
         <AnimatePresence mode="wait">
           {panel === "form" && <motion.div key="form">{FormPanel}</motion.div>}

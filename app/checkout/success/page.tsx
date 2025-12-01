@@ -39,7 +39,12 @@ function CheckoutSuccessPageContent() {
 
   useEffect(() => {
     setMounted(true);
-    const colors = ["#10b981", "#34d399", "#6ee7b7"];
+    const root = getComputedStyle(document.documentElement);
+    const colors = [
+      root.getPropertyValue("--accent-success").trim() || "#1e3a8a",
+      root.getPropertyValue("--accent-primary").trim() || "#1e3a8a",
+      root.getPropertyValue("--accent-secondary").trim() || "#ca8a04",
+    ];
     const duration = 2000;
     const end = Date.now() + duration;
 

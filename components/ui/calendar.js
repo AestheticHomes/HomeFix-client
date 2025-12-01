@@ -13,7 +13,7 @@ export function Calendar(props) {
   return (
     <DayPicker
       {...props}
-      className="p-3 rounded-xl border border-gray-300"
+      className="p-3 rounded-xl border border-border"
       mode="single"
     />
   );

@@ -30,16 +30,22 @@ const auraShadow: CSSProperties = {
 
 export default function ProjectsShowcase() {
   return (
-    <section className="px-3 sm:px-4 lg:px-8 xl:px-12 pt-4 pb-8">
+    <section
+      aria-labelledby="recent-projects-heading"
+      className="px-3 sm:px-4 lg:px-8 xl:px-12 pt-4 pb-8"
+    >
       <div className="w-full max-w-[1200px] 2xl:max-w-[1360px] mx-auto">
-        <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mb-4">
-          Recent projects
+        <h2
+          id="recent-projects-heading"
+          className="text-base sm:text-lg font-semibold text-[var(--text-primary)] mb-3 sm:mb-4"
+        >
+          Recent projects in Chennai
         </h2>
         <div className="grid sm:grid-cols-3 gap-4">
           {PROJECTS.map((project) => (
             <div
               key={project.id}
-              className="relative rounded-2xl border border-[color-mix(in_srgb,white_20%,var(--border-muted))] bg-[var(--surface-panel)] p-4 overflow-hidden"
+              className="relative rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 sm:p-5 overflow-hidden shadow-[0_14px_40px_rgba(15,23,42,0.10)]"
               style={auraShadow}
             >
               <div
@@ -53,13 +59,13 @@ export default function ProjectsShowcase() {
                 <p className="text-[11px] text-[var(--text-muted-soft)]">
                   Completed project
                 </p>
-                <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+                <h3 className="text-sm sm:text-base font-semibold text-[var(--text-primary)]">
                   {project.name}
                 </h3>
-                <p className="text-xs text-[var(--text-muted-soft)]">
+                <p className="text-xs sm:text-[13px] text-[var(--text-secondary)]">
                   {project.scope}
                 </p>
-                <p className="mt-1 text-[11px] text-[var(--text-muted-soft)]">
+                <p className="mt-1 text-[11px] sm:text-[12px] text-[var(--text-secondary)]">
                   Execution time:{" "}
                   <span className="font-semibold">{project.duration}</span>
                 </p>

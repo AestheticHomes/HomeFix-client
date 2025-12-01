@@ -15,11 +15,11 @@ export function DrawerContent({
 }: React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>) {
   return (
     <DrawerPrimitive.Portal>
-      <DrawerPrimitive.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[80]" />
+      <DrawerPrimitive.Overlay className="fixed inset-0 bg-[var(--overlay-cta)] backdrop-blur-sm z-[80]" />
       <DrawerPrimitive.Content
         {...props}
         className={cn(
-          "fixed bottom-0 left-0 right-0 z-[90] rounded-t-3xl bg-white dark:bg-slate-900 shadow-lg border-t border-slate-200 dark:border-slate-800",
+          "fixed bottom-0 left-0 right-0 z-[90] rounded-t-3xl bg-card text-foreground shadow-lg border-t border-border",
           className
         )}
       >

@@ -88,18 +88,18 @@ export default function ServiceCartDrawer({
       <UniversalHeader />
 
       <Drawer open={open} onOpenChange={onClose}>
-        <DrawerContent className="bg-white dark:bg-slate-900 rounded-t-3xl overflow-hidden shadow-xl">
+        <DrawerContent className="rounded-t-3xl overflow-hidden shadow-xl bg-card text-foreground border-t border-border">
           {/* Header */}
           <DrawerHeader className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <DrawerTitle className="text-lg font-semibold text-[#5A5DF0] dark:text-[#EC6ECF]">
+              <DrawerTitle className="text-lg font-semibold text-primary">
                 {service.title}
               </DrawerTitle>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="text-xs text-muted">
                 📍 {location}
               </span>
             </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-muted">
               {service.description ||
                 "Professional service handled by verified HomeFix experts."}
             </p>

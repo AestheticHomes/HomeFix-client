@@ -56,7 +56,7 @@ export default function ServiceCheckoutPanel({
   return (
     <div className="space-y-4">
       <motion.div
-        className="py-4 border-t border-slate-200 dark:border-slate-700 mt-2 px-4"
+        className="py-4 border-t border-border mt-2 px-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
@@ -77,7 +77,7 @@ export default function ServiceCheckoutPanel({
             key="add"
             onClick={handleAddToCart}
             whileTap={{ scale: 0.96 }}
-            className="w-full bg-gradient-to-r from-[#5A5DF0] to-[#EC6ECF] text-white py-2 rounded-lg font-medium shadow hover:opacity-90 transition"
+            className="w-full bg-primary text-primary-foreground py-2 rounded-lg font-medium shadow hover:opacity-90 transition"
           >
             Confirm &amp; Go to Checkout
           </motion.button>

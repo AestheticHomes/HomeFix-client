@@ -622,7 +622,7 @@ export default function UniversalPreview({
     <>
       {isFullscreen && showFullscreenToggle && !isExternalFullscreen && (
         <div
-          className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[60] bg-[var(--overlay-cta)] backdrop-blur-sm"
           onClick={() => toggleFullscreen(false)}
         />
       )}
@@ -663,14 +663,14 @@ export default function UniversalPreview({
           <button
             type="button"
             onClick={() => toggleFullscreen()}
-            className="absolute top-2 right-2 z-[80] rounded-full bg-black/50 text-[10px] text-slate-100 px-2 py-1 backdrop-blur border border-white/15 hover:bg-black/70"
+            className="absolute top-2 right-2 z-[80] rounded-full bg-[color-mix(in_srgb,var(--surface-dark)60%,transparent)] text-[10px] text-[var(--text-hero)] px-2 py-1 backdrop-blur border border-[var(--border-subtle)] hover:bg-[color-mix(in_srgb,var(--surface-dark)75%,transparent)]"
           >
             {isFullscreen ? "Close" : "Expand"}
           </button>
         )}
 
         {enableSelectionOverlay && selectedInfo && (
-          <div className="absolute left-3 bottom-3 z-[75] max-w-[70%] rounded-2xl bg-black/60 text-[11px] text-slate-100 px-3 py-2 backdrop-blur border border-white/10">
+          <div className="absolute left-3 bottom-3 z-[75] max-w-[70%] rounded-2xl bg-[var(--overlay-cta)] text-[11px] text-[var(--text-hero)] px-3 py-2 backdrop-blur border border-[var(--border-subtle)]">
             <div className="font-semibold truncate">
               {selectedInfo.name || "Component"}
             </div>
@@ -693,7 +693,7 @@ export default function UniversalPreview({
         )}
 
         {hintVisible && (
-          <div className="absolute left-3 bottom-3 z-[70] rounded-full bg-black/55 text-[10px] text-white px-3 py-1.5 backdrop-blur border border-white/10 shadow-sm transition-opacity">
+          <div className="absolute left-3 bottom-3 z-[70] rounded-full bg-[color-mix(in_srgb,var(--surface-dark)65%,transparent)] text-[10px] text-[var(--text-hero)] px-3 py-1.5 backdrop-blur border border-[var(--border-subtle)] shadow-sm transition-opacity">
             Drag to orbit · Scroll to zoom
           </div>
         )}

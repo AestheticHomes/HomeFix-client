@@ -108,7 +108,7 @@ export default function MapPicker({
           {missingApiKey ? (
             <p className="text-xs opacity-70">
               Google Maps is not configured. Add{" "}
-              <code className="px-1 py-0.5 rounded bg-black/10 text-[10px]">
+              <code className="px-1 py-0.5 rounded bg-[color-mix(in_srgb,var(--surface-dark)15%,transparent)] text-[10px]">
                 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
               </code>{" "}
               to enable live map selection.

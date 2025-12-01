@@ -1,4 +1,4 @@
-// components/estimator/blueprintSchema/kitchenShapes.js
+// components/instant-quote/blueprintSchema/kitchenShapes.js
 // ============================================================================
 //  Edith Kitchen Schemas (v5.1 CAD-stable)
 //  Search keys: [edith-cad][kitchenShapes][rules][offsets]

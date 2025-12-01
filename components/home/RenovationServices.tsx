@@ -32,19 +32,17 @@ export default function RenovationServices() {
   if (!services.length) return null;
 
   return (
-    <section className="px-3 sm:px-4 lg:px-8 xl:px-12 pt-8 pb-6">
+    <section
+      className="px-3 sm:px-4 lg:px-8 xl:px-12 py-3 border-t border-b border-[var(--border-muted)] bg-[var(--surface-base)]/90"
+      aria-labelledby="quick-actions-heading"
+    >
       <div className="w-full max-w-[1200px] 2xl:max-w-[1360px] mx-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)]">
-            Renovation & interior services
-          </h2>
-          <Link
-            href="/services"
-            className="text-xs sm:text-sm font-semibold text-[var(--accent-primary)] hover:text-[color-mix(in_srgb,var(--accent-primary)85%,white)]"
-          >
-            View all services →
-          </Link>
-        </div>
+        <h2
+          id="quick-actions-heading"
+          className="text-xs sm:text-sm font-semibold text-[var(--text-secondary)] mb-2"
+        >
+          Interior services we offer in Chennai
+        </h2>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {services.map((service) => (
@@ -76,6 +74,15 @@ export default function RenovationServices() {
               </div>
             </Link>
           ))}
+        </div>
+
+        <div className="mt-3">
+          <Link
+            href="/services"
+            className="text-xs sm:text-sm font-semibold text-[var(--accent-primary)] hover:text-[color-mix(in_srgb,var(--accent-primary)85%,white)]"
+          >
+            View all services →
+          </Link>
         </div>
       </div>
     </section>

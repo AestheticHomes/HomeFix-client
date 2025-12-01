@@ -1,4 +1,4 @@
-// components/estimator/lib/shapeFolderMap.ts
+// components/instant-quote/lib/shapeFolderMap.ts
 
 /**
  * Shape → GLB asset mapping for the estimator.
