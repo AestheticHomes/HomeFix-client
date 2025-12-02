@@ -146,7 +146,7 @@ export function PromoCarouselStrip() {
 
   return (
     <div
-      className="relative mx-4 mb-4 mt-2"
+      className="relative mx-auto mt-4 mb-6 max-w-6xl px-4"
       onMouseEnter={pause}
       onMouseLeave={resume}
       onFocusCapture={pause}
@@ -250,6 +250,50 @@ export function PromoCarouselStrip() {
           </div>
         </div>
       </div>
+
+      {/* Hidden SEO content to expose offers to crawlers without altering layout */}
+      <div className="sr-only">
+        <h2>HomeFix Store Offers and Free Installation Benefits</h2>
+        <ul>
+          <li>Single vanity units with free installation available in the HomeFix Store.</li>
+          <li>Kitchen tall units and pantry ladders offered as standalone upgrades.</li>
+          <li>Bathroom storage refresh options with transparent pricing and quick installation.</li>
+          <li>Small interior upgrades like wardrobes and study desks available individually.</li>
+          <li>Entryway and foyer tidy-up units including shoe racks and console units.</li>
+          <li>Free installation on every HomeFix Store modular unit.</li>
+        </ul>
+      </div>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            name: "HomeFix Store Popular Units & Offers",
+            itemListElement: PROMOS.map((promo, index) => ({
+              "@type": "Product",
+              position: index + 1,
+              name: promo.title,
+              description: promo.body,
+              offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: "INR",
+                availability: "https://schema.org/InStock",
+                itemCondition: "https://schema.org/NewCondition",
+                url: promo.href ?? "/store",
+                priceSpecification: {
+                  "@type": "UnitPriceSpecification",
+                  name: "Installation",
+                  price: "0",
+                  priceCurrency: "INR",
+                },
+              },
+            })),
+          }),
+        }}
+      />
     </div>
   );
 }

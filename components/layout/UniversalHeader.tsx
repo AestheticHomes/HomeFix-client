@@ -1,7 +1,6 @@
 "use client";
 /**
- * UniversalHeader — Global shell with rotating promo strip under the nav.
- * The promo strip lives in <PromoCarouselStrip/> and stays layout-only here.
+ * UniversalHeader — Global shell with navigation + theme toggle.
  */
 
 import { motion } from "framer-motion";
@@ -12,7 +11,6 @@ import React, { useEffect, useRef, useState } from "react";
 
 import MobileSideNav from "@/components/layout/MobileSideNav";
 import HomeFixLogo from "@/components/ui/HomeFixLogo";
-import { PromoCarouselStrip } from "@/components/layout/PromoCarouselStrip";
 
 export default function UniversalHeader(): React.ReactElement {
   const headerRef = useRef<HTMLElement | null>(null);
@@ -102,10 +100,6 @@ export default function UniversalHeader(): React.ReactElement {
 
       {/* Mobile Nav Drawer */}
       <MobileSideNav open={menuOpen} onClose={() => setMenuOpen(false)} />
-
-      {/* ── Secondary bar: rotating promos ───── */}
-      <PromoCarouselStrip />
-
     </motion.header>
   );
 }

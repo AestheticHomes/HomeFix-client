@@ -10,12 +10,17 @@ import StoreShowcase from "@/components/home/StoreShowcase";
 import YoutubeEmbedCard from "@/components/home/YoutubeEmbedCard"; // ⬅ new
 import ReviewStrip from "@/components/trust/ReviewStrip";
 import { HomeProcessTimeline } from "@/components/home/HomeProcessTimeline";
+import { PromoCarouselStrip } from "@/components/layout/PromoCarouselStrip";
 
 export default function HomePageShell() {
   return (
     <main className="w-full max-w-[1200px] 2xl:max-w-[1360px] mx-auto px-3 sm:px-4 lg:px-8 xl:px-12 pb-24 space-y-6">
       {/* Trust strip at very top */}
       <ReviewStrip />
+
+      <h2 className="sr-only">HomeFix Store — Modular Units With Free Installation</h2>
+      {/* Promo banner rail – homepage only */}
+      <PromoCarouselStrip />
 
       {/* Hero + quick actions + core process */}
       <Hero />
