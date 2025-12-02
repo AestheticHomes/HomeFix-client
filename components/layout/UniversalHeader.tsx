@@ -1,11 +1,7 @@
 "use client";
 /**
- * UniversalHeader — Single Promo Slot
- * - One promo per page, rendered by <PromoBar/>
- * - Promo engine (promoEngine.ts) decides:
- *     - homepage → "home-climate" (weather-aware ClimateBar)
- *     - other routes → text promos
- * - Header only owns layout; no direct weather / route logic.
+ * UniversalHeader — Global shell with rotating promo strip under the nav.
+ * The promo strip lives in <PromoCarouselStrip/> and stays layout-only here.
  */
 
 import { motion } from "framer-motion";
@@ -14,9 +10,9 @@ import { useTheme } from "next-themes";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 
-import PromoBar from "@/components/chrome/PromoBar";
 import MobileSideNav from "@/components/layout/MobileSideNav";
 import HomeFixLogo from "@/components/ui/HomeFixLogo";
+import { PromoCarouselStrip } from "@/components/layout/PromoCarouselStrip";
 
 export default function UniversalHeader(): React.ReactElement {
   const headerRef = useRef<HTMLElement | null>(null);
@@ -107,8 +103,8 @@ export default function UniversalHeader(): React.ReactElement {
       {/* Mobile Nav Drawer */}
       <MobileSideNav open={menuOpen} onClose={() => setMenuOpen(false)} />
 
-      {/* ── Secondary bar: promo engine decides variant (climate / text) ───── */}
-      <PromoBar />
+      {/* ── Secondary bar: rotating promos ───── */}
+      <PromoCarouselStrip />
 
     </motion.header>
   );

@@ -3,14 +3,7 @@
 
 import { useProductCartStore } from "@/components/store/cartStore";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import {
-  CalendarDays,
-  Home,
-  Layers3,
-  Settings,
-  Store,
-  User,
-} from "lucide-react";
+import { CalendarDays, Home, Layers3, Settings, Store } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -21,18 +14,16 @@ export default function NavBar() {
   const { totalItems } = useProductCartStore();
   const navRef = useRef<HTMLDivElement>(null);
 
-  const vibrate =
-    () =>
-      typeof navigator !== "undefined" &&
-      "vibrate" in navigator &&
-      navigator.vibrate(20);
+  const vibrate = () =>
+    typeof navigator !== "undefined" &&
+    "vibrate" in navigator &&
+    navigator.vibrate(20);
 
   const tabs = [
     { name: "Home", href: "/", icon: Home },
     { name: "Services", href: "/services", icon: Layers3 },
     { name: "Store", href: "/store", icon: Store },
     { name: "Bookings", href: "/my-bookings", icon: CalendarDays },
-    { name: "Profile", href: "/profile", icon: User },
     { name: "Settings", href: "/settings", icon: Settings },
   ] as const;
 

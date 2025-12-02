@@ -9,7 +9,7 @@ import RenovationServices from "@/components/home/RenovationServices";
 import StoreShowcase from "@/components/home/StoreShowcase";
 import YoutubeEmbedCard from "@/components/home/YoutubeEmbedCard"; // ⬅ new
 import ReviewStrip from "@/components/trust/ReviewStrip";
-import { TurnkeyProcessSection } from "@/components/turnkey/TurnkeyProcessSection";
+import { HomeProcessTimeline } from "@/components/home/HomeProcessTimeline";
 
 export default function HomePageShell() {
   return (
@@ -21,7 +21,7 @@ export default function HomePageShell() {
       <Hero />
 
       <section className="mt-4">
-        <TurnkeyProcessSection />
+        <HomeProcessTimeline />
       </section>
 
       <StoreShowcase />

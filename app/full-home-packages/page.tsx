@@ -1,6 +1,6 @@
+import { HomeProcessSection } from "@/components/home/HomeProcessSection";
 import SafeViewport from "@/components/layout/SafeViewport";
 import TurnkeyServicesSection from "@/components/services/TurnkeyServicesSection";
-import { TurnkeyProcessSection } from "@/components/turnkey/TurnkeyProcessSection";
 import { fetchServicesConfig } from "@/lib/servicesConfig";
 
 export const metadata = {
@@ -22,13 +22,13 @@ export default async function TurnkeyPage() {
             Turnkey services
           </h1>
           <p className="text-sm sm:text-base text-[var(--text-secondary)] max-w-2xl">
-            Full-home projects managed end-to-end: interiors, kitchens, wardrobes,
-            bathrooms, tiling, civil changes, and waterproofing — all under one project
-            manager.
+            Full-home projects managed end-to-end: interiors, kitchens,
+            wardrobes, bathrooms, tiling, civil changes, and waterproofing — all
+            under one project manager.
           </p>
         </section>
 
-        <TurnkeyProcessSection />
+        <HomeProcessSection />
 
         <TurnkeyServicesSection services={turnkey} />
       </main>
