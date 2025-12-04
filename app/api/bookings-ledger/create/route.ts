@@ -1,7 +1,9 @@
 // app/api/bookings-ledger/create/route.ts
+// Creates a booking, logs booking_events, enqueues notification_queue, triggers email-queue-worker.
 export const runtime = "nodejs";
 
 import { supabaseServer } from "@/lib/supabaseServerClient";
+import { triggerEmailQueueWorker } from "@/lib/notifications/triggerEmailQueueWorker";
 import { NextResponse } from "next/server";
 
 interface CreateBookingPayload {
@@ -18,6 +20,8 @@ interface CreateBookingPayload {
 
   receiver_name: string;
   receiver_phone: string;
+  receiver_email?: string;
+  user_email?: string;
 
   device_id?: string;
   source?: string;
@@ -116,18 +120,39 @@ export async function POST(req: Request) {
       },
     ]);
 
-    // Notify queue (optional)
-    await supabase.from("notification_queue").insert([
-      {
-        kind: "email",
-        to_email: null,
-        subject: "Booking Created",
-        html: `<p>Your booking has been created.</p>`,
-        meta: { bookingId, user_id: body.user_id },
-        status: "pending",
-        try_count: 0,
-      },
-    ]);
+    const receiverEmail =
+      (body as any)?.receiver_email || (body as any)?.user_email || null;
+
+    if (!receiverEmail) {
+      console.warn(
+        "[bookings-ledger/create] Skipping notification enqueue: missing receiver email"
+      );
+    } else {
+      const { error: notifErr } = await supabase.from("notification_queue").insert([
+        {
+          kind: "booking_created",
+          to_email: receiverEmail,
+          meta: {
+            booking_id: bookingId,
+            customer_name: bookingRow.receiver_name ?? null,
+            service_name: (body as any)?.service_name ?? null,
+            scheduled_date: (body as any)?.preferred_date ?? null,
+            scheduled_slot: (body as any)?.preferred_slot ?? null,
+          },
+          status: "pending",
+          try_count: 0,
+        },
+      ]);
+
+      if (notifErr) {
+        console.error(
+          "[bookings-ledger/create] notification_queue enqueue error:",
+          notifErr?.message || notifErr
+        );
+      } else {
+        await triggerEmailQueueWorker();
+      }
+    }
 
     return NextResponse.json(
       { success: true, booking: created },

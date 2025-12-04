@@ -15,11 +15,12 @@ export function DrawerContent({
 }: React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>) {
   return (
     <DrawerPrimitive.Portal>
-      <DrawerPrimitive.Overlay className="fixed inset-0 bg-[var(--overlay-cta)] backdrop-blur-sm z-[80]" />
+      <DrawerPrimitive.Overlay className="fixed inset-0 bg-[var(--overlay-cta)] backdrop-blur-sm z-[55]" />
       <DrawerPrimitive.Content
         {...props}
         className={cn(
-          "fixed bottom-0 left-0 right-0 z-[90] rounded-t-3xl bg-card text-foreground shadow-lg border-t border-border",
+          // Above nav (z50) with its own scroll area so long drawers never hide behind nav
+          "fixed bottom-0 left-0 right-0 z-[60] max-h-[80vh] overflow-y-auto rounded-t-3xl bg-card text-foreground shadow-lg border-t border-border",
           className
         )}
       >

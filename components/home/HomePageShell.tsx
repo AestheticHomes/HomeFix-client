@@ -1,4 +1,11 @@
-"use client";
+/**
+ * HomeFix — HomePageShell (Server Component)
+ *
+ * Purpose:
+ *   - Server-side wrapper for the homepage sections (trust strip, promo rail, hero, process, showcases, social embeds).
+ * Notes:
+ *   - Must render PromoCarouselShell exactly once; no duplicate promo fallback here.
+ */
 
 import Hero from "@/components/home/Hero";
 import Home3DVisualizerSection from "@/components/home/Home3DVisualizerSection";
@@ -7,20 +14,20 @@ import MoreServicesStrip from "@/components/home/MoreServicesStrip";
 import ProjectsShowcase from "@/components/home/ProjectsShowcase";
 import RenovationServices from "@/components/home/RenovationServices";
 import StoreShowcase from "@/components/home/StoreShowcase";
-import YoutubeEmbedCard from "@/components/home/YoutubeEmbedCard"; // ⬅ new
+import YoutubeEmbedCard from "@/components/home/YoutubeEmbedCard";
 import ReviewStrip from "@/components/trust/ReviewStrip";
 import { HomeProcessTimeline } from "@/components/home/HomeProcessTimeline";
-import { PromoCarouselStrip } from "@/components/layout/PromoCarouselStrip";
+import PromoCarouselShell from "@/components/layout/PromoCarouselShell";
 
 export default function HomePageShell() {
   return (
     <main className="w-full max-w-[1200px] 2xl:max-w-[1360px] mx-auto px-3 sm:px-4 lg:px-8 xl:px-12 pb-24 space-y-6">
       {/* Trust strip at very top */}
       <ReviewStrip />
-
-      <h2 className="sr-only">HomeFix Store — Modular Units With Free Installation</h2>
-      {/* Promo banner rail – homepage only */}
-      <PromoCarouselStrip />
+      <PromoCarouselShell />
+      <h2 className="sr-only">
+        HomeFix Store — Modular Units With Free Installation
+      </h2>
 
       {/* Hero + quick actions + core process */}
       <Hero />

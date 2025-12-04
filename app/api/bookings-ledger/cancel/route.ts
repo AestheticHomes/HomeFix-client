@@ -1,12 +1,16 @@
-// app/api/bookings-ledger/cancel/route.ts
+/**
+ * POST /api/bookings-ledger/cancel
+ * Cancels a booking/order, logs booking_events, enqueues notification_queue, triggers email worker.
+ */
 export const runtime = "nodejs";
 
 import { supabaseServer } from "@/lib/supabaseServerClient";
+import { triggerEmailQueueWorker } from "@/lib/notifications/triggerEmailQueueWorker";
 import { NextResponse } from "next/server";
 
 interface CancelPayload {
   booking_id: string;
-  user_id: string;
+  user_id?: string;
   reason?: string;
 }
 
@@ -19,13 +23,6 @@ export async function POST(req: Request) {
     if (!body?.booking_id) {
       return NextResponse.json(
         { success: false, message: "booking_id is required" },
-        { status: 400 }
-      );
-    }
-
-    if (!body?.user_id) {
-      return NextResponse.json(
-        { success: false, message: "user_id is required" },
         { status: 400 }
       );
     }
@@ -44,7 +41,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (existing.user_id !== body.user_id) {
+    if (body.user_id && existing.user_id !== body.user_id) {
       return NextResponse.json(
         { success: false, message: "Unauthorized booking access" },
         { status: 403 }
@@ -81,27 +78,48 @@ export async function POST(req: Request) {
     await supabase.from("booking_events").insert([
       {
         booking_id: body.booking_id,
-        user_id: body.user_id,
+        user_id: body.user_id ?? existing.user_id ?? null,
         event: "cancelled",
         status: "cancelled",
         meta: {
           reason: body.reason || "user_cancelled",
+          at: new Date().toISOString(),
         },
       },
     ]);
 
-    // Add to notification queue
-    await supabase.from("notification_queue").insert([
-      {
-        kind: "email",
-        to_email: null,
-        subject: "Your booking was cancelled",
-        html: `<p>Your booking was cancelled.</p>`,
-        meta: { bookingId: body.booking_id },
-        status: "pending",
-        try_count: 0,
-      },
-    ]);
+    const receiverEmail =
+      existing?.payload?.receiver_email ?? existing?.payload?.email ?? null;
+    if (!receiverEmail) {
+      console.warn(
+        "[bookings-ledger/cancel] Skipping notification enqueue: missing receiver email"
+      );
+    } else {
+      const { error: notifErr } = await supabase
+        .from("notification_queue")
+        .insert([
+          {
+            kind: "booking_cancelled",
+            to_email: receiverEmail,
+            meta: {
+              booking_id: body.booking_id,
+              customer_name:
+                existing?.receiver_name ?? existing?.payload?.customer_name ?? null,
+              service_name: existing?.payload?.service_name ?? null,
+            },
+            status: "pending",
+            try_count: 0,
+          },
+        ]);
+      if (notifErr) {
+        console.error(
+          "[bookings-ledger/cancel] notification_queue enqueue error:",
+          notifErr?.message || notifErr
+        );
+      } else {
+        await triggerEmailQueueWorker();
+      }
+    }
 
     return NextResponse.json(
       {

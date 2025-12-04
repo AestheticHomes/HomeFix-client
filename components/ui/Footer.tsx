@@ -29,7 +29,7 @@ export default function Footer() {
             href="https://aesthetichomes.net"
             target="_blank"
             rel="noopener noreferrer"
-            className="hf-aura"
+            className="font-semibold text-[var(--accent-primary)] hover:underline"
           >
             AestheticHomes
           </a>{" "}

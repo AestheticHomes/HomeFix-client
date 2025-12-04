@@ -2,7 +2,9 @@ import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
+// Finalizes store/service checkout into bookings_ledger, logs events, queues mail, triggers email-queue-worker.
 import { supabaseServer } from "@/lib/supabaseServerClient";
+import { triggerEmailQueueWorker } from "@/lib/notifications/triggerEmailQueueWorker";
 
 export const runtime = "nodejs";
 
@@ -41,9 +43,11 @@ export async function POST(req: Request) {
     const isFree = !!body?.isFree;
     const kind = body?.kind ?? "service";
     const sku = body?.sku ?? "turnkey";
+    const hasProducts = kind === "product";
 
     const amountFromCart = computeAmountFromCart(body?.cart);
     const amount = isFree ? 0 : amountFromCart;
+    const totalPayable = amount;
 
     const addr = body?.address ?? {};
     const receiver = body?.contact ?? {};
@@ -101,6 +105,39 @@ export async function POST(req: Request) {
         meta: { channel: row.channel, mode: isFree ? "FREE" : "PAID", sku },
       },
     ]);
+
+    const receiverEmail = receiver?.email ?? null;
+    if (!receiverEmail) {
+      console.warn("[checkout/finalize] Skipping notification enqueue: missing receiver email");
+    } else {
+      const { error: notifErr } = await supabaseServer.from("notification_queue").insert([
+        {
+          kind: hasProducts ? "store_order" : "booking_created",
+          to_email: receiverEmail,
+          meta: {
+            order_ref: data.id,
+            booking_id: data.id,
+            total_price: totalPayable,
+            customer_name: receiver?.name ?? null,
+            kind,
+            items: body?.cart ?? [],
+            channel: row.channel,
+            source: row.source,
+            free: isFree,
+          },
+          status: "pending",
+          try_count: 0,
+        },
+      ]);
+      if (notifErr) {
+        console.error(
+          "[checkout/finalize] notification_queue enqueue error:",
+          notifErr?.message || notifErr
+        );
+      } else {
+        await triggerEmailQueueWorker();
+      }
+    }
 
     return NextResponse.json({ id: data.id }, { status: 200 });
   } catch (err: any) {

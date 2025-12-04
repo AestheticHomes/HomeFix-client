@@ -55,7 +55,7 @@ export default function NavBar() {
                  border-t border-border
                  backdrop-blur-2xl transition-all duration-500"
       style={{
-        zIndex: "var(--z-navbar)",
+        zIndex: 50,
         background: "var(--nav-surface)",
         color: "var(--nav-text)",
         WebkitBackdropFilter: "blur(16px)",

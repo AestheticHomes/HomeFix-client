@@ -1,8 +1,10 @@
+/** RootShell: canonical app shell with scrollable SafeViewport and docked nav as sibling. */
 "use client";
 
 import AppSidebar from "@/components/chrome/AppSidebar";
 import UniversalHeader from "@/components/chrome/UniversalHeader";
 import GlobalParticleField from "@/components/chrome/GlobalParticleField";
+import { useProductCartStore, useServiceCartStore } from "@/components/store/cartStore";
 import NavBar from "@/components/layout/NavBar";
 import SafeViewport from "@/components/layout/SafeViewport";
 import SessionSync from "@/components/SessionSync";
@@ -10,6 +12,8 @@ import Footer from "@/components/ui/Footer";
 import { EdithToaster } from "@/components/ui/toaster";
 import { SidebarProvider, useSidebar } from "@/contexts/SidebarContext";
 import { UserProvider } from "@/contexts/UserContext";
+import { useCatalogWithCache } from "@/hooks/useCatalogWithCache";
+import { useOrdersWithCache } from "@/hooks/useOrdersWithCache";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
@@ -23,11 +27,10 @@ function RootShellInner({ children }: { children: ReactNode }) {
 
   const isAdmin = pathname?.startsWith("/admin");
   const isAuth =
-    pathname?.startsWith("/login") || pathname?.startsWith("/signup");
+    pathname?.startsWith("/login") || pathname?.startsWith("/signup") || pathname?.startsWith("/auth");
 
   const headerPadding = isAuth ? "0px" : "var(--hf-header-height,72px)";
-  const dockPadding = isAuth ? "0px" : "var(--mbnav-h-safe,72px)";
-  const toastOffset = isAuth ? "24px" : "calc(var(--mbnav-h-safe,72px) + 24px)";
+  const toastOffset = isAuth ? "24px" : "calc(var(--mbnav-h,72px) + 24px)";
 
   // Simple breakpoint watcher so we only pad on desktop
   useEffect(() => {
@@ -92,6 +95,7 @@ function RootShellInner({ children }: { children: ReactNode }) {
   if (isAdmin) {
     return (
       <>
+        <BackgroundBootstrap />
         <SessionSync />
         {children}
       </>
@@ -106,38 +110,33 @@ function RootShellInner({ children }: { children: ReactNode }) {
 
   return (
     <UserProvider>
+      <BackgroundBootstrap />
       <SessionSync />
 
       {!isAuth && <UniversalHeader />}
 
-      <div className="relative z-0 bg-[var(--surface-base)] text-[var(--text-primary)]">
+      <div className="relative z-0 bg-[var(--surface-base)] text-[var(--text-primary)] min-h-screen flex flex-col">
         <GlobalParticleField />
         <AppSidebar />
 
-        {/* MAIN: flex column so footer can sit at bottom of 100vh region */}
+        {/* MAIN scrollable content; SafeViewport manages the padding for the dock */}
         <main
           id="app-scroll-region"
-          className="relative flex w-full flex-col overflow-y-auto overscroll-none"
+          className="relative flex-1 min-h-0 flex flex-col"
           style={{
-            height: "100vh",
             paddingTop: headerPadding,
-            // paddingBottom moves into content wrapper so footer stays at true bottom
             paddingLeft: sidebarPaddingLeft,
             scrollbarGutter: "stable",
           }}
         >
-          {/* Content wrapper grows + respects mobile dock padding */}
-          <div className="flex-1" style={{ paddingBottom: dockPadding }}>
-            <SafeViewport>{children}</SafeViewport>
-          </div>
-
-          {/* Footer is pinned to bottom of the scroll region (screen). 
-              On mobile, bottom NavBar will overlap it, but content above is safe. */}
-          {!isAuth && (
-            <div className="mt-6">
-              <Footer />
-            </div>
-          )}
+          <SafeViewport>
+            {children}
+            {!isAuth && (
+              <div className="mt-6">
+                <Footer />
+              </div>
+            )}
+          </SafeViewport>
         </main>
       </div>
 
@@ -162,4 +161,17 @@ export default function RootShell({ children }: { children: ReactNode }) {
       <RootShellInner>{children}</RootShellInner>
     </SidebarProvider>
   );
+}
+
+function BackgroundBootstrap() {
+  useCatalogWithCache();
+  useOrdersWithCache();
+
+  useEffect(() => {
+    // Touch persisted cart stores so hydration runs immediately.
+    useProductCartStore.getState().items;
+    useServiceCartStore.getState().items;
+  }, []);
+
+  return null;
 }

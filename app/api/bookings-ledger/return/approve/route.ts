@@ -1,7 +1,9 @@
 // app/api/bookings-ledger/return/approve/route.ts
+// Approves a return request; logs event, enqueues notification_queue, triggers email-queue-worker.
 export const runtime = "nodejs";
 
 import { supabaseServer } from "@/lib/supabaseServerClient";
+import { triggerEmailQueueWorker } from "@/lib/notifications/triggerEmailQueueWorker";
 import { NextResponse } from "next/server";
 
 interface ApproveReturnPayload {
@@ -84,21 +86,38 @@ export async function POST(req: Request) {
       },
     ]);
 
-    // Notify user
-    await supabase.from("notification_queue").insert([
-      {
-        kind: "email",
-        to_email: null,
-        subject: "Your Return Has Been Approved",
-        html: `<p>Your return request for booking <b>${booking.id}</b> has been approved.</p>`,
-        meta: {
-          bookingId: booking.id,
-          action: "return_approved",
-        },
-        status: "pending",
-        try_count: 0,
-      },
-    ]);
+    const receiverEmail =
+      booking?.payload?.receiver_email ?? booking?.payload?.email ?? null;
+    if (!receiverEmail) {
+      console.warn(
+        "[bookings-ledger/return-approve] Skipping notification enqueue: missing receiver email"
+      );
+    } else {
+      const { error: notifErr } = await supabase
+        .from("notification_queue")
+        .insert([
+          {
+            kind: "booking_return_approved",
+            to_email: receiverEmail,
+            meta: {
+              booking_id: booking.id,
+              customer_name:
+                booking?.receiver_name ?? booking?.payload?.customer_name ?? null,
+              service_name: booking?.payload?.service_name ?? null,
+            },
+            status: "pending",
+            try_count: 0,
+          },
+        ]);
+      if (notifErr) {
+        console.error(
+          "[bookings-ledger/return-approve] notification_queue enqueue error:",
+          notifErr?.message || notifErr
+        );
+      } else {
+        await triggerEmailQueueWorker();
+      }
+    }
 
     return NextResponse.json(
       {

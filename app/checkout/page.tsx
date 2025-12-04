@@ -18,6 +18,7 @@ import SafeViewport from "@/components/layout/SafeViewport";
 import { useLedgerX } from "@/components/ledgerx/useLedgerX";
 import type { Coordinates } from "@/components/MapPicker";
 import { resolveCartConflict } from "@/components/store/cartGuards";
+import { getRazorpayPublicKey } from "@/lib/payments/razorpayKeys";
 import {
   type CartItem,
   useProductCartStore,
@@ -45,6 +46,12 @@ import {
   useRef,
   useState,
 } from "react";
+
+declare global {
+  interface Window {
+    Razorpay?: any;
+  }
+}
 type Item = CartItem;
 
 const MapPicker = NextDynamic(() => import("@/components/MapPicker"), {
@@ -114,10 +121,12 @@ function CheckoutPageInner() {
 
   const productItems = useProductCartStore((s) => s.items);
   const productTotalPrice = useProductCartStore((s) => s.totalPrice);
+  const clearProductCart = useProductCartStore((s) => s.clearCart);
 
   const serviceItems = useServiceCartStore((s) => s.items);
   const addServiceItem = useServiceCartStore((s) => s.addItem);
   const serviceTotalPrice = useServiceCartStore((s) => s.totalPrice);
+  const clearServiceCart = useServiceCartStore((s) => s.clearCart);
   const {
     sendOtp,
     verifyOtp,
@@ -200,6 +209,30 @@ function CheckoutPageInner() {
   const [loading, setLoading] = useState(false);
   const [toastMsg, setToastMsg] = useState<ToastMessage | null>(null);
   const [uid, setUid] = useState<string | null>(null);
+  const razorpayKey = getRazorpayPublicKey() || "";
+  const razorpayLoaderRef = useRef<Promise<void> | null>(null);
+
+  const clearRelevantCart = () => {
+    if (hasServices) clearServiceCart();
+    if (hasProducts) clearProductCart();
+  };
+
+  const ensureRazorpaySdk = () => {
+    if (typeof window === "undefined") return Promise.reject();
+    if (window.Razorpay) return Promise.resolve();
+    if (!razorpayLoaderRef.current) {
+      razorpayLoaderRef.current = new Promise<void>((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.async = true;
+        script.onload = () => resolve();
+        script.onerror = () =>
+          reject(new Error("Failed to load Razorpay Checkout.js"));
+        document.body.appendChild(script);
+      });
+    }
+    return razorpayLoaderRef.current;
+  };
 
   const createToast = (text: string, type: ToastMessage["type"]) => {
     setToastMsg({ text, type });
@@ -397,6 +430,7 @@ function CheckoutPageInner() {
         }
 
         sessionStorage.setItem("checkoutInitiated", "true");
+        clearRelevantCart();
         createToast(
           "Booked! We’ll call to schedule your free site visit.",
           "success"
@@ -412,18 +446,19 @@ function CheckoutPageInner() {
       }
     }
 
-    const basePayload: Record<string, any> = {
-      user_id: uid ?? "guest",
-      type: checkoutMode,
-      items,
-      total: totalPayable,
-      address,
-      landmark,
-      latitude: coords.lat,
-      longitude: coords.lng,
-      status: "pending",
-      created_at: new Date().toISOString(),
-    };
+  const basePayload: Record<string, any> = {
+    user_id: uid ?? "guest",
+    type: checkoutMode,
+    items,
+    total: totalPayable,
+    address,
+    landmark,
+    latitude: coords.lat,
+    longitude: coords.lng,
+    status: "pending",
+    created_at: new Date().toISOString(),
+    receiver_email: (user as any)?.email ?? null,
+  };
 
     basePayload.ledgerx_v3 = {
       fulfillment: {
@@ -500,18 +535,84 @@ function CheckoutPageInner() {
       }
 
       const bookingId = ledgerData.booking.id;
+      const amountPaise = Math.max(1, Math.round(totalPayable * 100));
+      if (!amountPaise) {
+        createToast("Invalid payment amount.", "error");
+        setLoading(false);
+        return;
+      }
+
+      const orderRes = await fetch("/api/payments/razorpay-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ booking_id: bookingId, amount: amountPaise }),
+      });
+
+      const orderJson = await orderRes.json().catch(() => ({}));
+      const orderId = orderJson?.orderId;
+
+      if (!orderRes.ok || !orderId) {
+        console.error("Razorpay order creation failed:", orderJson);
+        createToast("Payment initialization failed. Try again.", "error");
+        setLoading(false);
+        return;
+      }
+
+      await ensureRazorpaySdk().catch((err) => {
+        console.error("Razorpay SDK load failed:", err);
+        createToast("Could not load payment gateway.", "error");
+        setLoading(false);
+      });
+
+      if (!window.Razorpay || !razorpayKey) {
+        createToast("Payment gateway unavailable.", "error");
+        setLoading(false);
+        return;
+      }
+
       localStorage.setItem("hf_pending_order_id", bookingId);
+      clearRelevantCart();
+      sessionStorage.setItem("checkoutInitiated", "true");
+
+      const rzp = new window.Razorpay({
+        key: razorpayKey,
+        amount: amountPaise,
+        currency: "INR",
+        name: "HomeFix India",
+        description: hasServices
+          ? "Service booking advance"
+          : "Store order payment",
+        order_id: orderId,
+        prefill: {
+          name: contactName,
+          email: (user as any)?.email ?? "",
+          contact: normalizePhone(contactPhone) || contactPhone,
+        },
+        notes: { booking_id: bookingId },
+        handler: () => {
+          setLoading(false);
+          router.push(`/checkout/success?type=${checkoutMode}`);
+        },
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
+          },
+        },
+      });
+
+      rzp.on("payment.failed", () => {
+        createToast("Payment failed. Please try again.", "error");
+        setLoading(false);
+      });
+
+      rzp.open();
+      return;
     } catch (err) {
       console.error("❌ Checkout ledger error:", err);
       createToast("Failed to create booking", "error");
       setLoading(false);
       return;
     }
-
-    await new Promise((r) => setTimeout(r, 900));
-    sessionStorage.setItem("checkoutInitiated", "true");
-
-    router.push(`/mockrazorpay?type=${checkoutMode}`);
   }
 
   /* EMPTY CART */
@@ -534,7 +635,7 @@ function CheckoutPageInner() {
   /* RENDER */
   return (
     <SafeViewport>
-      <main className="flex flex-col w-full sm:max-w-2xl mx-auto px-4 sm:px-6 pb-28 min-h-[calc(100vh-120px)]">
+      <main className="flex flex-col w-full sm:max-w-2xl mx-auto px-4 sm:px-6 pb-40 sm:pb-32 min-h-[calc(100vh-120px)]">
         {!online && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -862,7 +963,10 @@ function CheckoutPageInner() {
         </Card>
 
         {/* FOOTER */}
-        <footer className="fixed bottom-0 left-0 right-0 z-50 flex justify-between items-center px-5 py-4 w-full sm:max-w-2xl mx-auto rounded-t-2xl bg-[var(--edith-surface)] border-t border-[var(--edith-border)] backdrop-blur-md">
+        <footer
+          className="fixed left-0 right-0 z-40 flex justify-between items-center px-5 py-4 w-full sm:max-w-2xl mx-auto rounded-t-2xl bg-[var(--edith-surface)] border-t border-[var(--edith-border)] backdrop-blur-md sm:bottom-0"
+          style={{ bottom: "calc(var(--mbnav-h,72px) + 12px)" }}
+        >
           <div className="flex-1 pr-4">
             <p className="text-sm text-[var(--text-secondary)]">
               {payableLabel}

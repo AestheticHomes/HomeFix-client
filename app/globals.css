@@ -36,7 +36,9 @@
     padding: 0;
   }
   body {
-    overflow: hidden;
+    /* allow page scrolling; only hide horizontal overflow to prevent layout bleed */
+    overflow-x: hidden;
+    overflow-y: auto;
   }
   * {
     box-sizing: border-box;

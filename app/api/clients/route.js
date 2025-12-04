@@ -1,6 +1,7 @@
 /**
  * File: /app/api/clients/route.js
- * Purpose: CRUD endpoint for lightweight client records (HomeFix booking or lead flow)
+ * Purpose: CRUD endpoint for lightweight client records (HomeFix booking or lead flow).
+ * Also enqueues support/contact notifications and triggers email-queue-worker.
  * Dependencies:
  *  - Uses `supabaseServer` for safe service-role operations
  *  - Consistent JSON structure and unified console logging
@@ -8,6 +9,7 @@
 
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServerClient";
+import { triggerEmailQueueWorker } from "@/lib/notifications/triggerEmailQueueWorker";
 import { error, log, warn } from "@/lib/console";
 
 export const dynamic = "force-dynamic";
@@ -63,7 +65,7 @@ export async function GET(req) {
 ------------------------------------------------------------ */
 export async function POST(req) {
   try {
-    const { name, phone } = await req.json();
+    const { name, phone, email } = await req.json();
 
     if (!name || !phone) {
       return NextResponse.json(
@@ -81,6 +83,32 @@ export async function POST(req) {
       .maybeSingle();
 
     if (insertErr) throw insertErr;
+
+    // Enqueue support/contact notification for admin + user
+    if (!email) {
+      warn("API:clients", "Skipping notification enqueue: missing email");
+    } else {
+      const { error: notifErr } = await supabase.from("notification_queue").insert([
+        {
+          kind: "support_contact",
+          to_email: email,
+          meta: { clientId: data.id, name, email, phone, event: "SUPPORT_CONTACT" },
+          status: "pending",
+          try_count: 0,
+        },
+      ]);
+      if (notifErr) {
+        error(
+          "API:clients",
+          "notification_queue enqueue error:",
+          notifErr?.message || notifErr
+        );
+      } else {
+        await triggerEmailQueueWorker();
+      }
+    }
+
+    await triggerEmailQueueWorker();
 
     return NextResponse.json({ success: true, client: data }, { status: 201 });
   } catch (err) {

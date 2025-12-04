@@ -1,4 +1,9 @@
 "use client";
+/**
+ * LedgerX client store — local-only IndexedDB cache for booking/order events.
+ * - Manages add/load/mark status for entries per user.
+ * - Server sync to /api/ledger/sync is intentionally disabled; bookings_ledger + booking_events are canonical.
+ */
 
 import { nanoid } from "nanoid";
 import { create } from "zustand";
@@ -327,92 +332,11 @@ export const useLedgerX = create<LedgerStore>((set, get) => {
 
         let syncedCount = 0;
 
-        for (let i = 0; i < pendingAll.length; i += SYNC_BATCH_SIZE) {
-          const batch = pendingAll.slice(i, i + SYNC_BATCH_SIZE);
-          const payloadEntries = batch.map((p) => ({
-            id: p.id,
-            user_id: p.userId,
-            type: p.type,
-            payload: safeJson(p.payload),
-            status: p.status || "pending",
-            device_id: p.deviceId ?? "unknown",
-            checksum: p.checksum ?? "none",
-            created_at: new Date(p.createdAt || Date.now()).toISOString(),
-            updated_at: new Date(p.updatedAt || Date.now()).toISOString(),
-          }));
-
-          const body = JSON.stringify({ _entries: payloadEntries });
-
-          let attempt = 0;
-          let success = false;
-          let lastErr: any = null;
-
-          while (attempt <= SYNC_MAX_RETRIES && !success) {
-            try {
-              attempt++;
-              DEBUG &&
-                console.log(
-                  `[LedgerX] sync batch ${
-                    i / SYNC_BATCH_SIZE + 1
-                  } attempt ${attempt}`,
-                  payloadEntries.map((p) => p.id)
-                );
-
-              const res = await withTimeout(
-                fetch(
-                  `${
-                    typeof window !== "undefined" ? window.location.origin : ""
-                  }/api/ledger/sync`,
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body,
-                  }
-                )
-              );
-
-              if (!res.ok) {
-                const d = await res.json().catch(() => ({}));
-                throw new Error(d?.message || `HTTP ${res.status}`);
-              }
-
-              const now = Date.now();
-              for (const p of batch) {
-                try {
-                  const updated = { ...p, status: "synced", updatedAt: now };
-                  await addLedgerEntry(updated as LedgerXDBEntry);
-                } catch (err) {
-                  console.warn("[LedgerX] marking entry synced failed:", err);
-                }
-              }
-
-              syncedCount += batch.length;
-              success = true;
-            } catch (err) {
-              lastErr = err;
-              console.warn(
-                `[LedgerX] batch sync attempt ${attempt} failed:`,
-                err
-              );
-              const backoffMs = Math.min(1000 * Math.pow(2, attempt), 30000);
-              await new Promise((r) => setTimeout(r, backoffMs));
-            }
-          }
-
-          if (!success) {
-            console.error("[LedgerX] batch permanently failed:", lastErr);
-          } else {
-            try {
-              await get().hydrateFromCloud(uid);
-            } catch (e) {
-              DEBUG &&
-                console.warn(
-                  "[LedgerX] hydrateFromCloud after batch failed:",
-                  e
-                );
-            }
-          }
-        }
+        // Server sync disabled: bookings_ledger + booking_events are canonical.
+        DEBUG &&
+          console.log(
+            "[LedgerX] server sync disabled (no /api/ledger/sync); keeping entries local"
+          );
 
         await _refreshStateFromDB(uid);
         set({ lastSyncAt: Date.now() });

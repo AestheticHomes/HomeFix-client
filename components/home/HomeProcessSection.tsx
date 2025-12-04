@@ -84,19 +84,19 @@ export function HomeProcessSection() {
       className="relative overflow-hidden bg-background py-12 md:py-16"
     >
       {/* subtle cosmic backdrop – kept light so content stays readable */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(129,140,248,0.18),_transparent_55%),radial-gradient(circle_at_bottom,_rgba(56,189,248,0.12),_transparent_60%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(129,140,248,0.18),_transparent_55%),radial-gradient(circle_at_bottom,_rgba(56,189,248,0.12),_transparent_60%)] dark:bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.22),_transparent_55%),radial-gradient(circle_at_bottom,_rgba(56,189,248,0.18),_transparent_60%)]" />
 
       <div className="relative mx-auto max-w-6xl px-4 md:px-6">
         <header className="mb-8 text-center">
-          <p className="text-[0.7rem] uppercase tracking-[0.2em] text-slate-500">
+          <p className="text-[0.7rem] uppercase tracking-[0.2em] text-slate-500 dark:text-slate-300">
             Interior projects · Process
           </p>
-          <h2 className="mt-2 text-2xl font-semibold md:text-3xl">
+          <h2 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-50 md:text-3xl">
             How your HomeFix project moves from{" "}
-            <span className="text-indigo-500">first measurement</span> to{" "}
-            <span className="text-indigo-500">final handover</span>.
+            <span className="text-indigo-500 dark:text-indigo-300">first measurement</span> to{" "}
+            <span className="text-indigo-500 dark:text-indigo-300">final handover</span>.
           </h2>
-          <p className="mt-3 text-sm text-slate-600 md:text-base">
+          <p className="mt-3 text-sm text-slate-600 dark:text-slate-100 md:text-base">
             Each stage is documented, quality-checked, and coordinated so you always
             know where your interior project stands.
           </p>
@@ -104,7 +104,7 @@ export function HomeProcessSection() {
 
         {/* TIMELINE ICON ROW – scrollable on mobile, hover/click on desktop */}
         <div className="relative mb-6">
-          <div className="pointer-events-none absolute inset-x-4 top-1/2 h-px -translate-y-1/2 bg-slate-200/60" />
+          <div className="pointer-events-none absolute inset-x-4 top-1/2 h-px -translate-y-1/2 bg-slate-200/60 dark:bg-slate-700/60" />
 
           <div className="relative flex snap-x snap-mandatory overflow-x-auto pb-4 pt-2 md:justify-between md:overflow-visible">
             {STEPS.map((step) => {
@@ -127,10 +127,10 @@ export function HomeProcessSection() {
                   >
                     <span className="text-xs font-semibold">{step.id}</span>
                   </div>
-                  <span className="mt-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  <span className="mt-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300">
                     Step {step.id}
                   </span>
-                  <span className="text-xs font-medium text-slate-900">
+                  <span className="text-xs font-medium text-slate-900 dark:text-slate-50">
                     {step.title}
                   </span>
                 </button>
@@ -141,24 +141,24 @@ export function HomeProcessSection() {
 
         {/* ACTIVE STEP DETAIL CARD */}
         <div className="mx-auto mb-6 max-w-3xl">
-          <div className="rounded-3xl border border-slate-200 bg-white/80 p-4 shadow-[0_16px_40px_rgba(15,23,42,0.06)] backdrop-blur-sm md:p-6">
-            <p className="mb-1 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-slate-500">
+          <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-[0_16px_40px_rgba(15,23,42,0.06)] backdrop-blur-sm md:p-6 dark:border-slate-700/80 dark:bg-slate-900/80">
+            <p className="mb-1 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
               {activeStep.label}
             </p>
-            <h3 className="mb-2 text-base font-semibold text-slate-900 md:text-lg">
+            <h3 className="mb-2 text-base font-semibold text-slate-900 dark:text-slate-50 md:text-lg">
               {activeStep.title}
             </h3>
-            <p className="mb-3 text-xs text-slate-600 md:text-sm">
+            <p className="mb-3 text-xs text-slate-600 dark:text-slate-100 md:text-sm">
               {activeStep.description}
             </p>
             <ul className="space-y-1.5 md:space-y-2">
               {activeStep.bullets.map((item) => (
                 <li
                   key={item}
-                  className="flex items-start gap-2 text-xs text-slate-800 md:text-sm"
+                  className="flex items-start gap-2 text-xs text-slate-800 dark:text-slate-100 md:text-sm"
                 >
-                  <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-sky-500" />
-                  <span>{item}</span>
+                  <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-sky-500 dark:bg-sky-400" />
+                  <span className="text-slate-800 dark:text-slate-100">{item}</span>
                 </li>
               ))}
             </ul>
@@ -178,9 +178,9 @@ export function HomeProcessSection() {
 
 function Pill({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-slate-800 shadow-sm backdrop-blur">
-      <span className="h-2 w-2 rounded-full bg-sky-500" />
-      <span className="text-xs md:text-sm">{label}</span>
+    <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-slate-800 shadow-sm backdrop-blur dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-100">
+      <span className="h-2 w-2 rounded-full bg-sky-500 dark:bg-sky-400" />
+      <span className="text-xs text-slate-800 dark:text-slate-100 md:text-sm">{label}</span>
     </div>
   );
 }

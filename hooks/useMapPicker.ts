@@ -1,5 +1,11 @@
 "use client";
-// hooks/useMapPicker.ts
+/**
+ * hooks/useMapPicker.ts
+ * Client hook to load Google Maps + Places Autocomplete for the MapPicker component.
+ * - Integrates Places web component and map centering callbacks for bookings/checkout flows.
+ * - Depends on NEXT_PUBLIC_GOOGLE_MAPS_API_KEY; loads Maps JS with loading=async to avoid perf warnings.
+ * - TODO: migrate google.maps.Marker to google.maps.marker.AdvancedMarkerElement per Maps deprecation notice.
+ */
 
 import {
   MutableRefObject,
@@ -72,7 +78,7 @@ export function useMapPicker({
 
     w.__homefixGoogleMapsPromise = new Promise<void>((resolve) => {
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`;
       script.async = true;
       script.defer = true;
 

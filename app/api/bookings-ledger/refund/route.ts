@@ -1,7 +1,9 @@
 // app/api/bookings-ledger/refund/route.ts
+// Processes refunds for returned bookings; logs event, enqueues notification_queue, triggers email-queue-worker.
 export const runtime = "nodejs";
 
 import { supabaseServer } from "@/lib/supabaseServerClient";
+import { triggerEmailQueueWorker } from "@/lib/notifications/triggerEmailQueueWorker";
 import { NextResponse } from "next/server";
 
 interface RefundPayload {
@@ -117,25 +119,39 @@ export async function POST(req: Request) {
       },
     ]);
 
-    // Queue user email
-    await supabase.from("notification_queue").insert([
-      {
-        kind: "email",
-        to_email: null,
-        subject: "Refund Processed",
-        html: `
-          <p>Your refund for booking <b>${booking.id}</b> has been processed.</p>
-          <p><b>Amount:</b> ₹${body.amount}</p>
-        `,
-        meta: {
-          bookingId: booking.id,
-          amount: body.amount,
-          action: "refund",
-        },
-        status: "pending",
-        try_count: 0,
-      },
-    ]);
+    const receiverEmail =
+      booking?.payload?.receiver_email ?? booking?.payload?.email ?? null;
+    if (!receiverEmail) {
+      console.warn(
+        "[bookings-ledger/refund] Skipping notification enqueue: missing receiver email"
+      );
+    } else {
+      const { error: notifErr } = await supabase
+        .from("notification_queue")
+        .insert([
+          {
+            kind: "booking_refund",
+            to_email: receiverEmail,
+            meta: {
+              booking_id: booking.id,
+              customer_name:
+                booking?.receiver_name ?? booking?.payload?.customer_name ?? null,
+              refund_amount: body.amount,
+              refund_reason: body.notes || null,
+            },
+            status: "pending",
+            try_count: 0,
+          },
+        ]);
+      if (notifErr) {
+        console.error(
+          "[bookings-ledger/refund] notification_queue enqueue error:",
+          notifErr?.message || notifErr
+        );
+      } else {
+        await triggerEmailQueueWorker();
+      }
+    }
 
     return NextResponse.json(
       {
