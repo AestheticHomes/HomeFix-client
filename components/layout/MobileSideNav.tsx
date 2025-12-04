@@ -44,23 +44,23 @@ export default function MobileSideNav({ open, onClose }: MobileSideNavProps) {
         {open && (
           <>
             <motion.div
-              className="fixed inset-0 bg-[var(--overlay-cta)] z-[120]"
+              className="fixed inset-0 bg-(--overlay-cta) z-120"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onClose}
             />
             <motion.aside
-              className="fixed top-0 left-0 bottom-0 w-[82vw] max-w-[340px] z-[130] bg-[var(--edith-surface)] text-[var(--text-primary)] pt-5 pb-8 shadow-2xl"
+              className="fixed top-0 left-0 bottom-0 w-[82vw] max-w-[340px] z-130 bg-(--edith-surface) text-(--text-primary) pt-5 pb-8 shadow-2xl"
               initial={{ x: -360 }}
               animate={{ x: 0 }}
               exit={{ x: -360 }}
               transition={{ type: "spring", stiffness: 280, damping: 30 }}
             >
-              <div className="flex items-center justify-between px-4 pb-3 mb-2 border-b border-[var(--border-soft)]">
+              <div className="flex items-center justify-between px-4 pb-3 mb-2 border-b border-(--border-soft)">
                 <span className="text-sm font-semibold">Navigate</span>
                 <button
-                  className="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-[var(--border-soft)]"
+                  className="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-(--border-soft)"
                   onClick={onClose}
                   aria-label="Close menu"
                 >
@@ -72,7 +72,7 @@ export default function MobileSideNav({ open, onClose }: MobileSideNavProps) {
                   <button
                     key={item.href}
                     onClick={() => handleNav(item.href)}
-                    className="w-full flex items-center justify-between px-3 py-3 rounded-xl text-sm font-medium bg-[var(--surface-panel)] border border-[var(--border-soft)] hover:border-[var(--accent-primary)] transition"
+                    className="w-full flex items-center justify-between px-3 py-3 rounded-xl text-sm font-medium bg-(--surface-panel) border border-(--border-soft) hover:border-(--accent-primary) transition"
                   >
                     <span>{item.label}</span>
                     <ChevronRight className="w-4 h-4 opacity-60" />

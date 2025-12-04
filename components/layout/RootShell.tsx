@@ -115,7 +115,7 @@ function RootShellInner({ children }: { children: ReactNode }) {
 
       {!isAuth && <UniversalHeader />}
 
-      <div className="relative z-0 bg-[var(--surface-base)] text-[var(--text-primary)] min-h-screen flex flex-col">
+      <div className="relative z-0 bg-(--surface-base) text-(--text-primary) min-h-screen flex flex-col">
         <GlobalParticleField />
         <AppSidebar />
 
@@ -144,7 +144,7 @@ function RootShellInner({ children }: { children: ReactNode }) {
 
       <div
         id="edith-toast-safe"
-        className="fixed left-0 right-0 z-[120] flex justify-center pointer-events-none pb-4 px-3"
+        className="fixed left-0 right-0 z-120 flex justify-center pointer-events-none pb-4 px-3"
         style={{ bottom: toastOffset }}
       >
         <div className="w-full max-w-sm">

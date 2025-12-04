@@ -108,7 +108,7 @@ export default function VisualizationPage() {
         </Link>
         <Link
           href="/instant-quote"
-          className="inline-flex items-center justify-center rounded-full px-5 py-2.5 border border-primary text-primary bg-transparent font-semibold hover:bg-[var(--surface-hover)] transition"
+          className="inline-flex items-center justify-center rounded-full px-5 py-2.5 border border-primary text-primary bg-transparent font-semibold hover:bg-(--surface-hover) transition"
         >
           Upload my layout
         </Link>

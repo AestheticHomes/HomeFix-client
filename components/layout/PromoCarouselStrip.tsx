@@ -300,7 +300,7 @@ export function PromoCarouselStrip({ promos }: PromoCarouselStripProps) {
             onDragStart={() => setIsUserInteracting(true)}
             onDragEnd={onDragEnd}
             onDragTransitionEnd={() => setIsUserInteracting(false)}
-            className={`w-full ${storiesMode ? "aspect-[3/4] md:aspect-[16/6]" : ""}`}
+            className={`w-full ${storiesMode ? "aspect-3/4 md:aspect-16/6" : ""}`}
             transition={{ type: "spring", stiffness: 280, damping: 32 }}
           >
             <PrimaryBanner
@@ -429,7 +429,7 @@ function PrimaryBanner({
         willChange: "transform, opacity",
       }}
       className={`relative overflow-hidden rounded-3xl border border-(--border-soft) p-6 shadow-[0_20px_60px_rgba(0,0,0,0.2)] backdrop-blur-md md:p-8 ${
-        storiesMode ? "h-full" : "min-h-[240px]"
+        storiesMode ? "h-full" : "min-h-60"
       }`}
     >
       {storiesMode && (
@@ -459,9 +459,9 @@ function PrimaryBanner({
       )}
       <div className="flex h-full flex-col gap-4 md:flex-row md:items-center md:gap-6">
         {/* Emoji + aura */}
-        <div className="relative flex h-14 w-14 flex-shrink-0 items-center justify-center">
+        <div className="relative flex h-14 w-14 shrink-0 items-center justify-center">
           <span
-            className={`absolute inset-1 rounded-2xl bg-gradient-to-br ${promo.auraClass} blur-xl`}
+            className={`absolute inset-1 rounded-2xl bg-linear-to-br ${promo.auraClass} blur-xl`}
           />
           <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-(--surface-card) text-2xl shadow-md">
             {promo.emoji}

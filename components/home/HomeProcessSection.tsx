@@ -84,7 +84,7 @@ export function HomeProcessSection() {
       className="relative overflow-hidden bg-background py-12 md:py-16"
     >
       {/* subtle cosmic backdrop – kept light so content stays readable */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(129,140,248,0.18),_transparent_55%),radial-gradient(circle_at_bottom,_rgba(56,189,248,0.12),_transparent_60%)] dark:bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.22),_transparent_55%),radial-gradient(circle_at_bottom,_rgba(56,189,248,0.18),_transparent_60%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(129,140,248,0.18),transparent_55%),radial-gradient(circle_at_bottom,rgba(56,189,248,0.12),transparent_60%)] dark:bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.22),transparent_55%),radial-gradient(circle_at_bottom,rgba(56,189,248,0.18),transparent_60%)]" />
 
       <div className="relative mx-auto max-w-6xl px-4 md:px-6">
         <header className="mb-8 text-center">

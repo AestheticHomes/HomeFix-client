@@ -1,7 +1,21 @@
-// components/home/HomeProcessTimeline.tsx
+/**
+ * HomeFix — HomeProcessTimeline
+ *
+ * Purpose:
+ *   - Visualise the 6-step HomeFix project process as a horizontal timeline.
+ *   - Show a single expanded detail card for the active step.
+ * Interaction:
+ *   - Hover/click on steps to change the active step.
+ *   - Auto-progresses based on scroll position through the section.
+ * Notes:
+ *   - Maintains strong contrast in both light/dark themes.
+ *   - Uses framer-motion for smooth transform/opacity animations.
+ */
+
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Factory,
   HardHat,
@@ -103,33 +117,111 @@ const STEPS: Step[] = [
 
 export function HomeProcessTimeline() {
   const [activeId, setActiveId] = useState<number>(1);
-  const activeStep = STEPS.find((step) => step.id === activeId) ?? STEPS[0];
+  const [hoverId, setHoverId] = useState<number | null>(null);
+  const [userInteracted, setUserInteracted] = useState(false);
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const scrollThrottle = useRef<number | null>(null);
+
+  const activeStep = useMemo(
+    () => STEPS.find((step) => step.id === activeId) ?? STEPS[0],
+    [activeId]
+  );
+
+  const handleSetActive = useCallback((id: number, viaUser = false) => {
+    setActiveId(id);
+    if (viaUser) setUserInteracted(true);
+  }, []);
+
+  // Scroll-driven auto-progress
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
+    const onScroll = () => {
+      if (userInteracted) return;
+      if (scrollThrottle.current) return;
+      scrollThrottle.current = window.setTimeout(() => {
+        scrollThrottle.current = null;
+        const rect = el.getBoundingClientRect();
+        if (rect.height <= 0) return;
+        const viewHeight =
+          window.innerHeight || document.documentElement.clientHeight;
+        if (rect.bottom < 0 || rect.top > viewHeight) return;
+
+        const progress = Math.min(
+          1,
+          Math.max(
+            0,
+            1 -
+              (rect.bottom - viewHeight * 0.2) /
+                (rect.height + viewHeight * 0.4)
+          )
+        );
+        const bucket = Math.min(
+          STEPS.length - 1,
+          Math.max(0, Math.floor(progress * STEPS.length))
+        );
+        const nextId = STEPS[bucket].id;
+        if (nextId !== activeId) setActiveId(nextId);
+      }, 120);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (scrollThrottle.current) {
+        clearTimeout(scrollThrottle.current);
+        scrollThrottle.current = null;
+      }
+    };
+  }, [activeId, userInteracted]);
 
   return (
     <section
       aria-label="How your HomeFix project moves from first measurement to final handover"
-      className="relative overflow-hidden bg-background py-12 md:py-16"
+      ref={sectionRef}
+      className="relative overflow-hidden bg-(--surface-base) py-12 md:py-16 text-(--text-primary)"
     >
       <CosmicBackground />
 
       <div className="relative mx-auto max-w-6xl px-4 md:px-6">
         <header className="mb-8 text-center">
-          <p className="text-[0.7rem] uppercase tracking-[0.2em] text-slate-500 dark:text-slate-300">
+          <p className="text-[0.7rem] uppercase tracking-[0.2em] text-(--text-secondary)">
             Interior projects · Process
           </p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-50 md:text-3xl">
+          <h2 className="mt-2 text-2xl font-semibold text-(--text-primary) md:text-3xl">
             How your HomeFix project moves from{" "}
-            <span className="text-indigo-500 dark:text-indigo-300">first measurement</span> to{" "}
-            <span className="text-indigo-500 dark:text-indigo-300">final handover</span>.
+            <span className="text-(--accent-primary)">
+              first measurement
+            </span>{" "}
+            to{" "}
+            <span className="text-(--accent-primary)">
+              final handover
+            </span>
+            .
           </h2>
-          <p className="mt-3 text-sm text-slate-600 dark:text-slate-100 md:text-base">
+          <p className="mt-3 text-sm text-(--text-secondary) md:text-base">
             Each stage is measured, documented, and quality-checked so you know
             exactly where your project stands.
           </p>
         </header>
 
         <div className="relative mb-6">
-          <div className="pointer-events-none absolute inset-x-4 top-1/2 h-px -translate-y-1/2 bg-slate-200/60 dark:bg-slate-700/60" />
+          {/* Baseline under steps */}
+          <div className="pointer-events-none absolute inset-x-4 top-1/2 h-px -translate-y-1/2 bg-(--border-soft)" />
+
+          {/* Active progress line under steps */}
+          <div className="pointer-events-none absolute inset-x-4 top-1/2 -translate-y-1/2">
+            <div
+              className="h-0.5 rounded-full bg-(--accent-primary) transition-all duration-300 ease-out"
+              style={{
+                width: `${
+                  ((activeId - 1) / Math.max(STEPS.length - 1, 1)) * 100
+                }%`,
+              }}
+            />
+          </div>
+
           <div className="relative flex snap-x snap-mandatory overflow-x-auto pb-4 pt-2 md:justify-between md:overflow-visible">
             {STEPS.map((step) => {
               const isActive = step.id === activeId;
@@ -138,25 +230,41 @@ export function HomeProcessTimeline() {
                   key={step.id}
                   type="button"
                   className="group relative mx-3 flex min-w-[120px] snap-center flex-col items-center gap-1 md:mx-0 md:min-w-0"
-                  onClick={() => setActiveId(step.id)}
-                  onMouseEnter={() => setActiveId(step.id)}
+                  onClick={() => handleSetActive(step.id, true)}
+                  onMouseEnter={() => setHoverId(step.id)}
+                  onMouseLeave={() => setHoverId(null)}
                   aria-pressed={isActive}
+                  aria-current={isActive}
                 >
-                  <div
-                    className={[
-                      "flex h-12 w-12 items-center justify-center rounded-full border-2 bg-slate-900 text-white shadow-md transition-all",
+                  <motion.div
+                    className="flex h-12 w-12 items-center justify-center rounded-full border-2 bg-(--surface-strong) text-(--text-primary) shadow-md"
+                    initial={false}
+                    animate={
                       isActive
-                        ? "border-indigo-400 shadow-[0_0_24px_rgba(129,140,248,0.6)]"
-                        : "border-slate-700/70 opacity-80 group-hover:border-indigo-300",
-                    ].join(" ")}
+                        ? {
+                            scale: 1.08,
+                            boxShadow:
+                              "0 0 28px color-mix(in srgb,var(--accent-primary)55%,transparent)",
+                          }
+                        : {
+                            scale: 1,
+                            boxShadow: "0 0 0 color-mix(in srgb,var(--accent-primary)0%,transparent)",
+                          }
+                    }
+                    transition={{ type: "spring", stiffness: 260, damping: 24 }}
                   >
                     <StepIcon name={step.iconName} className="h-4 w-4" />
-                  </div>
-                  <span className="mt-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300">
+                  </motion.div>
+                  <span className="mt-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-(--text-secondary)">
                     Step {step.id}
                   </span>
-                  <span className="text-xs font-medium text-slate-900 dark:text-slate-50">
-                    {step.title}
+                  <span
+                    className={[
+                      "text-xs font-medium text-(--text-primary) text-center",
+                      isActive || hoverId === step.id ? "" : "opacity-70",
+                    ].join(" ")}
+                  >
+                    {step.shortLabel}
                   </span>
                 </button>
               );
@@ -165,28 +273,39 @@ export function HomeProcessTimeline() {
         </div>
 
         <div className="mx-auto mb-6 max-w-3xl">
-          <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-[0_16px_40px_rgba(15,23,42,0.06)] backdrop-blur-sm md:p-6 dark:border-slate-700/80 dark:bg-slate-900/80">
-            <p className="mb-1 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-              STEP {activeStep.id} · {activeStep.shortLabel.toUpperCase()}
-            </p>
-            <h3 className="mb-2 text-base font-semibold text-slate-900 dark:text-slate-50 md:text-lg">
-              {activeStep.title}
-            </h3>
-            <p className="mb-3 text-xs text-slate-600 dark:text-slate-100 md:text-sm">
-              {activeStep.description}
-            </p>
-            <ul className="space-y-1.5 md:space-y-2">
-              {activeStep.bullets.map((item) => (
-                <li
-                  key={item}
-                  className="flex items-start gap-2 text-xs text-slate-800 dark:text-slate-100 md:text-sm"
-                >
-                  <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-sky-500 dark:bg-sky-400" />
-                  <span className="text-slate-800 dark:text-slate-100">{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeStep.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="rounded-3xl border border-(--border-soft) bg-(--surface-card) bg-opacity-95 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.12)] backdrop-blur-md md:p-6"
+            >
+              <p className="mb-1 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-(--text-secondary)">
+                STEP {activeStep.id} · {activeStep.shortLabel.toUpperCase()}
+              </p>
+              <h3 className="mb-2 text-base font-semibold text-(--text-primary) md:text-lg">
+                {activeStep.title}
+              </h3>
+              <p className="mb-3 text-xs text-(--text-secondary) md:text-sm">
+                {activeStep.description}
+              </p>
+              <ul className="space-y-1.5 md:space-y-2">
+                {activeStep.bullets.map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-start gap-2 text-xs text-(--text-primary) md:text-sm"
+                  >
+                    <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-(--accent-primary)" />
+                    <span className="text-(--text-primary)">
+                      {item}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         <div className="grid gap-3 text-xs md:grid-cols-3 md:text-sm">
@@ -227,9 +346,11 @@ function StepIcon({
 
 function Pill({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-slate-800 shadow-sm backdrop-blur dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-100">
-      <span className="h-2 w-2 rounded-full bg-sky-500 dark:bg-sky-400" />
-      <span className="text-xs text-slate-800 dark:text-slate-100 md:text-sm">{label}</span>
+    <div className="flex items-center gap-2 rounded-full border border-(--border-soft) bg-(--surface-card)/85 px-3 py-2 text-(--text-primary) shadow-sm backdrop-blur">
+      <span className="h-2 w-2 rounded-full bg-(--accent-primary)" />
+      <span className="text-xs text-(--text-primary) md:text-sm">
+        {label}
+      </span>
     </div>
   );
 }
@@ -238,7 +359,7 @@ function CosmicBackground() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(129,140,248,0.18),_transparent_55%),radial-gradient(circle_at_bottom,_rgba(56,189,248,0.12),_transparent_60%)] dark:bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.22),_transparent_55%),radial-gradient(circle_at_bottom,_rgba(56,189,248,0.18),_transparent_60%)]"
+      className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,color-mix(in_srgb,var(--accent-primary)25%,transparent),transparent_55%),radial-gradient(circle_at_bottom,color-mix(in_srgb,var(--accent-secondary,var(--accent-primary))20%,transparent),transparent_60%)] dark:bg-[radial-gradient(circle_at_top,color-mix(in_srgb,var(--accent-primary)28%,transparent),transparent_55%),radial-gradient(circle_at_bottom,color-mix(in_srgb,var(--accent-secondary,var(--accent-primary))24%,transparent),transparent_60%)]"
     />
   );
 }

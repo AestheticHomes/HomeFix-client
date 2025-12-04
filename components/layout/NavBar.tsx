@@ -78,7 +78,7 @@ export default function NavBar() {
                 {active && (
                   <motion.span
                     layoutId="nav-active-glow"
-                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-[color-mix(in_srgb,var(--accent-primary)30%,transparent)] to-[color-mix(in_srgb,var(--accent-secondary)30%,transparent)] blur-md"
+                    className="absolute inset-0 rounded-xl bg-linear-to-r from-[color-mix(in_srgb,var(--accent-primary)30%,transparent)] to-[color-mix(in_srgb,var(--accent-secondary)30%,transparent)] blur-md"
                     transition={{ type: "spring", stiffness: 240, damping: 20 }}
                   />
                 )}
@@ -89,7 +89,7 @@ export default function NavBar() {
                 whileHover={{ scale: prefersReducedMotion ? 1 : 1.1 }}
                 transition={{ type: "spring", stiffness: 300, damping: 18 }}
                 className={
-                  active ? "text-emerald-500" : "text-[var(--nav-label-color)]"
+                  active ? "text-emerald-500" : "text-(--nav-label-color)"
                 }
               >
                 <Icon size={20} />
