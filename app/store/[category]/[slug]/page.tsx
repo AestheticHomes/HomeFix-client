@@ -18,9 +18,10 @@ import {
   mapGoodsToCatalog,
   type GoodsRow,
 } from "@/lib/catalog/mapGoodsToCatalog";
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
 import type { CatalogItem } from "@/types/catalog";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://homefix.co.in";
+const SITE_URL = CANONICAL_ORIGIN;
 
 async function getCatalogItem(
   categorySlug: string,

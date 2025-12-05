@@ -1,14 +1,20 @@
-import { HomeProcessSection } from "@/components/home/HomeProcessSection";
+/**
+ * Turnkey packages landing — canonical metadata + breadcrumb JSON-LD.
+ */
 import SafeViewport from "@/components/layout/SafeViewport";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
+import { buildMetadata } from "@/components/seo/buildMetadata";
 import TurnkeyServicesSection from "@/components/services/TurnkeyServicesSection";
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
 import { fetchServicesConfig } from "@/lib/servicesConfig";
 
-export const metadata = {
+// SEO: Canonical metadata for turnkey packages.
+export const metadata = buildMetadata({
   title: "Turnkey Home Interiors & Renovation | HomeFix",
   description:
     "Turnkey interiors, kitchens, wardrobes, bathrooms, tiling, civil works, and waterproofing managed under one project.",
-  robots: { index: true, follow: true },
-};
+  url: `${CANONICAL_ORIGIN}/full-home-packages`,
+});
 
 export default async function TurnkeyPage() {
   const services = await fetchServicesConfig().catch(() => []);
@@ -17,6 +23,12 @@ export default async function TurnkeyPage() {
   return (
     <SafeViewport>
       <main className="min-h-screen pb-16">
+        <BreadcrumbJsonLd
+          items={[
+            { name: "Home", url: CANONICAL_ORIGIN },
+            { name: "Turnkey Packages", url: `${CANONICAL_ORIGIN}/full-home-packages` },
+          ]}
+        />
         <section className="mx-auto max-w-5xl px-4 pt-8 space-y-4">
           <h1 className="text-3xl font-semibold tracking-tight text-[var(--text-primary)]">
             Turnkey services
@@ -27,8 +39,6 @@ export default async function TurnkeyPage() {
             under one project manager.
           </p>
         </section>
-
-        <HomeProcessSection />
 
         <TurnkeyServicesSection services={turnkey} />
       </main>

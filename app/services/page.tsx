@@ -1,13 +1,21 @@
-import Link from "next/link";
+/**
+ * Services landing page — canonical metadata + breadcrumb JSON-LD.
+ */
 import Image from "next/image";
+import Link from "next/link";
+
 import SafeViewport from "@/components/layout/SafeViewport";
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
+import { buildMetadata } from "@/components/seo/buildMetadata";
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
 import { fetchServicesConfig, type ServiceDefinition } from "@/lib/servicesConfig";
 
-export const metadata = {
-  title: "Services | HomeFix",
-  description:
-    "Book essential home services with transparent pricing. Painters, electricians, and more from HomeFix.",
-};
+// SEO: Canonical metadata for services landing.
+export const metadata = buildMetadata({
+  title: "HomeFix Services | Interiors, Renovation, Carpentry",
+  description: "End-to-end turnkey renovation services powered by AestheticHomes.",
+  url: `${CANONICAL_ORIGIN}/services`,
+});
 
 function EssentialGrid({ services }: { services: ServiceDefinition[] }) {
   if (!services.length) return null;
@@ -71,6 +79,13 @@ export default async function ServicesPage() {
   return (
     <SafeViewport>
       <main className="mx-auto max-w-5xl px-4 sm:px-6 py-10 space-y-10">
+        <BreadcrumbJsonLd
+          items={[
+            { name: "Home", url: CANONICAL_ORIGIN },
+            { name: "Services", url: `${CANONICAL_ORIGIN}/services` },
+          ]}
+        />
+
         <section className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
             Services

@@ -1,25 +1,16 @@
-import { Metadata } from "next";
+/**
+ * Layout metadata for services shell, built with canonical origin.
+ */
+import { buildMetadata } from "@/components/seo/buildMetadata";
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
 
-export const metadata: Metadata = {
+export const metadata = buildMetadata({
   title: "HomeFix Services | Plumbing, Electrical, Carpentry & More",
   description:
     "Explore our wide range of home services including plumbing, electrical, carpentry, painting, and full home renovation in Chennai.",
-  openGraph: {
-    title: "HomeFix Services | Professional Home Maintenance",
-    description:
-      "Expert home services at your doorstep. Verified professionals for all your home repair and renovation needs.",
-    url: "https://homefix.co.in/services",
-    type: "website",
-    images: [
-      {
-        url: "https://homefix.co.in/images/homefix-screenshot.png",
-        width: 1200,
-        height: 630,
-        alt: "HomeFix Services",
-      },
-    ],
-  },
-};
+  url: `${CANONICAL_ORIGIN}/services`,
+  image: `${CANONICAL_ORIGIN}/images/homefix-screenshot.png`,
+});
 
 export default function ServicesLayout({
   children,

@@ -10,6 +10,7 @@ import useEstimator, {
 } from "@/components/estimator/store/estimatorStore";
 import WardrobeRender from "@/components/estimator/WardrobeRender";
 import Breadcrumbs from "@/components/navigation/Breadcrumbs";
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
 import dynamic from "next/dynamic";
 import Script from "next/script";
 import React, { useCallback, useEffect, useMemo } from "react";
@@ -76,7 +77,7 @@ export default function EstimatorShell(): React.ReactElement {
       : "Interior Budget Estimator";
 
   const noneSelected = !hasKitchen && !hasWardrobe;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://homefix.co.in";
+  const siteUrl = CANONICAL_ORIGIN;
 
   const breadcrumbJsonLd = useMemo(
     () => ({

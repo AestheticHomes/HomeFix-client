@@ -1,7 +1,6 @@
 "use client";
 
 import StudioTipsStrip from "@/components/studio/StudioTipsStrip";
-import { useInitialCategory } from "@/lib/useInitialCategory";
 import { Float, Grid, OrbitControls, Stars, Text } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -500,7 +499,6 @@ const uiVariants = {
 };
 
 const StudioPageContent: FC = () => {
-  useInitialCategory();
   const cosmos = useCosmosTheme();
 
   return (

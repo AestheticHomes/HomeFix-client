@@ -1,4 +1,9 @@
+/**
+ * ReviewStrip — displays rating badge and emits AggregateRating JSON-LD.
+ */
 import type { FC } from "react";
+
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
 
 const rating = 4.9;
 const reviewCount = 52;
@@ -6,10 +11,7 @@ const reviewCount = 52;
 const reviewSchema = {
   "@context": "https://schema.org",
   "@type": "AggregateRating",
-  itemReviewed: {
-    "@type": "LocalBusiness",
-    name: "AestheticHomes",
-  },
+  itemReviewed: { "@id": `${CANONICAL_ORIGIN}#homefix-localbusiness` },
   ratingValue: rating.toString(),
   reviewCount: reviewCount.toString(),
   bestRating: "5",

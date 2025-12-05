@@ -1,16 +1,15 @@
-import { Metadata } from "next";
+/**
+ * Layout metadata for design-lab using canonical origin.
+ */
+import { buildMetadata } from "@/components/seo/buildMetadata";
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
 
-export const metadata: Metadata = {
+export const metadata = buildMetadata({
   title: "Design Studio | HomeFix India",
   description:
     "Explore our design studio for inspiration. View our portfolio of completed interior projects and design concepts.",
-  openGraph: {
-    title: "Design Studio | HomeFix India",
-    description:
-      "Visual inspiration for your home. Browse our gallery of stunning interior designs.",
-    url: "https://homefix.co.in/design-lab",
-  },
-};
+  url: `${CANONICAL_ORIGIN}/design-lab`,
+});
 
 export default function StudioLayout({
   children,

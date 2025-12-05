@@ -36,6 +36,8 @@ interface HomeFixUser {
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
+const panelBase =
+  "relative overflow-hidden p-6 sm:p-8 bg-card/95 border border-border/70 rounded-[32px] shadow-[0_24px_80px_rgba(15,23,42,0.35)] backdrop-blur-xl";
 
 export default function LoginPage() {
   // Login should always be dynamic to avoid prerender auth issues
@@ -215,20 +217,42 @@ export default function LoginPage() {
 
   /* Panels… (unchanged UI code below)
   ------------------------------------------------------------ */
+// shared base for all three panels
+const panelBase =
+  "relative overflow-hidden p-6 sm:p-8 rounded-3xl bg-card/90 text-foreground ring-1 ring-border/80 shadow-[0_24px_80px_rgba(15,23,42,0.35)]";
 
-  const FormPanel = (
-    <div className="p-6 sm:p-8 relative bg-card text-foreground border border-border rounded-3xl">
-      <motion.div
-        className="absolute inset-x-0 top-0 h-1 rounded-t-3xl bg-[var(--hf-gradient)]"
-        layoutId="glow"
-      />
-      <h2 className="text-xl font-semibold text-primary mb-4">
+// --- FORM PANEL ---------------------------------------------------------
+
+const FormPanel = (
+  <div className={panelBase}>
+    {/* top glow strip */}
+    <motion.div
+      className="absolute inset-x-4 top-0 h-1 rounded-b-full bg-[var(--hf-gradient)]"
+      layoutId="glow"
+    />
+
+    {/* soft background halo */}
+    <div className="pointer-events-none absolute -inset-16 bg-[radial-gradient(circle_at_top,_rgba(129,140,248,0.18),transparent_60%)] opacity-70" />
+
+    {/* subtle dark tint for contrast */}
+    <div className="pointer-events-none absolute inset-0 bg-black/5" />
+
+    <div className="relative">
+      <h2 className="text-2xl font-semibold text-primary tracking-tight mb-1">
         Welcome to HomeFix
       </h2>
+      <p className="text-sm text-muted mb-6">
+        Sign in with your mobile number to continue.
+      </p>
 
-      <label className="text-sm text-muted">Mobile Number</label>
-      <div className="flex items-center gap-2 border border-border rounded-xl px-3 py-2 mb-3 bg-card">
-        <Phone size={18} className="text-primary" />
+      <label className="text-xs font-medium uppercase tracking-[0.08em] text-muted mb-2 block">
+        Mobile Number
+      </label>
+
+      <div className="flex items-center gap-2 rounded-full px-3.5 py-3 mb-4 bg-background/70 border border-border/70 shadow-[0_10px_30px_rgba(15,23,42,0.12)] focus-within:border-primary/80 focus-within:ring-2 focus-within:ring-primary/40 focus-within:ring-offset-2 focus-within:ring-offset-background transition-all">
+        <div className="shrink-0 w-9 h-9 rounded-full bg-primary/5 flex items-center justify-center">
+          <Phone size={18} className="text-primary" />
+        </div>
         <input
           type="tel"
           inputMode="numeric"
@@ -237,64 +261,94 @@ export default function LoginPage() {
           onChange={(e) =>
             setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
           }
-          className="flex-1 bg-transparent outline-none text-sm text-foreground"
+          className="flex-1 bg-transparent outline-none text-sm text-foreground placeholder:text-muted"
         />
       </div>
 
-      <label className="flex items-center gap-2 mb-5 text-sm text-muted">
+      <label className="flex items-center gap-2 mb-6 text-sm text-muted">
         <input
           type="checkbox"
           checked
           readOnly
-          className="accent-primary"
+          className="accent-primary w-4 h-4 rounded-md border border-border"
         />
-        <span>Remember me</span>
+        <span>Remember me on this device</span>
       </label>
 
       <button
         onClick={handleSendOtp}
         disabled={loading || otpLoading || isProcessing}
-        className="w-full py-3 rounded-xl bg-primary text-primary-foreground hover:brightness-110 font-semibold transition active:scale-[0.97]"
+        className="w-full py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold tracking-wide shadow-[0_14px_40px_rgba(79,70,229,0.45)] hover:brightness-110 hover:shadow-[0_18px_55px_rgba(79,70,229,0.6)] disabled:opacity-60 disabled:shadow-none transition-all active:scale-[0.97]"
       >
-        {loading || otpLoading ? "Sending..." : "Send OTP"}
+        {loading || otpLoading ? "Sending OTP..." : "Send OTP"}
       </button>
-    </div>
-  );
 
-  const OtpPanel = (
-    <div className="p-6 sm:p-8 text-center">
-      <h2 className="text-lg font-semibold text-primary mb-2">
+      <p className="mt-3 text-[11px] text-muted">
+        We never share your number. You&apos;ll get a one-time code to verify.
+      </p>
+    </div>
+  </div>
+);
+
+// --- OTP PANEL ----------------------------------------------------------
+
+const OtpPanel = (
+  <div className={panelBase}>
+    {/* reuse same halo + tint so the flow feels continuous */}
+    <div className="pointer-events-none absolute -inset-16 bg-[radial-gradient(circle_at_top,_rgba(129,140,248,0.18),transparent_60%)] opacity-70" />
+    <div className="pointer-events-none absolute inset-0 bg-black/5" />
+
+    <div className="relative">
+      <h2 className="text-lg sm:text-xl font-semibold text-primary mb-1">
         Verify OTP
       </h2>
-      <p className="text-sm text-muted mb-2">
-        Enter OTP sent to +91 {phoneDigits}
+      <p className="text-sm text-muted mb-4">
+        Enter the 6-digit code sent to{" "}
+        <span className="font-medium">+91 {phoneDigits}</span>
       </p>
+
       <OTPInput otp={otp} setOtp={setOtp} refs={otpRefs} />
+
       <button
         onClick={handleVerifyOtp}
         disabled={otpVerifying || isProcessing}
-        className="w-full mt-4 py-3 rounded-xl bg-primary text-primary-foreground hover:brightness-110 font-semibold transition active:scale-[0.97]"
+        className="w-full mt-5 py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold tracking-wide shadow-[0_14px_40px_rgba(79,70,229,0.45)] hover:brightness-110 disabled:opacity-60 disabled:shadow-none transition-all active:scale-[0.97]"
       >
         {otpVerifying ? "Verifying..." : "Verify OTP"}
       </button>
-    </div>
-  );
 
-  const SuccessPanel = (
-    <div className="p-8 text-center">
-      <motion.div
-        initial={{ scale: 0.5 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 200, damping: 20 }}
-        className="w-20 h-20 bg-green-600 text-white mx-auto rounded-full flex items-center justify-center shadow-xl"
-      >
-        <Check size={40} />
-      </motion.div>
-      <p className="mt-3 text-green-600 dark:text-green-400 font-semibold">
-        Login Successful
+      <p className="mt-3 text-[11px] text-muted">
+        Didn&apos;t receive it? Check SMS inbox and spam, or resend after a few
+        seconds.
       </p>
     </div>
-  );
+  </div>
+);
+
+// --- SUCCESS PANEL ------------------------------------------------------
+
+const SuccessPanel = (
+  <div className={panelBase + " flex flex-col items-center justify-center"}>
+    <div className="pointer-events-none absolute -inset-16 bg-[radial-gradient(circle_at_bottom,_rgba(16,185,129,0.18),transparent_60%)] opacity-80" />
+    <div className="pointer-events-none absolute inset-0 bg-black/5" />
+
+    <motion.div
+      initial={{ scale: 0.6, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 220, damping: 18 }}
+      className="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-[0_18px_60px_rgba(16,185,129,0.7)] mb-3"
+    >
+      <Check size={40} />
+    </motion.div>
+
+    <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+      Login successful
+    </p>
+    <p className="mt-1 text-xs text-muted max-w-xs text-center">
+      You&apos;re all set. Redirecting to your HomeFix dashboard…
+    </p>
+  </div>
+);
 
   return (
     <main className="min-h-screen flex items-end sm:items-center justify-center bg-[var(--surface-base)] relative">

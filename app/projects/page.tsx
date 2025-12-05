@@ -1,11 +1,20 @@
-import type { Metadata } from "next";
+/**
+ * Projects listing — canonical metadata + breadcrumb JSON-LD.
+ */
 import Link from "next/link";
+import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "HomeFix Interior Projects | Completed Full Home Interiors in Chennai",
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
+import { buildMetadata } from "@/components/seo/buildMetadata";
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
+
+// SEO: Canonical metadata for projects listing.
+export const metadata: Metadata = buildMetadata({
+  title: "HomeFix Projects | Completed Homes Across Chennai",
   description:
-    "Browse HomeFix interior projects across Chennai — full home interiors, modular kitchens, wardrobes, and civil renovations delivered with transparent BOQ and handover.",
-};
+    "See our delivered interior projects powered by AestheticHomes across Chennai.",
+  url: `${CANONICAL_ORIGIN}/projects`,
+});
 
 export default function ProjectsPage() {
   const projects = [
@@ -16,6 +25,9 @@ export default function ProjectsPage() {
 
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+      <BreadcrumbJsonLd
+        items={[{ name: "Projects", url: `${CANONICAL_ORIGIN}/projects` }]}
+      />
       <header className="space-y-2">
         <p className="text-sm uppercase tracking-[0.25em] text-muted">Case Studies</p>
         <h1 className="text-3xl font-semibold text-foreground">

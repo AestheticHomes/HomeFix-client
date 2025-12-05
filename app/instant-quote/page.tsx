@@ -1,7 +1,10 @@
+/**
+ * Instant-quote page metadata + entry — ensures OG/Twitter use canonical origin.
+ */
 import EstimatorPageClient from "@/components/estimator/EstimatorPageClient";
 import type { Metadata } from "next";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://homefix.co.in";
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
 
 export const metadata: Metadata = {
   title: "HomeFix Estimator | 2D/3D kitchen & wardrobe budgeting",
@@ -11,7 +14,7 @@ export const metadata: Metadata = {
     title: "HomeFix Estimator | 2D/3D budgeting for interiors",
     description:
       "Estimate kitchens and wardrobes with live spans, finishes, and 3D previews before execution. Reduce waste and avoid labour mistakes.",
-    url: `${SITE_URL}/instant-quote`,
+    url: `${CANONICAL_ORIGIN}/instant-quote`,
     siteName: "HomeFix India",
   },
   twitter: {

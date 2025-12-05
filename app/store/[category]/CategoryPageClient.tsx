@@ -1,5 +1,8 @@
 "use client";
 /**
+ * Store category client — offline cache + breadcrumb JSON-LD uses canonical origin.
+ */
+/**
  * Client-side category listing (offline-first cache + cart)
  */
 
@@ -10,6 +13,7 @@ import {
   mapGoodsToCatalog,
   type GoodsRow,
 } from "@/lib/catalog/mapGoodsToCatalog";
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
 import type { CatalogItem } from "@/types/catalog";
 import Script from "next/script";
 import { useEffect, useMemo, useState } from "react";
@@ -128,7 +132,7 @@ export default function CategoryPageClient({ categorySlug }: Props) {
     });
   }, [all, categorySlug]);
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://homefix.co.in";
+  const siteUrl = CANONICAL_ORIGIN;
 
   const breadcrumbJsonLd = useMemo(
     () => ({

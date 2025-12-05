@@ -30,6 +30,7 @@ import { useSidebar } from "@/contexts/SidebarContext";
 import { useCatalogWithCache } from "@/hooks/useCatalogWithCache";
 import { useStoreAssetPrefetch } from "@/hooks/useStoreAssetPrefetch";
 import { normalizeCategory } from "@/lib/catalog/mapGoodsToCatalog";
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
 import type { CatalogItem } from "@/types/catalog";
 
 /**
@@ -126,7 +127,7 @@ export default function StorePageClient() {
     "@context": "https://schema.org",
     "@type": "Store",
     name: "HomeFix India",
-    url: "https://homefix.co.in/store",
+    url: `${CANONICAL_ORIGIN}/store`,
     description:
       "Premium modular kitchens, doors, panels, and hardware with installation included.",
   };

@@ -11,8 +11,9 @@ import {
   normalizeCategory,
   type GoodsRow,
 } from "@/lib/catalog/mapGoodsToCatalog";
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
 
-const BASE_URL = "https://homefix.co.in";
+const BASE_URL = CANONICAL_ORIGIN;
 
 export default async function sitemap() {
   const catalogUrl = process.env.NEXT_PUBLIC_GOODS_CATALOG_URL;

@@ -1,19 +1,31 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
+
 /**
  * ============================================================
- * 🧠 HomeFix Middleware — Edith Continuum v6.0 🌗
+ * 🧠 HomeFix Middleware — Edith Continuum v6.1 🌗
  * ------------------------------------------------------------
  * ✅ Protects /admin, /profile, /bookings, /account
  * ✅ Whitelists checkout + my-bookings (legacy my-orders) + mock-razorpay
  * ✅ Honors hf_skip_profile_redirect cookie
  * ✅ Works for both Supabase + App cookies
  * ✅ Edge-safe + PWA friendly
+ * ✅ Enforces canonical host → https://www.homefix.co.in
  * ============================================================
  */
 export function middleware(req: NextRequest) {
-  const url = req.nextUrl.pathname;
+  // 0️⃣ Canonical host enforcement (SEO duplicate avoidance)
+  const canonicalHost = new URL(CANONICAL_ORIGIN).hostname;
+  const nextUrl = req.nextUrl.clone();
+  if (nextUrl.hostname !== canonicalHost) {
+    nextUrl.hostname = canonicalHost;
+    nextUrl.protocol = "https:";
+    return NextResponse.redirect(nextUrl, 308);
+  }
+
+  const url = nextUrl.pathname;
   const res = NextResponse.next();
 
   /* ------------------------------------------------------------
@@ -110,5 +122,5 @@ export function middleware(req: NextRequest) {
    ⚙️ Matcher Configuration
 ------------------------------------------------------------ */
 export const config = {
-  matcher: ["/((?!_next|.*\\..*|api|manifest\\.json|icons).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon\\.ico|icons|manifest\\.json).*)"],
 };

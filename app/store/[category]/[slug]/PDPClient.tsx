@@ -10,6 +10,7 @@ import { useMemo, useState } from "react";
 
 import UniversalPreview from "@/components/preview/UniversalPreview";
 import { useProductCartStore } from "@/components/store/cartStore";
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
 import type { CatalogItem } from "@/types/catalog";
 import { ArrowLeft, MapPin, Minus, Plus, ShoppingCart } from "lucide-react";
 
@@ -33,7 +34,7 @@ export default function PDPClient({ item }: Props) {
 
   const [previewOverride, setPreviewOverride] = useState<string | null>(null);
 
-  const canonical = `https://homefix.co.in/store/${item.categorySlug}/${item.slug}`;
+  const canonical = `${CANONICAL_ORIGIN}/store/${item.categorySlug}/${item.slug}`;
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -59,13 +60,13 @@ export default function PDPClient({ item }: Props) {
         "@type": "ListItem",
         position: 1,
         name: "Store",
-        item: "https://homefix.co.in/store",
+        item: `${CANONICAL_ORIGIN}/store`,
       },
       {
         "@type": "ListItem",
         position: 2,
         name: item.category,
-        item: `https://homefix.co.in/store/${item.categorySlug}`,
+        item: `${CANONICAL_ORIGIN}/store/${item.categorySlug}`,
       },
       {
         "@type": "ListItem",

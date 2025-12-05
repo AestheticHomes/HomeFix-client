@@ -17,7 +17,10 @@
 
 import RouteAnnouncer from "@/components/a11y/RouteAnnouncer";
 import { RootShell } from "@/components/layout";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { GlobalBusinessGraph } from "@/components/seo/siteSchemas";
 import ThemeProviderClient from "@/components/theme/ThemeProviderClient";
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Montserrat } from "next/font/google";
 import "./globals.css";
@@ -27,7 +30,7 @@ const mont = Montserrat({ subsets: ["latin"], variable: "--font-heading", displa
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://homefix.co.in"),
+  metadataBase: new URL(CANONICAL_ORIGIN),
   title: {
     default: "HomeFix | Full home interiors, 2D/3D planning, and execution",
     template: "%s | HomeFix",
@@ -40,14 +43,14 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    url: "https://homefix.co.in/",
+    url: `${CANONICAL_ORIGIN}/`,
     siteName: "HomeFix",
     title: "HomeFix | Full home interiors, 2D/3D planning, and execution",
     description:
       "Book HomeFix for end-to-end interiors in Chennai: measurement, 2D/3D planning, curated materials, installation, and site supervision with lower waste and fewer errors.",
     images: [
       {
-        url: "https://homefix.co.in/images/homefix-screenshot.png",
+        url: `${CANONICAL_ORIGIN}/images/homefix-screenshot.png`,
         width: 1280,
         height: 720,
         alt: "HomeFix homepage showing interior services",
@@ -59,7 +62,7 @@ export const metadata: Metadata = {
     title: "HomeFix | Full home interiors, 2D/3D planning, and execution",
     description:
       "Book HomeFix for end-to-end interiors in Chennai: measurement, 2D/3D planning, curated materials, installation, and site supervision with lower waste and fewer errors.",
-    images: ["https://homefix.co.in/images/homefix-screenshot.png"],
+    images: [`${CANONICAL_ORIGIN}/images/homefix-screenshot.png`],
   },
   icons: {
     icon: "/icons/icon-192.png",
@@ -109,23 +112,8 @@ export default function RootLayout({
           name="apple-mobile-web-app-status-bar-style"
           content="black-translucent"
         />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              name: "HomeFix",
-              url: "https://homefix.co.in",
-              logo: "https://homefix.co.in/icons/icon-512.png",
-              parentOrganization: {
-                "@type": "Organization",
-                name: "AestheticHomes",
-                url: "https://aesthetichomes.net",
-              },
-            }),
-          }}
-        />
+        {/* SEO: Global business graph linking HomeFix to Aesthetic Homes */}
+        <JsonLd data={GlobalBusinessGraph} />
       </head>
 
       <body

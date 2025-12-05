@@ -1,23 +1,30 @@
+/**
+ * 3D visualization landing page — includes canonical metadata and Service JSON-LD.
+ */
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
+
+const PAGE_URL = `${CANONICAL_ORIGIN}/3d-visualization`;
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://homefix.co.in"),
+  metadataBase: new URL(CANONICAL_ORIGIN),
   title: "3D Home Interior Visualization in Chennai | HomeFix",
   description:
     "See your home in 3D before you build. HomeFix converts your 2D layout into a full 3D interior model so you can finalise layouts, finishes and storage before spending on materials or labour in Chennai.",
   alternates: {
-    canonical: "https://homefix.co.in/3d-visualization",
+    canonical: PAGE_URL,
   },
   openGraph: {
     title: "3D Home Interior Visualization in Chennai | HomeFix",
     description:
       "Avoid costly rework and material waste. Upload your 2D floor plan and get a complete 3D interior walkthrough for your kitchen or full home.",
-    url: "https://homefix.co.in/3d-visualization",
+    url: PAGE_URL,
     type: "article",
     images: [
       {
-        url: "https://homefix.co.in/images/3d-visualization-cover.jpg",
+        url: `${CANONICAL_ORIGIN}/images/3d-visualization-cover.jpg`,
         width: 1200,
         height: 630,
         alt: "3D interior visualization preview by HomeFix",
@@ -29,7 +36,7 @@ export const metadata: Metadata = {
     title: "3D Home Interior Visualization in Chennai | HomeFix",
     description:
       "Convert your 2D plan into a full 3D interior walkthrough and avoid costly rework during execution.",
-    images: ["https://homefix.co.in/images/3d-visualization-cover.jpg"],
+    images: [`${CANONICAL_ORIGIN}/images/3d-visualization-cover.jpg`],
   },
 };
 
@@ -124,7 +131,7 @@ export default function VisualizationPage() {
             provider: {
               "@type": "Organization",
               name: "HomeFix",
-              url: "https://homefix.co.in",
+              url: CANONICAL_ORIGIN,
               parentOrganization: {
                 "@type": "Organization",
                 name: "AestheticHomes",

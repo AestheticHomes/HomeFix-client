@@ -13,7 +13,7 @@ import type { Metadata } from "next";
 
 import CategoryPageClient from "./CategoryPageClient";
 
-const SITE_URL = "https://homefix.co.in";
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
 
 const prettify = (slug: string) =>
   slug
@@ -30,11 +30,14 @@ export async function generateMetadata({
   const prettyName = prettify(categorySlug);
   const title = `${prettyName} | HomeFix Store`;
   const description = `Browse ${prettyName} from HomeFix: curated doors, panels, hardware and more with installation included.`;
-  const url = `${SITE_URL}/store/${categorySlug}`;
+  const url = `${CANONICAL_ORIGIN}/store/${categorySlug}`;
 
   return {
     title,
     description,
+    alternates: {
+      canonical: url,
+    },
     openGraph: {
       title,
       description,

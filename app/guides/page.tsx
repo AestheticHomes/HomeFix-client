@@ -1,11 +1,19 @@
-import type { Metadata } from "next";
+/**
+ * Guides listing — canonical metadata + breadcrumb JSON-LD.
+ */
 import Link from "next/link";
+import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "HomeFix Interior Guides | Planning Full Home Interiors in Chennai",
-  description:
-    "Expert guides on planning full home interiors in Chennai: budgeting, transparent BOQ, 3D design, site execution, and warranties for kitchens, wardrobes, and more.",
-};
+import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
+import { buildMetadata } from "@/components/seo/buildMetadata";
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
+
+// SEO: Canonical metadata for guides listing.
+export const metadata: Metadata = buildMetadata({
+  title: "HomeFix Guides | Renovation Tips & Tutorials",
+  description: "Get interior insights from HomeFix's expert team.",
+  url: `${CANONICAL_ORIGIN}/guides`,
+});
 
 const guides = [
   { title: "Full Home Interiors Checklist", href: "/guides/full-home-interiors-checklist" },
@@ -16,6 +24,9 @@ const guides = [
 export default function GuidesPage() {
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+      <BreadcrumbJsonLd
+        items={[{ name: "Guides", url: `${CANONICAL_ORIGIN}/guides` }]}
+      />
       <header className="space-y-2">
         <p className="text-sm uppercase tracking-[0.25em] text-muted">Guides & Education</p>
         <h1 className="text-3xl font-semibold text-foreground">

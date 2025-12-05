@@ -1,16 +1,15 @@
-import { Metadata } from "next";
+/**
+ * Layout metadata for consultation booking; uses canonical origin for SEO.
+ */
+import { buildMetadata } from "@/components/seo/buildMetadata";
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
 
-export const metadata: Metadata = {
+export const metadata = buildMetadata({
   title: "Book Consultation | HomeFix India",
   description:
     "Schedule a consultation with our interior design experts. Get professional advice for your home renovation and interior needs.",
-  openGraph: {
-    title: "Book Consultation | HomeFix India",
-    description:
-      "Expert interior design consultation. Plan your dream home with our professional guidance.",
-    url: "https://homefix.co.in/consultation",
-  },
-};
+  url: `${CANONICAL_ORIGIN}/consultation`,
+});
 
 export default function ConsultationLayout({
   children,
