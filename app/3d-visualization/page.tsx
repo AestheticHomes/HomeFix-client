@@ -4,7 +4,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
+import { CANONICAL_ORIGIN, PARENT_ORG_NAME } from "@/lib/seoConfig";
 
 const PAGE_URL = `${CANONICAL_ORIGIN}/3d-visualization`;
 
@@ -134,7 +134,7 @@ export default function VisualizationPage() {
               url: CANONICAL_ORIGIN,
               parentOrganization: {
                 "@type": "Organization",
-                name: "AestheticHomes",
+                name: PARENT_ORG_NAME,
                 url: "https://aesthetichomes.net",
               },
             },

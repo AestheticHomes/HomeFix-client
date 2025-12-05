@@ -51,7 +51,7 @@ export default function ServicePage({ params }: Props) {
           serviceType: service.category || service.name,
           description: service.seoDescription || service.tagline || service.heroSubtitle || "",
           serviceArea: "Chennai",
-          provider: { "@id": `${CANONICAL_ORIGIN}#homefix-localbusiness` },
+          provider: { "@id": `${CANONICAL_ORIGIN}#homefix-localbusiness`, name: PARENT_ORG_NAME },
           url: `${CANONICAL_ORIGIN}/services/${service.slug}`,
         }}
       />

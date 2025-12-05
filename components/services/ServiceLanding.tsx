@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import ServiceMediaGallery from "./ServiceMediaGallery";
+import { PARENT_ORG_NAME } from "@/lib/seoConfig";
 import type { ServiceDefinition } from "@/lib/servicesConfig";
 
 export default function ServiceLanding({ service }: { service: ServiceDefinition }) {
@@ -92,7 +93,7 @@ export default function ServiceLanding({ service }: { service: ServiceDefinition
                 Recent projects in this service
               </h2>
               <p className="text-xs sm:text-sm text-muted max-w-2xl">
-                These are actual projects executed by AestheticHomes in Chennai.
+                These are actual projects executed by {PARENT_ORG_NAME} in Chennai.
                 You can book a similar scope for your home.
               </p>
             </div>

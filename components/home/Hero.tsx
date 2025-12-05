@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { PARENT_ORG_NAME } from "@/lib/seoConfig";
 import { track } from "@/lib/track";
 
 export default function Hero() {
@@ -59,7 +60,7 @@ export default function Hero() {
           <div className="relative z-10 flex flex-col gap-5">
             <span className="inline-flex items-center gap-2 text-[11px] font-medium rounded-full px-3 py-1 bg-white/85 border border-white/60 text-slate-800 w-fit">
               <span className="w-2 h-2 rounded-full bg-[var(--accent-primary)] shadow-[0_0_10px_color-mix(in_srgb,var(--accent-primary)80%,transparent)]" />
-              Turnkey interiors by AestheticHomes
+              Turnkey interiors by {PARENT_ORG_NAME}
             </span>
 
             <h1
@@ -74,7 +75,9 @@ export default function Hero() {
               className="text-sm md:text-base text-slate-700 max-w-2xl"
               style={{ textShadow: "0 1px 3px rgba(15,23,42,0.35)" }}
             >
-              Book full home interiors in Chennai with transparent, itemised BOQ and zero hidden costs. Backed by AestheticHomes, our projects include a 10-year warranty on core interior work — so you get a designer home without surprise overruns.
+              Book full home interiors in Chennai with transparent, itemised BOQ and zero hidden
+              costs. Backed by {PARENT_ORG_NAME}, our projects include a 10-year warranty on core
+              interior work — so you get a designer home without surprise overruns.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">

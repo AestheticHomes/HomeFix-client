@@ -1,10 +1,12 @@
 /**
  * SEO structured data: global business graph referencing the canonical origin.
  */
-import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
+import { CANONICAL_ORIGIN, PARENT_ORG_NAME } from "@/lib/seoConfig";
 
 const SITE_URL = CANONICAL_ORIGIN;
 const LOGO_URL = `${SITE_URL}/logo-homefix.svg`;
+
+// Parent org canonical URL (Wix site)
 const PARENT_ORG_URL = "https://www.aesthetichomes.net";
 
 /**
@@ -28,7 +30,7 @@ export const GlobalBusinessGraph = {
       parentOrganization: {
         "@type": "Organization",
         "@id": `${PARENT_ORG_URL}#aesthetichomes-parent`,
-        name: "Aesthetic Homes",
+        name: PARENT_ORG_NAME,          // 🔥 pulled from single constant
         url: PARENT_ORG_URL,
       },
       sameAs: [
@@ -47,6 +49,7 @@ export const GlobalBusinessGraph = {
       areaServed: ["Chennai"],
       parentOrganization: {
         "@id": `${PARENT_ORG_URL}#aesthetichomes-parent`,
+        name: PARENT_ORG_NAME,          // 🔥 propagated cleanly here too
       },
       address: {
         "@type": "PostalAddress",

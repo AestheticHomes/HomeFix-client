@@ -7,13 +7,14 @@ import Link from "next/link";
 import SafeViewport from "@/components/layout/SafeViewport";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { buildMetadata } from "@/components/seo/buildMetadata";
-import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
+import { CANONICAL_ORIGIN, PARENT_ORG_NAME } from "@/lib/seoConfig";
 import { fetchServicesConfig, type ServiceDefinition } from "@/lib/servicesConfig";
 
 // SEO: Canonical metadata for services landing.
 export const metadata = buildMetadata({
   title: "HomeFix Services | Interiors, Renovation, Carpentry",
-  description: "End-to-end turnkey renovation services powered by AestheticHomes.",
+  description:
+    `End-to-end turnkey renovation services powered by ${PARENT_ORG_NAME}.`,
   url: `${CANONICAL_ORIGIN}/services`,
 });
 

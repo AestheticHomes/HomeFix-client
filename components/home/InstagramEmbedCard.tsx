@@ -1,3 +1,5 @@
+import { PARENT_ORG_NAME } from "@/lib/seoConfig";
+
 export function InstagramEmbedCard() {
   return (
     <section
@@ -23,7 +25,7 @@ export function InstagramEmbedCard() {
             src="https://www.instagram.com/aesthetichomes_in/embed"
             className="h-full w-full border-0"
             loading="lazy"
-            title="AestheticHomes and HomeFix interior projects in Chennai on Instagram"
+            title={`${PARENT_ORG_NAME} and HomeFix interior projects in Chennai on Instagram`}
           />
         </div>
         <a

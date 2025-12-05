@@ -6,13 +6,13 @@ import type { Metadata } from "next";
 
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { buildMetadata } from "@/components/seo/buildMetadata";
-import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
+import { CANONICAL_ORIGIN, PARENT_ORG_NAME } from "@/lib/seoConfig";
 
 // SEO: Canonical metadata for projects listing.
 export const metadata: Metadata = buildMetadata({
   title: "HomeFix Projects | Completed Homes Across Chennai",
   description:
-    "See our delivered interior projects powered by AestheticHomes across Chennai.",
+    `See our delivered interior projects powered by ${PARENT_ORG_NAME} across Chennai.`,
   url: `${CANONICAL_ORIGIN}/projects`,
 });
 

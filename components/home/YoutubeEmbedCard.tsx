@@ -6,6 +6,8 @@ import Link from "next/link";
 // ✅ Only the video ID, NOT the full URL
 const FEATURED_VIDEO_ID = "_-kZCNBXUk8";
 
+import { PARENT_ORG_NAME } from "@/lib/seoConfig";
+
 const YOUTUBE_CHANNEL_URL = "https://www.youtube.com/@AestheticHomes_in";
 
 export default function YoutubeEmbedCard() {
@@ -38,7 +40,7 @@ export default function YoutubeEmbedCard() {
 
         <p className="text-xs sm:text-[13px] text-[var(--text-muted)]">
           Site progress, full home interiors and behind-the-scenes work by
-          AestheticHomes &amp; HomeFix in Chennai.
+          {PARENT_ORG_NAME} &amp; HomeFix in Chennai.
         </p>
 
         <p className="text-xs sm:text-[13px] text-[var(--text-muted)]">
@@ -49,7 +51,7 @@ export default function YoutubeEmbedCard() {
           <div className="relative w-full aspect-video">
             <iframe
               src={`https://www.youtube.com/embed/${FEATURED_VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${FEATURED_VIDEO_ID}&controls=0&rel=0&modestbranding=1&playsinline=1`}
-              title="HomeFix & AestheticHomes interior work on YouTube"
+              title={`HomeFix & ${PARENT_ORG_NAME} interior work on YouTube`}
               loading="lazy"
               className="absolute inset-0 h-full w-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

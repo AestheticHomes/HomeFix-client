@@ -1,5 +1,7 @@
 "use client";
 
+import { PARENT_ORG_NAME } from "@/lib/seoConfig";
+
 export default function MoreServicesStrip() {
   return (
     <section className="px-3 sm:px-4 lg:px-8 xl:px-12 pb-10 pt-4">
@@ -9,7 +11,9 @@ export default function MoreServicesStrip() {
             More services coming soon
           </h2>
           <p className="text-xs sm:text-sm text-[var(--text-muted-soft)]">
-            Electrician, plumbing, AC service and appliance repair will be added in upcoming phases. For now, we&apos;re focused on full home renovation, interiors, carpentry, tiling and civil work through AestheticHomes.
+            Electrician, plumbing, AC service and appliance repair will be added in upcoming
+            phases. For now, we&apos;re focused on full home renovation, interiors, carpentry,
+            tiling and civil work through {PARENT_ORG_NAME}.
           </p>
         </div>
       </div>

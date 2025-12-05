@@ -8,6 +8,7 @@
  * ✅ Smooth color transitions
  * ✅ Matches UniversalHeader & Sidebar styles
  */
+import { PARENT_ORG_NAME } from "@/lib/seoConfig";
 
 export default function Footer() {
   return (
@@ -31,7 +32,7 @@ export default function Footer() {
             rel="noopener noreferrer"
             className="font-semibold text-[var(--accent-primary)] hover:underline"
           >
-            AestheticHomes
+            {PARENT_ORG_NAME}
           </a>{" "}
           – Chennai interiors brand with 4.9★ rating, now powered by HomeFix.
         </div>
