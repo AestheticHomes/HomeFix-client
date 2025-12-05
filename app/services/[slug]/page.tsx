@@ -8,7 +8,7 @@ import SafeViewport from "@/components/layout/SafeViewport";
 import { BreadcrumbJsonLd } from "@/components/seo/BreadcrumbJsonLd";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildMetadata } from "@/components/seo/buildMetadata";
-import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
+import { CANONICAL_ORIGIN, PARENT_ORG_NAME } from "@/lib/seoConfig";
 import ServiceLanding from "@/components/services/ServiceLanding";
 import { fetchServicesConfig, getServiceBySlug } from "@/lib/servicesConfig";
 
