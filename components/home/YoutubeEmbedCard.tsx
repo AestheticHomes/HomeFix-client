@@ -1,4 +1,10 @@
-// components/home/YoutubeEmbedCard.tsx
+/**
+ * YoutubeEmbedCard
+ *
+ * What: Embeds a featured YouTube video and channel link for HomeFix projects.
+ * Where: Homepage social row alongside Instagram embed.
+ * Layout/SEO: Responsive iframe with trimmed chrome; expects parent flex/snap container to align cards.
+ */
 "use client";
 
 import Link from "next/link";

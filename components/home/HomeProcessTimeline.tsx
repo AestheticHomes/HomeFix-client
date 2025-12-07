@@ -1,20 +1,14 @@
 /**
  * HomeFix — HomeProcessTimeline
  *
- * Purpose:
- *   - Visualise the 6-step HomeFix project process as a horizontal timeline.
- *   - Show a single expanded detail card for the active step.
- * Interaction:
- *   - Hover/click on steps to change the active step.
- *   - Auto-progresses based on scroll position through the section.
- * Notes:
- *   - Maintains strong contrast in both light/dark themes.
- *   - Uses framer-motion for smooth transform/opacity animations.
+ * What: Collapsible 6-step process timeline with hover/click expansion.
+ * Where: Homepage after the 3D Visualizer; no external dependencies beyond icons.
+ * Layout/SEO: Scrollable without visible scrollbar, 4/12 grid-safe spacing, details stay collapsed until hover/tap (no pills/footer).
  */
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Factory,
@@ -116,75 +110,44 @@ const STEPS: Step[] = [
 ];
 
 export function HomeProcessTimeline() {
-  const [activeId, setActiveId] = useState<number>(1);
-  const [hoverId, setHoverId] = useState<number | null>(null);
-  const [userInteracted, setUserInteracted] = useState(false);
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const scrollThrottle = useRef<number | null>(null);
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const [isClickLocked, setIsClickLocked] = useState(false);
 
   const activeStep = useMemo(
-    () => STEPS.find((step) => step.id === activeId) ?? STEPS[0],
+    () => (activeId ? STEPS.find((step) => step.id === activeId) : null),
     [activeId]
   );
 
-  const handleSetActive = useCallback((id: number, viaUser = false) => {
+  const handleHover = (id: number) => {
+    if (isClickLocked) return;
     setActiveId(id);
-    if (viaUser) setUserInteracted(true);
-  }, []);
+  };
 
-  // Scroll-driven auto-progress
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
+  const handleLeave = () => {
+    if (isClickLocked) return;
+    setActiveId(null);
+  };
 
-    const onScroll = () => {
-      if (userInteracted) return;
-      if (scrollThrottle.current) return;
-      scrollThrottle.current = window.setTimeout(() => {
-        scrollThrottle.current = null;
-        const rect = el.getBoundingClientRect();
-        if (rect.height <= 0) return;
-        const viewHeight =
-          window.innerHeight || document.documentElement.clientHeight;
-        if (rect.bottom < 0 || rect.top > viewHeight) return;
-
-        const progress = Math.min(
-          1,
-          Math.max(
-            0,
-            1 -
-              (rect.bottom - viewHeight * 0.2) /
-                (rect.height + viewHeight * 0.4)
-          )
-        );
-        const bucket = Math.min(
-          STEPS.length - 1,
-          Math.max(0, Math.floor(progress * STEPS.length))
-        );
-        const nextId = STEPS[bucket].id;
-        if (nextId !== activeId) setActiveId(nextId);
-      }, 120);
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (scrollThrottle.current) {
-        clearTimeout(scrollThrottle.current);
-        scrollThrottle.current = null;
+  const handleClick = (id: number) => {
+    setIsClickLocked((locked) => {
+      const shouldUnlock = locked && activeId === id;
+      if (shouldUnlock) {
+        setActiveId(null);
+        return false;
       }
-    };
-  }, [activeId, userInteracted]);
+      setActiveId(id);
+      return true;
+    });
+  };
 
   return (
     <section
       aria-label="How your HomeFix project moves from first measurement to final handover"
-      ref={sectionRef}
-      className="relative overflow-hidden bg-(--surface-base) py-12 md:py-16 text-(--text-primary)"
+      className="relative overflow-hidden bg-(--surface-base) py-10 md:py-14 text-(--text-primary)"
     >
       <CosmicBackground />
 
-      <div className="relative mx-auto max-w-6xl px-4 md:px-6">
+      <div className="relative mx-auto w-full max-w-[1200px] px-3 sm:px-4 lg:px-6">
         <header className="mb-8 text-center">
           <p className="text-[0.7rem] uppercase tracking-[0.2em] text-(--text-secondary)">
             Interior projects · Process
@@ -216,13 +179,13 @@ export function HomeProcessTimeline() {
               className="h-0.5 rounded-full bg-(--accent-primary) transition-all duration-300 ease-out"
               style={{
                 width: `${
-                  ((activeId - 1) / Math.max(STEPS.length - 1, 1)) * 100
+                  (((activeId ?? 1) - 1) / Math.max(STEPS.length - 1, 1)) * 100
                 }%`,
               }}
             />
           </div>
 
-          <div className="relative flex snap-x snap-mandatory overflow-x-auto pb-4 pt-2 md:justify-between md:overflow-visible">
+          <div className="relative flex snap-x snap-mandatory overflow-x-auto pb-4 pt-2 md:justify-between md:overflow-visible [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {STEPS.map((step) => {
               const isActive = step.id === activeId;
               return (
@@ -230,9 +193,9 @@ export function HomeProcessTimeline() {
                   key={step.id}
                   type="button"
                   className="group relative mx-3 flex min-w-[120px] snap-center flex-col items-center gap-1 md:mx-0 md:min-w-0"
-                  onClick={() => handleSetActive(step.id, true)}
-                  onMouseEnter={() => setHoverId(step.id)}
-                  onMouseLeave={() => setHoverId(null)}
+                  onClick={() => handleClick(step.id)}
+                  onMouseEnter={() => handleHover(step.id)}
+                  onMouseLeave={handleLeave}
                   aria-pressed={isActive}
                   aria-current={isActive}
                 >
@@ -261,7 +224,7 @@ export function HomeProcessTimeline() {
                   <span
                     className={[
                       "text-xs font-medium text-(--text-primary) text-center",
-                      isActive || hoverId === step.id ? "" : "opacity-70",
+                      isActive ? "" : "opacity-70",
                     ].join(" ")}
                   >
                     {step.shortLabel}
@@ -272,46 +235,53 @@ export function HomeProcessTimeline() {
           </div>
         </div>
 
-        <div className="mx-auto mb-6 max-w-3xl">
+        <div className="mx-auto mb-2 max-w-3xl">
           <AnimatePresence mode="wait">
-            <motion.div
-              key={activeStep.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-              className="rounded-3xl border border-(--border-soft) bg-(--surface-card) bg-opacity-95 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.12)] backdrop-blur-md md:p-6"
-            >
-              <p className="mb-1 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-(--text-secondary)">
-                STEP {activeStep.id} · {activeStep.shortLabel.toUpperCase()}
-              </p>
-              <h3 className="mb-2 text-base font-semibold text-(--text-primary) md:text-lg">
-                {activeStep.title}
-              </h3>
-              <p className="mb-3 text-xs text-(--text-secondary) md:text-sm">
-                {activeStep.description}
-              </p>
-              <ul className="space-y-1.5 md:space-y-2">
-                {activeStep.bullets.map((item) => (
-                  <li
-                    key={item}
-                    className="flex items-start gap-2 text-xs text-(--text-primary) md:text-sm"
-                  >
-                    <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-(--accent-primary)" />
-                    <span className="text-(--text-primary)">
-                      {item}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
+            {activeStep ? (
+              <motion.div
+                key={activeStep.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className="rounded-3xl border border-(--border-soft) bg-(--surface-card) bg-opacity-95 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.12)] backdrop-blur-md md:p-6"
+              >
+                <p className="mb-1 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-(--text-secondary)">
+                  STEP {activeStep.id} · {activeStep.shortLabel.toUpperCase()}
+                </p>
+                <h3 className="mb-2 text-base font-semibold text-(--text-primary) md:text-lg">
+                  {activeStep.title}
+                </h3>
+                <p className="mb-3 text-xs text-(--text-secondary) md:text-sm">
+                  {activeStep.description}
+                </p>
+                <ul className="space-y-1.5 md:space-y-2">
+                  {activeStep.bullets.map((item) => (
+                    <li
+                      key={item}
+                      className="flex items-start gap-2 text-xs text-(--text-primary) md:text-sm"
+                    >
+                      <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-(--accent-primary)" />
+                      <span className="text-(--text-primary)">
+                        {item}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="placeholder"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="rounded-3xl border border-(--border-soft) bg-(--surface-card) px-4 py-4 text-center text-sm text-(--text-secondary) shadow-[0_12px_32px_rgba(0,0,0,0.10)] md:px-6"
+              >
+                Hover or tap a step to view the details.
+              </motion.div>
+            )}
           </AnimatePresence>
-        </div>
-
-        <div className="grid gap-3 text-xs md:grid-cols-3 md:text-sm">
-          <Pill label="Free consultation and designer site visit" />
-          <Pill label="Factory-built modules and transparent BOQ" />
-          <Pill label="Single point of contact and formal handover" />
         </div>
       </div>
     </section>
@@ -342,17 +312,6 @@ function StepIcon({
     default:
       return <KeyRound className={shared} />;
   }
-}
-
-function Pill({ label }: { label: string }) {
-  return (
-    <div className="flex items-center gap-2 rounded-full border border-(--border-soft) bg-(--surface-card)/85 px-3 py-2 text-(--text-primary) shadow-sm backdrop-blur">
-      <span className="h-2 w-2 rounded-full bg-(--accent-primary)" />
-      <span className="text-xs text-(--text-primary) md:text-sm">
-        {label}
-      </span>
-    </div>
-  );
 }
 
 function CosmicBackground() {

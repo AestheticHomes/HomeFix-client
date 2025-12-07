@@ -92,7 +92,7 @@ export default function NavBar() {
                   active ? "text-emerald-500" : "text-(--nav-label-color)"
                 }
               >
-                <Icon size={20} />
+                <Icon className="w-5 h-5 md:w-6 md:h-6" />
                 {name === "Store" && totalItems > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}

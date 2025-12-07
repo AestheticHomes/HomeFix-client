@@ -1,19 +1,23 @@
 /**
  * ReviewStrip — displays rating badge and emits AggregateRating JSON-LD.
+ *
+ * Usage: Optional trust strip for marketing pages (e.g., legacy homepage placements); the rating values
+ *         are also consumed by the UniversalHeader pill and promo JSON-LD.
+ * Layout/SEO: Compact inline badge with AggregateRating schema anchored to the global business graph.
  */
 import type { FC } from "react";
 
 import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
 
-const rating = 4.9;
-const reviewCount = 52;
+export const HOMEFIX_RATING_VALUE = 4.9;
+export const HOMEFIX_REVIEW_COUNT = 52;
 
 const reviewSchema = {
   "@context": "https://schema.org",
   "@type": "AggregateRating",
   itemReviewed: { "@id": `${CANONICAL_ORIGIN}#homefix-localbusiness` },
-  ratingValue: rating.toString(),
-  reviewCount: reviewCount.toString(),
+  ratingValue: HOMEFIX_RATING_VALUE.toString(),
+  reviewCount: HOMEFIX_REVIEW_COUNT.toString(),
   bestRating: "5",
   worstRating: "1",
 };
@@ -24,7 +28,7 @@ const ReviewStrip: FC = () => {
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1">
           <span className="text-lg sm:text-xl font-semibold text-[var(--text-primary)]">
-            {rating.toFixed(1)}
+            {HOMEFIX_RATING_VALUE.toFixed(1)}
           </span>
           <span
             className="text-lg sm:text-xl text-[var(--accent-secondary)]"
@@ -34,7 +38,7 @@ const ReviewStrip: FC = () => {
           </span>
         </div>
         <span className="text-xs sm:text-[13px] text-[var(--text-secondary)]">
-          from {reviewCount}+ Google reviews in Chennai
+          from {HOMEFIX_REVIEW_COUNT}+ Google reviews in Chennai
         </span>
       </div>
 

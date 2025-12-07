@@ -16,12 +16,38 @@ import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
  * ============================================================
  */
 export function middleware(req: NextRequest) {
+  const env = process.env.NODE_ENV;
+  const isDev = env === "development";
+  const isProd = env === "production";
+
+  /**
+   * ------------------------------------------------------------
+   * 🚧 Dev safeguard: never do canonical redirects in dev
+   * ------------------------------------------------------------
+   * This prevents localhost → homefix.co.in redirects even if:
+   * - npm run dev is accidentally run with NODE_ENV=production
+   * - Browser has cached 308s/HSTS rules (308s are permanent!)
+   * - Host header is weird (Edge/Chrome quirks on '/')
+   */
+  if (!isProd || isDev || env !== "production") {
+    // Explicitly return next() to avoid any redirect logic below
+    return NextResponse.next();
+  }
+
   // 0️⃣ Canonical host enforcement (SEO duplicate avoidance)
-  const canonicalHost = new URL(CANONICAL_ORIGIN).hostname;
   const nextUrl = req.nextUrl.clone();
-  if (nextUrl.hostname !== canonicalHost) {
+  const urlHostname = nextUrl.hostname;
+  const canonicalHost = new URL(CANONICAL_ORIGIN).hostname;
+
+  const isLocalHost =
+    urlHostname === "localhost" ||
+    urlHostname === "127.0.0.1" ||
+    urlHostname === "[::1]";
+
+  if (!isLocalHost && urlHostname !== canonicalHost) {
     nextUrl.hostname = canonicalHost;
     nextUrl.protocol = "https:";
+    nextUrl.port = ""; // no port in canonical
     return NextResponse.redirect(nextUrl, 308);
   }
 
@@ -47,7 +73,7 @@ export function middleware(req: NextRequest) {
   ];
 
   if (whitelist.some((re) => re.test(url))) {
-    if (process.env.NODE_ENV === "development") {
+    if (isDev) {
       console.log("🟢 [Middleware] Whitelisted:", url);
     }
     return res;
@@ -66,7 +92,7 @@ export function middleware(req: NextRequest) {
       url.startsWith("/my-orders") ||
       url.startsWith("/mock-razorpay"))
   ) {
-    if (process.env.NODE_ENV === "development") {
+    if (isDev) {
       console.log("🧭 [Middleware] Skip redirect → post-checkout safe path");
     }
     return res;
@@ -96,7 +122,7 @@ export function middleware(req: NextRequest) {
      ------------------------------------------------------------ */
   const requiresAuth = protectedPaths.some((re) => re.test(url));
   if (requiresAuth && !isAuthed) {
-    if (process.env.NODE_ENV === "development") {
+    if (isDev) {
       console.log(
         "🚫 [Middleware] Unauthorized access → redirecting to /login"
       );
@@ -111,7 +137,7 @@ export function middleware(req: NextRequest) {
   /* ------------------------------------------------------------
      5️⃣ Allow all other requests
      ------------------------------------------------------------ */
-  if (process.env.NODE_ENV === "development") {
+  if (isDev) {
     console.log("🧩 [Middleware] Normal pass-through:", url);
   }
 

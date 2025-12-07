@@ -1,20 +1,40 @@
 "use client";
 /**
- * UniversalHeader — Global shell with navigation + theme toggle.
+ * UniversalHeader — Global shell with navigation + theme toggle and optional rating pill.
+ *
+ * Usage: Injected by RootShell on all non-auth routes; shows the 4.9 rating pill only on "/".
+ * Layout/SEO: Fixed translucent bar that updates header height CSS vars; emits AggregateRating JSON-LD when the pill is visible.
  */
 
 import { motion } from "framer-motion";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
-import React, { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import MobileSideNav from "@/components/layout/MobileSideNav";
 import HomeFixLogo from "@/components/ui/HomeFixLogo";
+import { HOMEFIX_RATING_VALUE, HOMEFIX_REVIEW_COUNT } from "@/components/trust/ReviewStrip";
+import { CANONICAL_ORIGIN } from "@/lib/seoConfig";
 
 export default function UniversalHeader(): React.ReactElement {
   const headerRef = useRef<HTMLElement | null>(null);
   const { theme, setTheme, systemTheme } = useTheme();
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+  const ratingSchema = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@type": "AggregateRating",
+      itemReviewed: { "@id": `${CANONICAL_ORIGIN}#homefix-localbusiness` },
+      ratingValue: HOMEFIX_RATING_VALUE.toString(),
+      reviewCount: HOMEFIX_REVIEW_COUNT.toString(),
+      bestRating: "5",
+      worstRating: "1",
+    }),
+    []
+  );
 
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -82,6 +102,13 @@ export default function UniversalHeader(): React.ReactElement {
             </button>
           )}
 
+          {isHome && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-soft)] bg-[var(--surface-card)] px-3 py-1 text-[11px] font-semibold text-[var(--text-primary)]">
+              <span aria-hidden="true">★</span>
+              <span>{HOMEFIX_RATING_VALUE.toFixed(1)}</span>
+            </span>
+          )}
+
           <button
             aria-label="Open navigation"
             className="inline-flex items-center justify-center w-10 h-10 rounded-xl
@@ -100,6 +127,12 @@ export default function UniversalHeader(): React.ReactElement {
 
       {/* Mobile Nav Drawer */}
       <MobileSideNav open={menuOpen} onClose={() => setMenuOpen(false)} />
+      {isHome && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ratingSchema) }}
+        />
+      )}
     </motion.header>
   );
 }

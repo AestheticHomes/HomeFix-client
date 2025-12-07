@@ -1,3 +1,11 @@
+/**
+ * InstagramEmbedCard
+ *
+ * What: Embeds the Instagram feed for Aesthetic Homes/HomeFix work.
+ * Where: Homepage social row, paired with YouTube embed.
+ * Layout/SEO: Card-styled iframe with rounded border; assumes parent provides horizontal flex/snap container.
+ */
+
 import { PARENT_ORG_NAME } from "@/lib/seoConfig";
 
 export function InstagramEmbedCard() {

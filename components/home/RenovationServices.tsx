@@ -1,4 +1,11 @@
 "use client";
+/**
+ * RenovationServices
+ *
+ * What: Lists interior services offered in Chennai pulled from services config.
+ * Where: Homepage services grid after social embeds.
+ * Layout/SEO: 1/2/3 grid matching the store pattern with compact padding and subdued typography.
+ */
 
 import Link from "next/link";
 import type { CSSProperties } from "react";
@@ -33,23 +40,23 @@ export default function RenovationServices() {
 
   return (
     <section
-      className="px-3 sm:px-4 lg:px-8 xl:px-12 py-3 border-t border-b border-[var(--border-muted)] bg-[var(--surface-base)]/90"
+      className="px-3 sm:px-4 lg:px-8 xl:px-12 py-4 border-t border-b border-[var(--border-muted)] bg-[var(--surface-base)]/90"
       aria-labelledby="quick-actions-heading"
     >
       <div className="w-full max-w-[1200px] 2xl:max-w-[1360px] mx-auto">
         <h2
           id="quick-actions-heading"
-          className="text-xs sm:text-sm font-semibold text-[var(--text-secondary)] mb-2"
+          className="text-xs sm:text-sm font-semibold text-[var(--text-secondary)] mb-3"
         >
           Interior services we offer in Chennai
         </h2>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {services.map((service) => (
             <Link
               key={service.slug}
               href={`/services/${service.slug}`}
-              className="relative rounded-2xl border border-[color-mix(in_srgb,white_20%,var(--border-muted))] bg-[var(--surface-panel)] p-4 overflow-hidden group"
+              className="relative rounded-2xl border border-[color-mix(in_srgb,white_20%,var(--border-muted))] bg-[var(--surface-panel)] p-3 sm:p-4 overflow-hidden group"
               style={auraShadow}
               onClick={() => track("book_consultation", { service: service.slug })}
             >
@@ -65,7 +72,7 @@ export default function RenovationServices() {
                 <h3 className="text-sm sm:text-base font-semibold text-[var(--text-primary)]">
                   {service.name}
                 </h3>
-                <p className="text-xs sm:text-sm text-[var(--text-muted-soft)]">
+                <p className="text-[12px] sm:text-sm text-[var(--text-muted-soft)]">
                   {service.heroSubtitle || service.tagline}
                 </p>
                 <span className="mt-1 text-[11px] font-semibold text-[var(--accent-primary)] group-hover:translate-x-0.5 transition-transform">

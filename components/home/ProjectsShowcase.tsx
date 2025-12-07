@@ -1,4 +1,11 @@
 "use client";
+/**
+ * ProjectsShowcase
+ *
+ * What: Highlights recent completed projects in Chennai.
+ * Where: Bottom of the homepage after services/testimonials.
+ * Layout/SEO: 1/2/3 grid aligned with store spacing; compact padding and soft aura shadow; static copy only.
+ */
 
 import type { CSSProperties } from "react";
 
@@ -41,7 +48,7 @@ export default function ProjectsShowcase() {
         >
           Recent projects in Chennai
         </h2>
-        <div className="grid sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {PROJECTS.map((project) => (
             <div
               key={project.id}
