@@ -69,6 +69,45 @@ const SLICE_SIZE = 12;
 const AUTO_INTERVAL_MS = 5000;
 const RESUME_TIMEOUT_MS = 6000;
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (delay = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.45,
+      ease: "easeOut",
+      delay,
+    },
+  }),
+};
+
+const staggerParent = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const childItem = {
+  hidden: { opacity: 0, y: 10 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3, ease: "easeOut" },
+  },
+};
+
+const hoverLift = {
+  whileHover: {
+    y: -4,
+    scale: 1.01,
+    transition: { type: "spring", stiffness: 220, damping: 18 },
+  },
+};
+
 export default function StoreShowcase() {
   const slices = useMemo(() => {
     const groups: StoreCategory[][] = [];
@@ -144,7 +183,14 @@ export default function StoreShowcase() {
 
   return (
     <section className="px-3 sm:px-4 lg:px-8 xl:px-12 pt-3 pb-6">
-      <div className="w-full max-w-[1200px] 2xl:max-w-[1360px] mx-auto">
+      <motion.div
+        className="w-full max-w-[1200px] 2xl:max-w-[1360px] mx-auto"
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.4 }}
+        custom={0.1}
+      >
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold text-[var(--text-primary)] sm:text-xl">
@@ -191,11 +237,19 @@ export default function StoreShowcase() {
             onTouchStart={pauseForUser}
             onTouchEnd={resumeAfterIdle}
           >
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <motion.div
+              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
+              variants={staggerParent}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+            >
               {activeSlice.map((cat) => (
-                <article
+                <motion.article
                   key={cat.id}
                   className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] px-3 py-3 shadow-[0_14px_36px_rgba(15,23,42,0.10)] transition hover:-translate-y-0.5 hover:border-[var(--accent-primary)]"
+                  variants={childItem}
+                  {...hoverLift}
                 >
                   <div className="flex flex-col gap-2">
                     <h3 className="text-sm font-semibold text-[var(--text-primary)] sm:text-base">
@@ -225,9 +279,9 @@ export default function StoreShowcase() {
                       </Link>
                     </div>
                   </div>
-                </article>
+                </motion.article>
               ))}
-            </div>
+            </motion.div>
           </motion.div>
         </AnimatePresence>
 
@@ -252,7 +306,7 @@ export default function StoreShowcase() {
             View full catalogue →
           </Link>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }

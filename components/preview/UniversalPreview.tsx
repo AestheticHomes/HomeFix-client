@@ -669,7 +669,7 @@ export default function UniversalPreview({
           </button>
         )}
 
-        {enableSelectionOverlay && selectedInfo && (
+        {enableSelectionOverlay && isFullscreen && selectedInfo && (
           <div className="absolute left-3 bottom-3 z-[75] max-w-[70%] rounded-2xl bg-[var(--overlay-cta)] text-[11px] text-[var(--text-hero)] px-3 py-2 backdrop-blur border border-[var(--border-subtle)]">
             <div className="font-semibold truncate">
               {selectedInfo.name || "Component"}
