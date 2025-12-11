@@ -238,7 +238,7 @@ export default function AestheticHomesPage() {
               </div>
 
               <Link
-                href="/aesthetic-homes"
+                href="/aesthetichomes"
                 className="text-sm opacity-60"
               >
                 Turnkey interiors by Aesthetic Homes →

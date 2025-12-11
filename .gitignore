@@ -72,3 +72,5 @@ coverage/
 !styles/
 !supabase/functions/
 components/seo/aesthetichomes
+debug.html
+live_debug.html

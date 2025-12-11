@@ -14,6 +14,8 @@ export default function GlobalParticleField() {
 
     const dpr = window.devicePixelRatio || 1;
     let frameId: number;
+    // time variable is not strictly needed but good practice for smooth wave/phase
+    // let time = 0; // Removed since it's not used in the draw loop, but phase is.
 
     const resize = () => {
       const { innerWidth, innerHeight } = window;
@@ -27,8 +29,9 @@ export default function GlobalParticleField() {
     resize();
     window.addEventListener("resize", resize);
 
+    // [TWEAK 1: REDUCE DENSITY] Lowered the particle count to be sparser (Antigravity look)
     const particleCount =
-      window.innerWidth < 640 ? 80 : window.innerWidth < 1280 ? 140 : 200;
+      window.innerWidth < 640 ? 60 : window.innerWidth < 1280 ? 110 : 160;
 
     type P = {
       x: number;
@@ -48,7 +51,8 @@ export default function GlobalParticleField() {
 
     for (let i = 0; i < particleCount; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const radius = Math.random() * 260 + 80;
+      // [TWEAK 2: EXPAND FIELD SIZE] Made the initial circle larger to fill the screen better
+      const radius = Math.random() * 400 + 100;
       const x = center.x + Math.cos(angle) * radius;
       const y = center.y + Math.sin(angle) * radius;
 
@@ -57,9 +61,10 @@ export default function GlobalParticleField() {
         y,
         baseX: x,
         baseY: y,
-        vx: (Math.random() - 0.5) * 0.2,
-        vy: (Math.random() - 0.5) * 0.2,
-        r: Math.random() * 1.8 + 0.8,
+        // [TWEAK 3: SLOW INITIAL SPEED] Reduced initial random velocity for slower drift
+        vx: (Math.random() - 0.5) * 0.08,
+        vy: (Math.random() - 0.5) * 0.08,
+        r: Math.random() * 1.5 + 0.5, // Subtle radius reduction
         phase: Math.random() * Math.PI * 2,
         opacity: 0,
       });
@@ -91,12 +96,14 @@ export default function GlobalParticleField() {
         ) || color;
 
       for (const p of particles) {
-        p.phase += 0.02;
-        p.x += p.vx + Math.sin(p.phase) * 0.06;
-        p.y += p.vy + Math.cos(p.phase * 0.8) * 0.06;
+        // [TWEAK 4: SLOW WAVE DRIFT] Reduced phase increment for slower, subtler "wave" movement
+        p.phase += 0.008;
+        p.x += p.vx + Math.sin(p.phase) * 0.03; // Reduced wave amplitude
+        p.y += p.vy + Math.cos(p.phase * 0.8) * 0.03; // Reduced wave amplitude
 
-        p.x += (p.baseX - p.x) * 0.002;
-        p.y += (p.baseY - p.y) * 0.002;
+        // [TWEAK 5: WEAKEN CENTRIPETAL PULL] The pull back to the base position is much weaker
+        p.x += (p.baseX - p.x) * 0.0005;
+        p.y += (p.baseY - p.y) * 0.0005;
 
         if (mouse) {
           const dx = mouse.x - p.x;
@@ -105,30 +112,34 @@ export default function GlobalParticleField() {
           const radius = 180;
           if (dist < radius) {
             const force = (radius - dist) / radius;
-            const pull = 0.08;
+            // [TWEAK 6: WEAKEN MOUSE PULL] Mouse interaction is much weaker/subtler
+            const pull = 0.03;
             p.x += (dx / dist) * force * 6 * pull;
             p.y += (dy / dist) * force * 6 * pull;
           }
         }
 
-        let targetOpacity = 0.15;
+        let targetOpacity = 0.08; // Base opacity lowered significantly
         if (mouse) {
           const dx = mouse.x - p.x;
           const dy = mouse.y - p.y;
           const dist = Math.sqrt(dx * dx + dy * dy) || 1;
           const bubbleRadius = 220;
           if (dist < bubbleRadius) {
-            targetOpacity = 0.3 + ((bubbleRadius - dist) / bubbleRadius) * 0.7;
+            // Lowered max brightness near cursor
+            targetOpacity = 0.2 + ((bubbleRadius - dist) / bubbleRadius) * 0.5;
           }
         }
         p.opacity += (targetOpacity - p.opacity) * 0.08;
 
+        // Wrap around logic remains unchanged for a continuous field
         if (p.x < -20) p.x = innerWidth + 20;
         if (p.x > innerWidth + 20) p.x = -20;
         if (p.y < -20) p.y = innerHeight + 20;
         if (p.y > innerHeight + 20) p.y = -20;
 
-        const chosen = Math.random() < 0.25 ? altColor : color;
+        // [TWEAK 7: ALT COLOR FREQUENCY] The secondary color appears less often
+        const chosen = Math.random() < 0.15 ? altColor : color;
         const parts = chosen.replace(/rgba?\(|\)/g, "").split(",");
         let fill = chosen.trim();
         if (parts.length >= 3) {

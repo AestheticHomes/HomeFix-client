@@ -145,7 +145,7 @@ export default function Hero() {
 
             {/** link to AestheticHomes + rating line */}
             <div className="flex flex-wrap items-center gap-3 text-[10px] sm:text-xs pt-2">
-              <Link href="/aesthetic-homes" className="hover:underline underline-offset-2 opacity-80">
+              <Link href="/aesthetichomes" className="hover:underline underline-offset-2 opacity-80">
                 Turnkey interiors by Aesthetic Homes →
               </Link>
               <div className="flex items-center gap-1 opacity-80">

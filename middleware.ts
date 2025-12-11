@@ -29,12 +29,17 @@ export function middleware(req: NextRequest) {
    * - Browser has cached 308s/HSTS rules (308s are permanent!)
    * - Host header is weird (Edge/Chrome quirks on '/')
    */
-  if (!isProd || isDev || env !== "production") {
-    // Explicitly return next() to avoid any redirect logic below
+  /**
+   * ------------------------------------------------------------
+   * 🚧 Dev safeguard: never do canonical redirects in dev
+   * ------------------------------------------------------------
+   * Only enforce canonical host / HTTPS in production.
+   */
+  if (!isProd) {
     return NextResponse.next();
   }
 
-  // 0️⃣ Canonical host enforcement (SEO duplicate avoidance)
+  // 0️⃣ Canonical host + HTTPS enforcement (SEO duplicate avoidance)
   const nextUrl = req.nextUrl.clone();
   const urlHostname = nextUrl.hostname;
   const canonicalHost = new URL(CANONICAL_ORIGIN).hostname;
@@ -44,7 +49,20 @@ export function middleware(req: NextRequest) {
     urlHostname === "127.0.0.1" ||
     urlHostname === "[::1]";
 
-  if (!isLocalHost && urlHostname !== canonicalHost) {
+  // Infer protocol from x-forwarded-proto (Vercel / proxies)
+  const protoHeader = req.headers.get("x-forwarded-proto");
+  const isHttps =
+    protoHeader === "https" ||
+    protoHeader === "https:" || // some envs include colon
+    nextUrl.protocol === "https:";
+
+  const isCanonicalHost = urlHostname === canonicalHost;
+
+  // ✅ Already correct: HTTPS + canonical host → DO NOT REDIRECT
+  if (!isLocalHost && isCanonicalHost && isHttps) {
+    // fall through to auth + whitelist logic below
+  } else if (!isLocalHost && (!isCanonicalHost || !isHttps)) {
+    // 🔁 Anything else in prod → normalize to https://<canonicalHost>...
     nextUrl.hostname = canonicalHost;
     nextUrl.protocol = "https:";
     nextUrl.port = ""; // no port in canonical

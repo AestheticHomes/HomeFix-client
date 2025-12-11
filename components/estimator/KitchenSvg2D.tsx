@@ -281,8 +281,8 @@ const within = (
       pref === "nearStart"
         ? ix + COUNTER_D
         : pref === "nearEnd"
-        ? ix + Math.max(0, iw - w - COUNTER_D)
-        : ix + Math.max(0, (iw - w) / 2);
+          ? ix + Math.max(0, iw - w - COUNTER_D)
+          : ix + Math.max(0, (iw - w) / 2);
     return { x, y };
   } else {
     // vertical run
@@ -291,8 +291,8 @@ const within = (
       pref === "nearStart"
         ? iy + COUNTER_D
         : pref === "nearEnd"
-        ? iy + Math.max(0, ih - h - COUNTER_D)
-        : iy + Math.max(0, (ih - h) / 2);
+          ? iy + Math.max(0, ih - h - COUNTER_D)
+          : iy + Math.max(0, (ih - h) / 2);
     return { x, y };
   }
 };
@@ -442,8 +442,8 @@ function KitchenSvg2DInner(): React.ReactElement {
     >
       {(transform) => {
         const scale = transform.z;
-        const tx = transform.x - toPx(centerX);
-        const ty = transform.y - toPx(centerY);
+        const tx = transform.x + VIEW_W / 2 - toPx(centerX) * transform.z;
+        const ty = transform.y + VIEW_H / 2 - toPx(centerY) * transform.z;
 
         return (
           <svg
